@@ -8,3 +8,10 @@ import { TOTAL_SCREENS } from '../config/acts'
  */
 export const master = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
 master.set({}, {}, TOTAL_SCREENS)
+
+/** Re-renders the timeline at its current time, so tweens added after the last scroll update apply now. */
+export function syncMaster(): void {
+  const t = master.time()
+  master.time(0, true)
+  master.time(t, true)
+}

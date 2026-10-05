@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ACTS, TOTAL_SCREENS, actAt, actLocalProgress, actWindows, temperatureAt } from './acts'
+import { ACTS, DEFAULT_ENTRY, TOTAL_SCREENS, actAt, actLocalProgress, actWindows, temperatureAt } from './acts'
 
 describe('acts config', () => {
   it('sums screens to the total', () => {
@@ -8,10 +8,24 @@ describe('acts config', () => {
 
   it('builds contiguous windows', () => {
     const w = actWindows()
-    expect(w[0]).toEqual({ id: 'intro', start: 0, end: 0.5 })
-    expect(w[1]).toEqual({ id: 'idea', start: 0.5, end: 2.5 })
+    expect(w[0]).toMatchObject({ id: 'intro', start: 0, end: 0.5 })
+    expect(w[1]).toMatchObject({ id: 'idea', start: 0.5, end: 2.5 })
     expect(w.at(-1)!.end).toBe(TOTAL_SCREENS)
     for (let i = 1; i < w.length; i++) expect(w[i].start).toBe(w[i - 1].end)
+  })
+
+  it('lands chapter clicks on the act entry point', () => {
+    const w = actWindows()
+    const idea = w.find((x) => x.id === 'idea')!
+    const print = w.find((x) => x.id === 'print')!
+    // Idea lands where the edges are drawn and the copy is in, not on its empty first frame.
+    expect(idea.entry).toBeCloseTo(1.1)
+    // Acts without an explicit entry land just past their start.
+    expect(print.entry).toBeCloseTo(print.start + DEFAULT_ENTRY)
+    for (const x of w) {
+      expect(x.entry).toBeGreaterThan(x.start)
+      expect(x.entry).toBeLessThan(x.end)
+    }
   })
 
   it('finds the act for a screen, end-exclusive', () => {

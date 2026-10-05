@@ -6,12 +6,17 @@ export interface ActDef {
   screens: number
   /** Frame temperature reached at the end of the act: 0 cold blueprint, 0.5 neutral, 1 molten. */
   temperature: number
+  /** Screens into the act where a chapter click lands. Default DEFAULT_ENTRY. */
+  entry?: number
 }
+
+/** Small step past the act start so pixel rounding never lands on the previous act. */
+export const DEFAULT_ENTRY = 0.01
 
 /** Story order and lengths (spec section 3). 'birth' includes the final hold. Tune by eye. */
 export const ACTS: readonly ActDef[] = [
   { id: 'intro', screens: 0.5, temperature: 0 },
-  { id: 'idea', screens: 2, temperature: 0 },
+  { id: 'idea', screens: 2, temperature: 0, entry: 0.6 },
   { id: 'print', screens: 1.5, temperature: 0.1 },
   { id: 'mold', screens: 2.5, temperature: 0.15 },
   { id: 'fire', screens: 2.5, temperature: 0.8 },
@@ -26,12 +31,14 @@ export interface ActWindow {
   /** Start and end in screens from the top of the track. */
   start: number
   end: number
+  /** Where a chapter click lands, in screens from the top. */
+  entry: number
 }
 
 export function actWindows(acts: readonly ActDef[] = ACTS): ActWindow[] {
   let t = 0
   return acts.map((a) => {
-    const w = { id: a.id, start: t, end: t + a.screens }
+    const w = { id: a.id, start: t, end: t + a.screens, entry: t + (a.entry ?? DEFAULT_ENTRY) }
     t += a.screens
     return w
   })

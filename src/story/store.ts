@@ -1,6 +1,18 @@
 import { useSyncExternalStore } from 'react'
 import type { ActId } from '../config/acts'
 
+/** The persistent hero ring, driven by acts through `master`. */
+export interface RingState {
+  /** Turn around Y, radians. */
+  yaw: number
+  /** Surface opacity 0..1 (alpha-hashed). 0 = only act props such as edge lines are visible. */
+  fill: number
+  /** Material state: 0 polished gold, 1 CAD surface. */
+  cad: number
+}
+
+export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1 }
+
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {
   /** Scroll position in screens, 0..TOTAL_SCREENS. */
@@ -10,9 +22,11 @@ export interface Story {
   actProgress: number
   /** Frame temperature for the grade, 0..1. */
   temperature: number
+  /** Hero ring values. */
+  ring: RingState
 }
 
-export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0 }
+export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL } }
 
 const actListeners = new Set<() => void>()
 
