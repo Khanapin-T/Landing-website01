@@ -102,7 +102,7 @@ export function createRingMaterial(): RingMaterialHandle {
       .replace('#include <worldpos_vertex>', VERTEX_WORLD_Y)
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', FRAGMENT_PARS)
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vRingWorldY < uCureY) discard;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vRingWorldY < uCureY + 1e-4) discard;')
       .replace(
         '#include <color_fragment>',
         '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, uCadColor, uCad);\ndiffuseColor.rgb = mix(diffuseColor.rgb, uResinColor, uResin);',

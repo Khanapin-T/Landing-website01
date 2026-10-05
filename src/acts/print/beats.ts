@@ -1,10 +1,11 @@
 /** Act 2 choreography in absolute screens (print 2.5..4.0). Tune by eye. */
 export const PRINT_BEATS = {
   /** Act 2 props render in [windowFrom, windowTo]: the vat rises in while Act 1 still dissolves. */
-  windowFrom: 2.0,
+  windowFrom: 1.8,
   windowTo: 4.0,
-  vatInFrom: 2.0,
-  vatInTo: 2.35,
+  /** In place before the first Act 1 points land (~2.16). */
+  vatInFrom: 1.8,
+  vatInTo: 2.15,
   /** Instant ring switch (hidden under the cure plane). */
   setup: 2.5,
   plateDownFrom: 2.5,

@@ -17,7 +17,8 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   const len = (from: number, to: number) => to - from
   const start = printPose(0)
   const end = printPose(1)
-  const instant = 0.01
+  // Zero duration: a short blend would show a half-flipped, half-dithered ring before the clip engages.
+  const instant = 0
 
   seg.fromTo(print, { vat: 0 }, { vat: 1, duration: len(B.vatInFrom, B.vatInTo), ease: 'power2.out' }, B.vatInFrom)
 

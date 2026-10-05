@@ -45,7 +45,7 @@ describe('ring material', () => {
     expect(shader.uniforms.uResin).toBe(uniforms.uResin)
     expect(shader.uniforms.uCureY).toBe(uniforms.uCureY)
     expect(shader.vertexShader).toContain('vRingWorldY')
-    expect(shader.fragmentShader).toMatch(/if \(vRingWorldY < uCureY\) discard;/)
+    expect(shader.fragmentShader).toMatch(/if \(vRingWorldY < uCureY \+ 1e-4\) discard;/)
     expect(shader.fragmentShader).toMatch(/diffuseColor\.rgb = mix\(diffuseColor\.rgb, uResinColor, uResin\)/)
     expect(shader.fragmentShader).toContain('uFrontColor')
   })

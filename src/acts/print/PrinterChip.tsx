@@ -77,7 +77,8 @@ export function PrinterChip() {
         if (!spin) return
         if (on) spin.play()
         else spin.pause()
-        gsap.to(beamEl, { autoAlpha: on ? 1 : 0, duration: 0.3, overwrite: true })
+        // 'auto', not true: true would also kill the --beam spin on the same element.
+        gsap.to(beamEl, { autoAlpha: on ? 1 : 0, duration: 0.3, overwrite: 'auto' })
       }
 
       const setLabel = (text: string, type: boolean) => {
@@ -106,6 +107,8 @@ export function PrinterChip() {
           gsap.to(chipEl, { autoAlpha: 0, duration: 0.25, overwrite: true })
           return
         }
+        // Visible before the first label write, so screen readers do not drop the live announcement.
+        gsap.set(chipEl, { visibility: 'inherit' })
         gsap.to(chipEl, { autoAlpha: 1, duration: 0.25, overwrite: true })
         if (next === 'sending') {
           setLabel(t.sending, true)

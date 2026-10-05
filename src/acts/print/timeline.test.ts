@@ -27,9 +27,9 @@ afterEach(() => {
 
 describe('act 2 timeline', () => {
   it('raises the vat during the end of act 1', () => {
-    tl.time(1.9)
+    tl.time(1.75)
     expect(print.vat).toBe(0)
-    tl.time(2.4)
+    tl.time(2.16)
     expect(print.vat).toBe(1)
   })
 
@@ -37,6 +37,11 @@ describe('act 2 timeline', () => {
     tl.time(2.49)
     expect(story.ring.cureY).toBe(CURE_OFF)
     expect(story.ring.flip).toBe(0)
+    // No in-between frame: right after the switch everything is in its print state already.
+    tl.time(2.505)
+    expect(story.ring.flip).toBeCloseTo(Math.PI)
+    expect(story.ring.cureY).toBe(PRINT.cureY)
+    expect(story.ring.fill).toBe(1)
     tl.time(2.6)
     expect(story.ring.fill).toBe(1)
     expect(story.ring.cad).toBe(0)

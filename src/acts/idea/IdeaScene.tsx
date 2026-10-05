@@ -40,7 +40,7 @@ function ringDerived(ring: THREE.BufferGeometry) {
   if (!d) {
     d = {
       edgeGeometry: buildEdgeGeometry(ring, 30),
-      particles: streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: PRINT.resinSurfaceY, drop: 0.01 }),
+      particles: streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: PRINT.resinSurfaceY, drop: 0.01, spread: 0.4 }),
     }
     derived.set(ring, d)
   }
