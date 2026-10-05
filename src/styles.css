@@ -1,0 +1,83 @@
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/SpaceGrotesk-latin-wght.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0b0b0d;
+  --fg: #f2efe9;
+  --font: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: thin;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#gl {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#gate[hidden] {
+  display: none;
+}
+
+#gate p {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+/* On gated devices only the message is shown. */
+.is-gated body > :not(#gate):not(script) {
+  display: none;
+}
+.is-gated body {
+  overflow: hidden;
+}
