@@ -2,17 +2,18 @@ import { gsap } from 'gsap'
 import { TOTAL_SCREENS } from '../config/acts'
 import { story } from '../story/store'
 
-const FROM = 2.5
+const FROM = 4.0
+/** Yaw at the end of Act 2 (2 PI from Act 1 plus the settle turn). */
+const START_YAW = Math.PI * 2 + 0.6
 
 /**
- * TEMP until s02: after Act 1 the s00 gold placeholder ring comes back for acts 2-6 and keeps turning slowly.
- * Delete this file (and its registration in IdeaScene) when Act 2 drives the ring.
+ * TEMP until s03: after Act 2 the resin ring (with its sprue) keeps turning slowly through acts 3-6.
+ * Act 3 takes over the ring; delete this file then (and its registration in PrintScene).
  */
 export function registerPlaceholder(tl: gsap.core.Timeline): () => void {
   const seg = gsap.timeline({ defaults: { ease: 'none', immediateRender: false } })
-  seg.fromTo(story.ring, { fill: 0, cad: 1 }, { fill: 1, cad: 0, duration: 0.3 }, FROM)
   const span = TOTAL_SCREENS - FROM
-  seg.fromTo(story.ring, { yaw: Math.PI * 2 }, { yaw: Math.PI * 2 + span * Math.PI * 0.35, duration: span }, FROM)
+  seg.fromTo(story.ring, { yaw: START_YAW }, { yaw: START_YAW + span * Math.PI * 0.35, duration: span }, FROM)
   tl.add(seg, 0)
   return () => {
     seg.kill()

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { registerIdea } from './timeline'
-import { registerPlaceholder } from '../placeholder'
 import { IDEA_INITIAL, idea } from './state'
 import { RING_INITIAL, story } from '../../story/store'
 
@@ -13,7 +12,7 @@ beforeEach(() => {
   Object.assign(story.ring, RING_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
   tl.set({}, {}, 14.5)
-  offs = [registerIdea(tl), registerPlaceholder(tl)]
+  offs = [registerIdea(tl)]
 })
 
 afterEach(() => {
@@ -60,6 +59,7 @@ describe('act 1 timeline', () => {
     tl.time(2.5)
     expect(idea.dissolve).toBe(1)
     expect(idea.grid).toBe(0)
+    expect(idea.points).toBe(0)
   })
 
   it('restores every value when scrubbed back to the top', () => {
@@ -67,16 +67,6 @@ describe('act 1 timeline', () => {
     tl.time(0)
     expect(idea).toMatchObject(IDEA_INITIAL)
     expect(story.ring).toMatchObject(RING_INITIAL)
-  })
-
-  it('hands over to the gold placeholder after act 1 (TEMP until s02)', () => {
-    tl.time(3)
-    expect(story.ring.fill).toBe(1)
-    expect(story.ring.cad).toBe(0)
-    expect(story.ring.yaw).toBeGreaterThan(Math.PI * 2)
-    tl.time(2.4)
-    expect(story.ring.fill).toBe(0)
-    expect(story.ring.cad).toBe(1)
   })
 
   it('removes its tweens when unregistered (StrictMode double mount)', () => {

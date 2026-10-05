@@ -25,6 +25,7 @@ export function registerIdea(tl: gsap.core.Timeline): () => void {
   seg.fromTo(idea, { points: 0 }, { points: 1, duration: 0.06 }, B.dissolveFrom)
   seg.fromTo(idea, { dissolve: 0 }, { dissolve: 1, duration: len(B.dissolveFrom, B.dissolveTo) }, B.dissolveFrom)
   seg.fromTo(idea, { grid: 1 }, { grid: 0, duration: len(B.gridOutFrom, B.gridOutTo) }, B.gridOutFrom)
+  seg.fromTo(idea, { points: 1 }, { points: 0, duration: len(B.pointsOutFrom, B.pointsOutTo) }, B.pointsOutFrom)
 
   tl.add(seg, 0)
   return () => {
