@@ -1,3 +1,9 @@
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { App } from './App'
 
-createRoot(document.getElementById('root')!).render(<p className="p-8 font-mono text-line">scaffold ok</p>)
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
