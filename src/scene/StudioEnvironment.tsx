@@ -8,6 +8,8 @@ export function StudioEnvironment() {
       <Lightformer form="rect" intensity={1.5} position={[-4, 1, 1]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
       <Lightformer form="rect" intensity={1.2} color="#bcd4ff" position={[4, 0.5, -1]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} />
       <Lightformer form="ring" intensity={2} position={[0, 1, -5]} scale={3} />
+      {/* Soft front card behind the camera so faces turned to the viewer are not black. */}
+      <Lightformer form="rect" intensity={0.8} position={[0, 0.5, 6]} rotation-y={Math.PI} scale={[5, 3, 1]} />
     </Environment>
   )
 }

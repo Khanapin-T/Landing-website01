@@ -28,7 +28,8 @@ export function PostFX() {
       <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.15} resolutionScale={q.bloomScale} />
       <ToneMapping mode={ToneMappingMode.AGX} />
       <primitive object={grade} dispose={null} />
-      <Noise premultiply opacity={0.06} />
+      {/* Not premultiplied: the grain must also reach dark pixels to dither gradient banding. */}
+      <Noise opacity={0.035} />
     </EffectComposer>
   )
 }

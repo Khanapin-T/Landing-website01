@@ -28,3 +28,11 @@ body {
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }
+
+/* The chapter scale is the scroll indicator; hide the native scrollbar (scrolling itself is untouched). */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
