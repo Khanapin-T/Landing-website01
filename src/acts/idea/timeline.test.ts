@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { registerIdea } from './timeline'
-import { registerPlaceholder } from '../placeholder'
 import { IDEA_INITIAL, idea } from './state'
-import { RING_INITIAL, story } from '../../story/store'
+import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
 let tl: gsap.core.Timeline
 let offs: (() => void)[] = []
@@ -11,9 +10,10 @@ let offs: (() => void)[] = []
 beforeEach(() => {
   Object.assign(idea, IDEA_INITIAL)
   Object.assign(story.ring, RING_INITIAL)
+  Object.assign(story.stream, STREAM_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
   tl.set({}, {}, 14.5)
-  offs = [registerIdea(tl), registerPlaceholder(tl)]
+  offs = [registerIdea(tl)]
 })
 
 afterEach(() => {
@@ -26,7 +26,7 @@ describe('act 1 timeline', () => {
     tl.time(0.3)
     expect(idea.draw).toBe(0)
     expect(story.ring.fill).toBe(0)
-    expect(idea.points).toBe(0)
+    expect(story.stream.opacity).toBe(0)
     expect(idea.grid).toBe(1)
   })
 
@@ -47,19 +47,21 @@ describe('act 1 timeline', () => {
     expect(story.ring.yaw).toBeCloseTo(Math.PI * 2)
   })
 
-  it('fills surfaces in CAD state, then dissolves into points', () => {
+  it('fills surfaces in CAD state, then dissolves into the resin stream', () => {
     tl.time(1.9)
     expect(story.ring.fill).toBe(1)
     expect(story.ring.cad).toBe(1)
     tl.time(2.2)
     expect(story.ring.fill).toBe(0)
     expect(idea.edges).toBe(0)
-    expect(idea.points).toBe(1)
-    expect(idea.dissolve).toBeGreaterThan(0)
-    expect(idea.dissolve).toBeLessThan(1)
+    expect(story.stream.opacity).toBe(1)
+    expect(story.stream.fall).toBeGreaterThan(0)
+    expect(story.stream.fall).toBeLessThan(1)
     tl.time(2.5)
-    expect(idea.dissolve).toBe(1)
+    expect(story.stream.fall).toBe(1)
     expect(idea.grid).toBe(0)
+    // The points stay: they wait in the resin bed and feed the print in Act 2.
+    expect(story.stream.opacity).toBe(1)
   })
 
   it('restores every value when scrubbed back to the top', () => {
@@ -67,16 +69,7 @@ describe('act 1 timeline', () => {
     tl.time(0)
     expect(idea).toMatchObject(IDEA_INITIAL)
     expect(story.ring).toMatchObject(RING_INITIAL)
-  })
-
-  it('hands over to the gold placeholder after act 1 (TEMP until s02)', () => {
-    tl.time(3)
-    expect(story.ring.fill).toBe(1)
-    expect(story.ring.cad).toBe(0)
-    expect(story.ring.yaw).toBeGreaterThan(Math.PI * 2)
-    tl.time(2.4)
-    expect(story.ring.fill).toBe(0)
-    expect(story.ring.cad).toBe(1)
+    expect(story.stream).toMatchObject(STREAM_INITIAL)
   })
 
   it('removes its tweens when unregistered (StrictMode double mount)', () => {

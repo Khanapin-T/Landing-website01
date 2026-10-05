@@ -3,6 +3,8 @@ import { Canvas } from '@react-three/fiber'
 import { setError } from '../story/appState'
 import { HeroRing } from './ring/HeroRing'
 import { IdeaScene } from '../acts/idea/IdeaScene'
+import { PrintScene } from '../acts/print/PrintScene'
+import { ResinStream } from './particles/ResinStream'
 import { StudioEnvironment } from './StudioEnvironment'
 import { PostFX } from './PostFX'
 import { CameraRig } from './CameraRig'
@@ -50,6 +52,8 @@ export function Stage() {
           <StudioEnvironment />
           <HeroRing />
           <IdeaScene />
+          <PrintScene />
+          <ResinStream />
           <Precompile />
         </Suspense>
       </SceneErrorBoundary>

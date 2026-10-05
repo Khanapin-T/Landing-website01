@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { ActId } from '../config/acts'
+import { CURE_OFF } from '../config/print'
 
 /** The persistent hero ring, driven by acts through `master`. */
 export interface RingState {
@@ -9,9 +10,30 @@ export interface RingState {
   fill: number
   /** Material state: 0 polished gold, 1 CAD surface. */
   cad: number
+  /** World Y offset of the ring's center. */
+  y: number
+  /** Rotation around Z (screen plane), radians. PI = upside down. */
+  flip: number
+  /** Material state: 1 = castable resin (mixed over gold/CAD). */
+  resin: number
+  /** 1 = the sprue is attached (from the print until the cut in Act 6). */
+  sprue: number
+  /** World Y of the print cure plane; the ring is clipped below it. CURE_OFF = no clip. */
+  cureY: number
 }
 
-export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1 }
+export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF }
+
+/** The resin stream (one particle system across acts 1-2): the ring dissolves into it and is printed from it. */
+export interface StreamState {
+  /** 0..1: points pour from the dissolving ring into the resin bed (Act 1). */
+  fall: number
+  /** 0..1: print progress; each point flies to its spot on the ring as the cure front reaches it (Act 2). */
+  feed: number
+  opacity: number
+}
+
+export const STREAM_INITIAL: Readonly<StreamState> = { fall: 0, feed: 0, opacity: 0 }
 
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {
@@ -24,9 +46,11 @@ export interface Story {
   temperature: number
   /** Hero ring values. */
   ring: RingState
+  /** Resin stream particles. */
+  stream: StreamState
 }
 
-export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL } }
+export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL }, stream: { ...STREAM_INITIAL } }
 
 const actListeners = new Set<() => void>()
 

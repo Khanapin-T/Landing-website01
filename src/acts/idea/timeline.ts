@@ -22,8 +22,8 @@ export function registerIdea(tl: gsap.core.Timeline): () => void {
   const fade = 0.15
   seg.fromTo(story.ring, { fill: 1 }, { fill: 0, duration: fade }, B.dissolveFrom)
   seg.fromTo(idea, { edges: 1 }, { edges: 0, duration: fade }, B.dissolveFrom)
-  seg.fromTo(idea, { points: 0 }, { points: 1, duration: 0.06 }, B.dissolveFrom)
-  seg.fromTo(idea, { dissolve: 0 }, { dissolve: 1, duration: len(B.dissolveFrom, B.dissolveTo) }, B.dissolveFrom)
+  seg.fromTo(story.stream, { opacity: 0 }, { opacity: 1, duration: 0.06 }, B.dissolveFrom)
+  seg.fromTo(story.stream, { fall: 0 }, { fall: 1, duration: len(B.dissolveFrom, B.dissolveTo) }, B.dissolveFrom)
   seg.fromTo(idea, { grid: 1 }, { grid: 0, duration: len(B.gridOutFrom, B.gridOutTo) }, B.gridOutFrom)
 
   tl.add(seg, 0)
