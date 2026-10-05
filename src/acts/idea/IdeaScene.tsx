@@ -12,7 +12,7 @@ import { useRingGeometry } from '../../scene/ring/useRingGeometry'
 import type { Box, Vec3 } from '../../scene/ring/normalize'
 import { ParticleCloud, type ParticleCloudState } from '../../scene/particles/ParticleCloud'
 import { sampleSurface, streamDown, type ParticleBuffers } from '../../scene/particles/particleData'
-import { registerPlaceholder } from '../placeholder'
+import { PRINT } from '../../config/print'
 import { IDEA_BEATS } from './beats'
 import { dimLabelEls } from './DimLabels'
 import { createLineDrawMaterial } from './lineDraw'
@@ -40,7 +40,7 @@ function ringDerived(ring: THREE.BufferGeometry) {
   if (!d) {
     d = {
       edgeGeometry: buildEdgeGeometry(ring, 30),
-      particles: streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: -1.6 }),
+      particles: streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: PRINT.resinSurfaceY, drop: 0.01 }),
     }
     derived.set(ring, d)
   }
@@ -84,7 +84,7 @@ export function IdeaScene() {
   useEffect(() => () => dims.material.dispose(), [dims])
 
   useLayoutEffect(() => {
-    const offs = [registerIdea(master), registerPlaceholder(master)]
+    const offs = [registerIdea(master)]
     syncMaster()
     return () => offs.forEach((off) => off())
   }, [])
