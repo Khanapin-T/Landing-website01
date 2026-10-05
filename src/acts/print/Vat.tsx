@@ -28,12 +28,13 @@ export function Vat() {
       new THREE.MeshStandardMaterial({
         color: RESIN_COLOR,
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.5,
         depthWrite: false,
-        roughness: 0.15,
+        roughness: 0.35,
+        envMapIntensity: 0.35,
         metalness: 0,
         emissive: RESIN_COLOR,
-        emissiveIntensity: 0.05,
+        emissiveIntensity: 0.12,
       }),
     [],
   )
@@ -60,7 +61,7 @@ export function Vat() {
     if (!g) return
     g.visible = getAppState().phase === 'loading' || print.vat > 0.001
     g.position.y = (1 - print.vat) * PRINT.vatHiddenOffset
-    resin.emissiveIntensity = 0.05 + 0.25 * print.glow
+    resin.emissiveIntensity = 0.12 + 0.3 * print.glow
     cure.opacity = 0.35 * print.glow
   })
 

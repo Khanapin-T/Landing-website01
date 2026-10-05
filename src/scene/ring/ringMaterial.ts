@@ -41,7 +41,7 @@ const FRAGMENT_PARS = [
   'varying float vRingWorldY;',
   'varying float vRingLocalY;',
   '#define CAD_ROUGHNESS 0.62',
-  '#define RESIN_ROUGHNESS 0.32',
+  '#define RESIN_ROUGHNESS 0.12',
 ].join('\n')
 
 // Runs right before opaque_fragment: `normal` (view space, normal_fragment_begin), `vViewPosition` and
@@ -50,13 +50,13 @@ const FRAGMENT_RESIN_AND_FRONT = [
   '{',
   '  // Resin: soft inner glow + fresnel rim instead of real transmission.',
   '  float resinFres = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 2.0);',
-  '  outgoingLight += uResin * uResinColor * (0.10 + 0.35 * resinFres);',
+  '  outgoingLight += uResin * mix(uResinColor, vec3(0.85, 1.0, 0.9), 0.5) * (0.05 + 0.75 * resinFres);',
   '  // Faint layer lines, fixed to the part: 1 at each layer boundary, 0 for the inner ~80% of a layer.',
   '  float layerT = vRingLocalY / uLayer;',
   '  float layerLine = smoothstep(0.8, 1.0, abs(fract(layerT) - 0.5) * 2.0);',
   '  // Fade the lines out where a layer gets thinner than ~4 px on screen (grazing angles, small ring): no moire.',
   '  layerLine *= 1.0 - smoothstep(0.25, 0.5, fwidth(layerT));',
-  '  outgoingLight *= 1.0 - 0.06 * uResin * layerLine;',
+  '  outgoingLight *= 1.0 - 0.1 * uResin * layerLine;',
   '  // Glowing cure front just above the cure plane (zero when the clip is off: CURE_OFF is far below).',
   '  float front = 1.0 - smoothstep(0.0, 0.03, vRingWorldY - uCureY);',
   '  outgoingLight += front * uFrontColor;',

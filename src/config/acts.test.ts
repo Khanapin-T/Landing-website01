@@ -18,10 +18,13 @@ describe('acts config', () => {
     const w = actWindows()
     const idea = w.find((x) => x.id === 'idea')!
     const print = w.find((x) => x.id === 'print')!
+    const mold = w.find((x) => x.id === 'mold')!
     // Idea lands where the edges are drawn and the copy is in, not on its empty first frame.
     expect(idea.entry).toBeCloseTo(1.1)
+    // Print lands mid-print (plate up, ring half grown, copy in).
+    expect(print.entry).toBeCloseTo(3.1)
     // Acts without an explicit entry land just past their start.
-    expect(print.entry).toBeCloseTo(print.start + DEFAULT_ENTRY)
+    expect(mold.entry).toBeCloseTo(mold.start + DEFAULT_ENTRY)
     for (const x of w) {
       expect(x.entry).toBeGreaterThan(x.start)
       expect(x.entry).toBeLessThan(x.end)

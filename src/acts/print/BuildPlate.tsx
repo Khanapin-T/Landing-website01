@@ -6,7 +6,7 @@ import { print } from './state'
 import { getAppState } from '../../story/appState'
 
 const { width, depth, thickness, parkedY } = PRINT.plate
-const ARM = { w: 0.12, h: 2.0, d: 0.12 }
+const ARM = { w: 0.06, h: 2.0, d: 0.06 }
 
 /** Aluminum build plate with a vertical arm (out of frame above). The group origin is the plate's bottom face. */
 export function BuildPlate() {
@@ -14,7 +14,7 @@ export function BuildPlate() {
 
   const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
   const aluminum = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#c3c9d1', metalness: 1, roughness: 0.38 }),
+    () => new THREE.MeshStandardMaterial({ color: '#9aa3ad', metalness: 1, roughness: 0.45, envMapIntensity: 0.55 }),
     [],
   )
 
