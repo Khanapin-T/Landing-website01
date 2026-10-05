@@ -34,7 +34,7 @@ export const content = {
   },
   print: {
     heading: 'Then it is printed',
-    caption: 'Castable resin, cured layer by layer. The ring grows upside down on a single sprue.',
+    caption: 'Castable resin, cured by light layer by layer on a resin 3D printer. A print usually takes about 400A0hours.',
     chip: { sending: 'Sending to printer', printing: 'Printing', done: 'Printed' },
   },
   scale: {
