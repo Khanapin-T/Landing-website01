@@ -8,6 +8,7 @@ export const SITE = {
 
 export const LOADER = {
   text: "We'll start in a minute",
+  error: 'Something went wrong while loading. Please reload the page.',
 };
 
 // Placeholders: replace with the real details before launch.

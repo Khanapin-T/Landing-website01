@@ -40,7 +40,7 @@ const HANGING = xf(V0, [Math.PI, 0, 0]); // upside down under the build plate
 const TILT = xf(V0, [0.175, 0, 0]); // ~10 deg
 const IN_FLASK = xf([0, 1.4, 0], V0, 0.8); // ring on its slot of the tree inside the flask
 
-export const POSES = [
+const POSES_DRAFT = [
   /* 0  catalog start    */ pose({ anchor: UPRIGHT, fade: 0, look: 'cad', rig: { dist: 12 } }),
   /* 1  rhino start      */ pose({ anchor: THREE_QUARTER, fade: 0, look: 'cad', rig: { dist: 10, yaw: 0.2, pitch: 0.18 } }),
   /* 2  printer start    */ pose({ anchor: THREE_QUARTER, fade: 0, look: 'cad', rig: { dist: 12 } }),
@@ -57,3 +57,14 @@ export const POSES = [
   /* 13 final start      */ pose({ anchor: TILT, fade: 1, look: 'polished', rig: { dist: 9 } }),
   /* 14 end              */ pose({ anchor: TILT, fade: 1, look: 'polished', rig: { dist: 9 } }),
 ];
+
+// Deep-freeze so an accidental in-place write (poses share arrays/objects) throws in strict mode.
+function deepFreeze(o) {
+  if (o && typeof o === 'object' && !Object.isFrozen(o)) {
+    Object.freeze(o);
+    Object.values(o).forEach(deepFreeze);
+  }
+  return o;
+}
+
+export const POSES = deepFreeze(POSES_DRAFT);

@@ -14,6 +14,15 @@ import { loader } from './loader.js';
 
 const params = new URLSearchParams(location.search);
 
+// whenReady() resolves after the reveal and rejects if boot fails (see the catch at the bottom).
+let resolveReady;
+let rejectReady;
+const ready = new Promise((resolve, reject) => {
+  resolveReady = resolve;
+  rejectReady = reject;
+});
+ready.catch(() => {}); // handled here; callers awaiting whenReady() still see the rejection
+
 async function boot() {
   // Dev harness first, so errors during boot are captured.
   const debug = params.has('debug') ? await import('./core/debug.js') : null;
@@ -76,6 +85,8 @@ async function boot() {
   window.addEventListener('resize', applySize);
   applySize();
 
+  if (debug) debug.initDebug(ctx, { ready }); // before loading, so __app exists even if loading fails
+
   // Bootstrap: gate (entry.js) -> loader -> assets (0..90%) -> hero -> compileAsync (90..100%) -> reveal.
   const { heroGeo } = await loadAssets((f) => loader.set(f * 0.9));
   const hero = createHero(ctx, heroGeo);
@@ -85,10 +96,7 @@ async function boot() {
   rig.state.pitch = 0.2;
   if (import.meta.env.DEV && params.has('hero')) hero.setState(params.get('hero')); // ?hero=cad|resin|rawGold|polished (screenshots)
 
-  let resolveReady;
-  const ready = new Promise((r) => (resolveReady = r));
   if (import.meta.env.DEV && params.has('demo')) addDemo(ctx);
-  if (debug) debug.initDebug(ctx, { ready });
 
   if (!(import.meta.env.DEV && params.has('nowarm'))) await postfx.compileAsync(scene, rig.camera); // dev ?nowarm skips the warm-up (A/B)
   loader.set(1);
@@ -123,4 +131,8 @@ function addDemo(ctx) {
   ctx.loop.markDirty();
 }
 
-boot();
+boot().catch((e) => {
+  console.error(e);
+  loader.fail();
+  rejectReady(e);
+});
