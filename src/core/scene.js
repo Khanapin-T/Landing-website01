@@ -18,7 +18,9 @@ export function createScene(renderer) {
   scene.add(world);
 
   const pmrem = new PMREMGenerator(renderer);
-  const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const room = new RoomEnvironment();
+  const envMap = pmrem.fromScene(room, 0.04).texture;
+  room.dispose();
   scene.environment = envMap;
   pmrem.dispose();
 

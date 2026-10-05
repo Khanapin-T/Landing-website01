@@ -47,12 +47,16 @@ export function postSteps(base) {
   return steps;
 }
 
-// Rolling 2 s window over RENDERED frames. Ignores the first 3 s after start and frames
-// longer than 250 ms. When avg fps < 40: lower the post effect quality first, then the
+// Rolling 2 s window over RENDERED frames (the loop only reports consecutive rendered ticks,
+// so idle time between dirty frames is never counted). Needs >= 1.5 s and >= 5 samples to
+// decide; ignores the first 3 s after start and frames longer than 250 ms (tab switches). When avg fps < 40: lower the post effect quality first, then the
 // DPR in 0.25 steps (floor 0.75). 2 s between steps, never steps back up.
 export function createAdaptive({ tier, getDpr, setDpr, setPost = null, log = true }) {
   const WINDOW = 2000;
   const WARMUP = 3000;
+  const MIN_SPAN = 1500; // collected span needed before a decision
+  const MIN_SAMPLES = 5;
+  const STEP_GAP = 2000;
   const MIN_FPS = 40;
   const DPR_STEP = 0.25;
   const DPR_FLOOR = 0.75;
@@ -61,7 +65,7 @@ export function createAdaptive({ tier, getDpr, setDpr, setPost = null, log = tru
   const events = [];
   let level = 0;
   let samples = []; // { t, ms }
-  let windowStart = 0;
+  let lastStep = born;
 
   function step(now, fps) {
     if (level < steps.length - 1) {
@@ -77,16 +81,15 @@ export function createAdaptive({ tier, getDpr, setDpr, setPost = null, log = tru
     }
     if (log) console.info('[adaptive]', events[events.length - 1]);
     samples = [];
-    windowStart = now;
+    lastStep = now;
     return true;
   }
 
   function frame(ms, now = performance.now()) {
     if (now - born < WARMUP || ms > 250) return;
-    if (!samples.length) windowStart = now;
     samples.push({ t: now, ms });
     while (samples.length && now - samples[0].t > WINDOW) samples.shift();
-    if (now - windowStart < WINDOW || samples.length < 20) return;
+    if (now - samples[0].t < MIN_SPAN || samples.length < MIN_SAMPLES || now - lastStep < STEP_GAP) return;
     let sum = 0;
     for (const s of samples) sum += s.ms;
     const fps = 1000 / (sum / samples.length);

@@ -75,7 +75,7 @@ async function boot() {
 
   let resolveReady;
   const ready = new Promise((r) => (resolveReady = r));
-  if (params.has('demo')) addDemo(ctx);
+  if (import.meta.env.DEV && params.has('demo')) addDemo(ctx);
   if (debug) debug.initDebug(ctx, { ready });
 
   loop.renderNow();

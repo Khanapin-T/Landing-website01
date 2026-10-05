@@ -187,11 +187,21 @@ function makeTarget(hdrR11, samples = 0, depth = false) {
 export function createPostFx(renderer, tier, { onDirty = () => {} } = {}) {
   let quality = { div: 4, iterations: 2, edgeBlur: true, bloom: true, aberration: true, ...tier.post };
   const samples = tier.post.samples ?? 0;
-  const r11 = renderer.extensions.has('EXT_color_buffer_float');
+  const hasFloatRT = renderer.extensions.has('EXT_color_buffer_float');
+  const hasHalfRT = hasFloatRT || renderer.extensions.has('EXT_color_buffer_half_float');
+  // Debug only: ?forceRt=rgba16f fails the R11G11B10F target, ?forceRt=none fails every target.
+  const forceRt = new URLSearchParams(location.search).get('forceRt');
 
-  const sceneRT = makeTarget(r11, samples, true);
-  const blurA = makeTarget(r11);
-  const blurB = makeTarget(r11);
+  let r11 = hasFloatRT;
+  let sceneRT;
+  let blurA;
+  let blurB;
+  const createTargets = () => {
+    sceneRT = makeTarget(r11, samples, true);
+    blurA = makeTarget(r11);
+    blurB = makeTarget(r11);
+  };
+  createTargets();
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
@@ -243,6 +253,7 @@ export function createPostFx(renderer, tier, { onDirty = () => {} } = {}) {
   });
 
   const fx = {
+    failed: false, // set when no usable render target exists
     enabled: true, // false renders the scene directly (A/B and frame-time comparison)
     blurSpread: 2.6, // blur radius scale (~22 px sigma at 1080p, div 4, 2 iterations)
     uniforms,
@@ -270,8 +281,52 @@ export function createPostFx(renderer, tier, { onDirty = () => {} } = {}) {
     px = { w: Math.max(1, Math.floor(w * dpr)), h: Math.max(1, Math.floor(h * dpr)) };
     sceneRT.setSize(px.w, px.h);
     layout();
+    verifyTargets();
     onDirty();
   };
+
+  // Binds each target once and checks the framebuffer is complete (restores the previous target).
+  function targetsComplete() {
+    if (forceRt === 'none' || (forceRt === 'rgba16f' && r11)) return false;
+    const gl = renderer.getContext();
+    const prev = renderer.getRenderTarget();
+    let ok = true;
+    for (const rt of [sceneRT, blurA, blurB]) {
+      renderer.setRenderTarget(rt);
+      ok = ok && gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    }
+    renderer.setRenderTarget(prev);
+    return ok;
+  }
+
+  // R11G11B10F incomplete -> rebuild as RGBA16F; still incomplete (or no float render support)
+  // -> disable the pass so the loop renders directly (same path as ?post=0).
+  function verifyTargets() {
+    if (!hasHalfRT) {
+      fail('no float render target support');
+      return;
+    }
+    if (targetsComplete()) return;
+    if (r11) {
+      console.warn('[postfx] R11G11B10F target incomplete, falling back to RGBA16F');
+      [sceneRT, blurA, blurB].forEach((rt) => rt.dispose());
+      r11 = false;
+      createTargets();
+      uniforms.tScene.value = sceneRT.texture;
+      uniforms.tBlur.value = blurA.texture;
+      sceneRT.setSize(px.w, px.h);
+      layout();
+      if (targetsComplete()) return;
+    }
+    fail('render targets incomplete');
+  }
+
+  function fail(reason) {
+    if (fx.failed) return;
+    console.warn(`[postfx] ${reason}, post pass disabled (direct render)`);
+    fx.failed = true;
+    fx.enabled = false;
+  }
 
   // params: { div, iterations, edgeBlur, bloom, aberration } (partial is fine).
   fx.setQuality = (params) => {
