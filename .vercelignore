@@ -1,0 +1,11 @@
+ring-scrollytelling
+.superpowers
+shots
+.playwright-cli
+.claude
+docs
+node_modules
+dist
+.env.local
+*.log
+CLAUDE.md

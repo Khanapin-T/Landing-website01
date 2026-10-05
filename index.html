@@ -2,93 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>From CAD to Gold</title>
-    <meta name="description" content="How a red-gold signet ring is made, from CAD model to the finished ring." />
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="description" content="How a gold signet ring is made, from CAD model to polished piece." />
     <link rel="preload" href="/fonts/SpaceGrotesk-latin-wght.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/src/styles.css" />
-    <style>
-      /* Loader: inline so it paints before any script runs. */
-      #loader {
-        position: fixed;
-        inset: 0;
-        z-index: 900;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 22px;
-        background: #0b0b0d;
-        color: #f2efe9;
-        font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
-        transition: opacity 0.8s ease, visibility 0s linear 0.8s;
-      }
-      #loader.is-done {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-      }
-      #loader .loader-ring {
-        display: block;
-        height: min(62vh, 560px);
-        width: auto;
-        -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 52%, transparent 100%);
-        mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 52%, transparent 100%);
-      }
-      #loader .loader-bar {
-        width: 220px;
-        height: 2px;
-        overflow: hidden;
-        background: rgba(242, 239, 233, 0.16);
-      }
-      #loader .loader-bar i {
-        display: block;
-        height: 100%;
-        background: #e6a97f;
-        transform: scaleX(0);
-        transform-origin: 0 50%;
-        transition: transform 0.35s ease-out;
-      }
-      #loader .loader-text {
-        margin: 0;
-        min-height: 1.2em;
-        max-width: min(90vw, 420px);
-        text-align: center;
-        line-height: 1.5;
-        font-size: 13px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-      }
-      #loader .loader-text.is-set {
-        opacity: 0.7;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #loader,
-        #loader .loader-bar i,
-        #loader .loader-text {
-          transition: none;
-        }
-      }
-    </style>
   </head>
   <body>
-    <canvas id="gl"></canvas>
-    <div id="bg"></div>
-    <aside id="panel"></aside>
-    <nav id="dots"></nav>
-    <div id="counter"></div>
-    <main id="track"></main>
-    <div id="loader" role="status" aria-live="polite">
-      <img class="loader-ring" src="/img/loader-ring.webp" width="732" height="900" alt="" fetchpriority="high" />
-      <div class="loader-bar"><i></i></div>
-      <p class="loader-text"></p>
-    </div>
-    <div id="gate" hidden>
-      <p>This experience is built for desktop. Please open it on a computer.</p>
-    </div>
-    <script type="module" src="/src/entry.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/gate.ts"></script>
   </body>
 </html>

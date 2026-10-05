@@ -4,6 +4,9 @@ node_modules/
 dist/
 shots/
 .playwright-cli/
+.playwright-mcp/
 .vercel/
 *.log
 .superpowers/
+.vercel
+.env*

@@ -1,83 +1,38 @@
+@import "tailwindcss";
+
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/fonts/SpaceGrotesk-latin-wght.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-latin-wght.woff2") format("woff2");
   font-weight: 300 700;
-  font-style: normal;
   font-display: swap;
 }
 
-:root {
-  --bg: #0b0b0d;
-  --fg: #f2efe9;
-  --font: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+@theme {
+  --color-ink: #0a1622;  /* blueprint navy, page base */
+  --color-line: #dbe6f2; /* HUD white */
+  --color-mute: #8aa0b8; /* blue-grey secondary */
+  --color-gold: #e3b04b; /* the only accent, act 5 onward */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  scrollbar-width: thin;
-  background: var(--bg);
-  overflow-x: hidden;
+html,
+body,
+#root {
+  background: var(--color-ink);
+  color: var(--color-line);
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
-  overflow-x: hidden;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font);
+  font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }
 
-#gl {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  display: block;
-  z-index: 0;
+/* The chapter scale is the scroll indicator; hide the native scrollbar (scrolling itself is untouched). */
+html {
+  scrollbar-width: none;
 }
-
-#bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-
-#gate {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  text-align: center;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-#gate[hidden] {
+html::-webkit-scrollbar {
   display: none;
-}
-
-#gate p {
-  margin: 0;
-  max-width: 28ch;
-  font-size: 20px;
-  line-height: 1.4;
-}
-
-/* On gated devices only the message is shown. */
-.is-gated body > :not(#gate):not(script) {
-  display: none;
-}
-.is-gated body {
-  overflow: hidden;
 }
