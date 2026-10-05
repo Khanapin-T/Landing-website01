@@ -3,11 +3,20 @@ import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import { story } from '../../story/store'
 
-/** Applies the ring's scroll-driven yaw (turn around Y) to everything attached to the ring. */
+/** Applies the ring's scroll-driven placement to everything attached to it: lift (Y), flip (Z), turn (Y). */
 export function RingPivot({ children }: { children: ReactNode }) {
-  const ref = useRef<Group>(null)
+  const outer = useRef<Group>(null)
+  const inner = useRef<Group>(null)
   useFrame(() => {
-    if (ref.current) ref.current.rotation.y = story.ring.yaw
+    if (outer.current) {
+      outer.current.position.y = story.ring.y
+      outer.current.rotation.z = story.ring.flip
+    }
+    if (inner.current) inner.current.rotation.y = story.ring.yaw
   })
-  return <group ref={ref}>{children}</group>
+  return (
+    <group ref={outer}>
+      <group ref={inner}>{children}</group>
+    </group>
+  )
 }
