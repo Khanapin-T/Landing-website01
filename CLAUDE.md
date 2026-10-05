@@ -42,6 +42,7 @@ Printed resin (not wax) burns out in the furnace. Tape is wrapped around the per
 - Process: `superpowers` skills (brainstorming, plans, TDD, debugging, review, verification).
 - Design: project skills `design-taste-frontend` (leads), `frontend-design`, `web-design-guidelines` (final audit), `magic-ui` (reference for Magic UI components; its shadcn install flow is not used here).
 - Browser checks: **Playwright MCP** (project `.mcp.json`), not the global `playwright-cli` skill.
+- Library docs: **Context7 MCP** (project `.mcp.json`). Before writing code against drei, @react-three/postprocessing, postprocessing, R3F, Lenis, GSAP or Tailwind v4 APIs, look up the current docs for the pinned version instead of relying on memory. Subagents must do the same.
 - GitHub: `gh` CLI is installed and logged in (account Khanapin-T). If `gh` is not on PATH in an old shell, call `"C:\Program Files\GitHub CLI\gh.exe"`.
 
 ## Workflow

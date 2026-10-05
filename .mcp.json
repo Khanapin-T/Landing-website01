@@ -10,6 +10,17 @@
         "@playwright/mcp@0.0.83"
       ],
       "env": {}
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp@4.1.1"
+      ],
+      "env": {}
     }
   }
 }
