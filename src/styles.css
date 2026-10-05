@@ -1,9 +1,24 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "Space Grotesk";
-  src: url("/fonts/SpaceGrotesk-latin-wght.woff2") format("woff2");
-  font-weight: 300 700;
+  font-family: "Archivo";
+  src: url("/fonts/Archivo-latin-wdth-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-latin-500.woff2") format("woff2");
+  font-weight: 500;
   font-display: swap;
 }
 
@@ -12,8 +27,8 @@
   --color-line: #dbe6f2; /* HUD white */
   --color-mute: #8aa0b8; /* blue-grey secondary */
   --color-gold: #e3b04b; /* the only accent, act 5 onward */
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
 html,

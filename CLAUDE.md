@@ -26,7 +26,7 @@ Vite + React + TypeScript; three + @react-three/fiber + @react-three/drei + @rea
 - `public/models/ring.glb`: hero ring, 100k tris, 3 MB, exported by the author from Rhino and optimized (max deviation < 0.07 mm). `public/models/ring_light.glb`: same ring, 40k tris, for clones. One mesh, positions + normals only, materials defined in code.
   - Y up, 1 unit = 1 cm, bounding box 2.35 x 2.48 x 1.03 cm. Finger-hole axis = Z, signet plate on top (+Y), honeycomb pattern inside the shank, four stepped bands on both sides of the plate.
   - **Replacement contract:** auto-normalize on load (center bbox, scale to target height, keep Y up) so a re-exported file needs no code change. Large Rhino exports must be reduced first (<= 100k tris, <= 5 MB, e.g. `npx @gltf-transform/cli`).
-- `public/fonts/`: Space Grotesk (one of the font candidates; final font chosen with the author).
+- `public/fonts/`: Archivo (variable, width + weight axes; headings at `font-stretch: 125%`) and IBM Plex Mono 400/500 for the HUD. Chosen by the author 2026-10-05. OFL licenses next to the files.
 - Reference photos in `ring-scrollytelling/assets/reference/` are for modeling/mood only. **Never ship them.**
 
 ## Process facts (must stay correct)
