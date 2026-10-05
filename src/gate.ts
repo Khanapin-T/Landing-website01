@@ -17,5 +17,8 @@ if (isTouchPrimary(readDeviceEnv())) {
 } else if (!hasWebGL2()) {
   showMessage(content.noWebGL.message)
 } else {
+  // The story always starts at the intro, also after a reload or Retry.
+  history.scrollRestoration = 'manual'
+  window.scrollTo(0, 0)
   import('./main').catch(() => showMessage(content.loader.error))
 }

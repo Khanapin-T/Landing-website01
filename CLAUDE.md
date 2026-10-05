@@ -18,7 +18,7 @@ Vite + React + TypeScript; three + @react-three/fiber + @react-three/drei + @rea
 
 ## Author's machine and performance budget
 - Windows 11 (PowerShell), AMD Radeon 740M integrated GPU, 16 GB RAM. This is also the machine Claude works on, so FPS is measured on the real target GPU.
-- >= 45 fps (60 target) at 1080p. Never trade fps for effects: step down DPR (1.5 -> 1.25 -> 1.0), then bloom resolution, then particle count.
+- >= 45 fps (60 target) at 1080p. Never trade fps for effects: step down DPR (1.5 -> 1.25 -> 1.0), then particle count. Never change post-processing settings at runtime (it rebuilds the composer and recompiles shaders).
 - No React state updates during scroll (scroll values live in a mutable store read in `useFrame`). Pre-compile all shaders during the loader. One canvas, one post-processing pass. No transmission/refraction materials, no large shadow maps.
 - Initial download < 10 MB.
 

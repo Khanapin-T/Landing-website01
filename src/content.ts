@@ -12,7 +12,7 @@ export const content = {
   loader: {
     line: "We'll start in a minute",
     heightLabel: '24.8 mm',
-    error: 'Something went wrong while loading.',
+    error: 'Something went wrong.',
     retry: 'Retry',
   },
   scale: {

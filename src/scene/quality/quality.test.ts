@@ -33,8 +33,6 @@ describe('quality steps', () => {
       const a = QUALITY_STEPS[i - 1]
       const b = QUALITY_STEPS[i]
       expect(b.dpr).toBeLessThanOrEqual(a.dpr)
-      expect(b.msaa).toBeLessThanOrEqual(a.msaa)
-      expect(b.bloomScale).toBeLessThanOrEqual(a.bloomScale)
       expect(b.particleScale).toBeLessThanOrEqual(a.particleScale)
     }
   })

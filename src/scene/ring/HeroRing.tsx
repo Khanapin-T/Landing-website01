@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
@@ -33,10 +33,6 @@ export function HeroRing() {
   }, [scene])
 
   const material = useMemo(() => createRingMaterial(), [])
-  useEffect(() => () => {
-    geometry.dispose()
-    material.dispose()
-  }, [geometry, material])
 
   const ref = useRef<THREE.Mesh>(null)
   // Placeholder motion until act sessions drive the ring: a slow turn around Y tied to scroll.

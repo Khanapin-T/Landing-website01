@@ -16,14 +16,21 @@ export function Loader() {
 
   useGSAP(
     () => {
-      if (phase !== 'ready' || !root.current) return
+      if (!root.current) return
+      if (phase === 'error') {
+        // An error after (or during) the fade-out brings the loader back with Retry.
+        gsap.killTweensOf(root.current)
+        gsap.set(root.current, { autoAlpha: 1 })
+        return
+      }
+      if (phase !== 'ready') return
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       gsap.to(root.current, { autoAlpha: 0, duration: reduce ? 0 : 0.8, ease: 'power2.out', onComplete: () => setGone(true) })
     },
     { dependencies: [phase] },
   )
 
-  if (gone) return null
+  if (gone && phase !== 'error') return null
   const p = Math.round(progress)
   const x = (W * p) / 100
 
@@ -35,6 +42,7 @@ export function Loader() {
           <button
             type="button"
             className="mt-6 border border-line/40 px-5 py-2 font-mono text-sm text-line transition hover:border-line focus-visible:outline focus-visible:outline-1 focus-visible:outline-line active:scale-[0.98]"
+            autoFocus
             onClick={() => window.location.reload()}
           >
             {content.loader.retry}

@@ -5,6 +5,8 @@ import { scrollToScreen } from '../story/scrollControl'
 import { useCurrentAct } from '../story/store'
 
 const CHAPTERS = actWindows().filter((w) => w.id !== 'intro')
+/** Small step past the act start so pixel rounding never lands on the previous act. */
+const CHAPTER_ENTRY = 0.01
 
 /** Right-edge chapter scale: one tick per act, clickable and keyboard reachable. */
 export function ActScale() {
@@ -27,7 +29,7 @@ export function ActScale() {
                 type="button"
                 aria-label={content.scale.goTo(name)}
                 aria-current={active ? 'step' : undefined}
-                onClick={() => scrollToScreen(w.start)}
+                onClick={() => scrollToScreen(w.start + CHAPTER_ENTRY)}
                 className="group flex items-center gap-3 py-1 focus-visible:outline focus-visible:outline-1 focus-visible:outline-line"
               >
                 <span

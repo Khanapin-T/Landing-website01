@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Lenis from 'lenis'
+import 'lenis/dist/lenis.css' // .lenis-stopped blocks keyboard/native scroll under the loader, not just the wheel
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { TOTAL_SCREENS, actAt, actLocalProgress, temperatureAt } from '../config/acts'
@@ -41,12 +42,25 @@ export function ScrollDirector() {
       end: 'bottom bottom',
       onUpdate: (self) => apply(self.progress * TOTAL_SCREENS),
     })
-    apply(0)
+    apply(st.progress * TOTAL_SCREENS)
+
+    // The track is sized in vh: after a resize, F11 or zoom, keep the same story position, not the same pixels.
+    let savedScreen = 0
+    const onRefreshInit = () => {
+      savedScreen = story.screen
+    }
+    const onRefresh = () => {
+      lenis.scrollTo(savedScreen * window.innerHeight, { immediate: true, force: true })
+    }
+    ScrollTrigger.addEventListener('refreshInit', onRefreshInit)
+    ScrollTrigger.addEventListener('refresh', onRefresh)
 
     setScrollToScreen((screen) => lenis.scrollTo(screen * window.innerHeight, { duration: 1.4, immediate: reduce }))
 
     return () => {
       offApp()
+      ScrollTrigger.removeEventListener('refreshInit', onRefreshInit)
+      ScrollTrigger.removeEventListener('refresh', onRefresh)
       st.kill()
       gsap.ticker.remove(tick)
       lenis.destroy()

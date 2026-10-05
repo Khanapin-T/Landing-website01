@@ -5,11 +5,9 @@ import { ToneMappingMode } from 'postprocessing'
 import { GradeEffect } from './fx/GradeEffect'
 import { LensEffect } from './fx/LensEffect'
 import { story } from '../story/store'
-import { useQuality } from './quality/qualityStore'
 
 /** The single post-processing chain used on every screen. */
 export function PostFX() {
-  const q = useQuality()
   const lens = useMemo(() => new LensEffect(), [])
   const grade = useMemo(() => new GradeEffect(), [])
 
@@ -23,9 +21,10 @@ export function PostFX() {
   })
 
   return (
-    <EffectComposer multisampling={q.msaa} enableNormalPass={false}>
+    // Constant MSAA: changing it at runtime recreates the composer. Quality steps only touch DPR and particles.
+    <EffectComposer multisampling={4} enableNormalPass={false}>
       <primitive object={lens} dispose={null} />
-      <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.15} resolutionScale={q.bloomScale} />
+      <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.15} />
       <ToneMapping mode={ToneMappingMode.AGX} />
       <primitive object={grade} dispose={null} />
       {/* Not premultiplied: the grain must also reach dark pixels to dither gradient banding. */}

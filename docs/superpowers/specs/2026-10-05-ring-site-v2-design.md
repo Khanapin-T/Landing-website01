@@ -94,7 +94,7 @@ React Bits and Magic UI are used as **technique sources**: their React code is c
 - `acts/Act0Intro ... Act6Birth`: each owns its props, its timeline segment and its HUD copy. Outside its scroll window an act is hidden (no draw calls). Acts do not import each other.
 - `hud/*`: DOM overlay components (titles, labels, chips, gauge, act scale), animated by GSAP through refs.
 - `content.ts`: all user-visible text.
-- `quality`: drei `PerformanceMonitor` driving steps: DPR 1.5 -> 1.25 -> 1.0, then bloom resolution, then particle count.
+- `quality`: drei `PerformanceMonitor` driving steps: DPR 1.5 -> 1.25 -> 1.0, then particle count. Post-processing settings (MSAA, bloom) stay constant: changing them rebuilds the composer and recompiles shaders mid-scroll.
 
 **Assets:** `ring.glb` (100k tris) for the hero only; `ring_light.glb` (40k) for clones. Initial download < 10 MB. Gzipped JS estimated at 400-450 KB (to verify at build).
 

@@ -1,21 +1,20 @@
 export interface QualityStep {
   /** Max device pixel ratio for the canvas. */
   dpr: number
-  /** MSAA samples on the composer's render target (0 = off). */
-  msaa: number
-  /** Bloom render resolution relative to the canvas. */
-  bloomScale: number
   /** Multiplier for particle counts in act sessions. */
   particleScale: number
 }
 
-/** Ordered from most to least expensive. Each step lowers cost; fps is never traded for effects. */
+/**
+ * Ordered from most to least expensive: DPR first, then particle counts.
+ * Post-processing settings are deliberately NOT stepped: changing MSAA or bloom options
+ * rebuilds the composer and recompiles shaders mid-scroll (a visible hitch).
+ */
 export const QUALITY_STEPS: readonly QualityStep[] = [
-  { dpr: 1.5, msaa: 4, bloomScale: 0.5, particleScale: 1 },
-  { dpr: 1.25, msaa: 4, bloomScale: 0.5, particleScale: 1 },
-  { dpr: 1, msaa: 2, bloomScale: 0.5, particleScale: 1 },
-  { dpr: 1, msaa: 0, bloomScale: 0.5, particleScale: 1 },
-  { dpr: 1, msaa: 0, bloomScale: 0.35, particleScale: 0.6 },
+  { dpr: 1.5, particleScale: 1 },
+  { dpr: 1.25, particleScale: 1 },
+  { dpr: 1, particleScale: 1 },
+  { dpr: 1, particleScale: 0.6 },
 ]
 
 /** First step whose DPR the device can actually show (no wasted steps on low-DPR screens). */
