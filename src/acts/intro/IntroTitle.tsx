@@ -14,6 +14,8 @@ export const INTRO_OUT = 0.25
 /** Longer than any glyph outline at the title size, so one dash covers each contour. */
 const DASH = 1400
 const LINE_HEIGHT = 120
+/** Matches the loader's fade-out (src/hud/Loader.tsx). */
+const LOADER_FADE = 0.7
 
 /** Act 0: the title draws in as an outline, then fills (StrokeText technique, SVG + GSAP). */
 export function IntroTitle() {
@@ -59,12 +61,14 @@ export function IntroTitle() {
       if (reduce) {
         intro.set(texts, { strokeDashoffset: 0, fillOpacity: 1 }).to(el, { autoAlpha: 1, duration: 0.3 })
       } else {
+        // Starts as the loader finishes fading, so the outline draw is not hidden under it.
+        const t = LOADER_FADE
         intro
-          .set(el, { autoAlpha: 1 })
-          .to(texts, { strokeDashoffset: 0, duration: 1.6, ease: 'power2.inOut', stagger: 0.18 }, 0.15)
-          .to(texts, { fillOpacity: 1, duration: 0.8, ease: 'power1.out', stagger: 0.18 }, 1.2)
-          .fromTo(sub, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2 }, 1.5)
-          .to(sub, { scrambleText: { text: content.intro.subtitle, chars: 'upperCase', speed: 0.6 }, duration: 1 }, 1.5)
+          .set(el, { autoAlpha: 1 }, t)
+          .to(texts, { strokeDashoffset: 0, duration: 1.6, ease: 'power2.inOut', stagger: 0.18 }, t + 0.1)
+          .to(texts, { fillOpacity: 1, duration: 0.8, ease: 'power1.out', stagger: 0.18 }, t + 1.15)
+          .fromTo(sub, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2 }, t + 1.45)
+          .to(sub, { scrambleText: { text: content.intro.subtitle, chars: 'upperCase', speed: 0.6 }, duration: 1 }, t + 1.45)
       }
 
       const off = addCue({
