@@ -6,3 +6,4 @@ shots/
 .playwright-cli/
 .vercel/
 *.log
+.superpowers/
