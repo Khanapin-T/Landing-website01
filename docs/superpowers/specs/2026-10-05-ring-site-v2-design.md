@@ -21,7 +21,7 @@ Consequences:
 - **Process facts must stay correct:** printed resin (not wax) burns out in the furnace; tape is wrapped around the perforated flask before the investment is poured (author: mandatory); investment is de-aired under vacuum; the flask is flipped after the furnace; vacuum casting; the gold rests 5-15 min before quenching in water; the investment dissolves in water and the raw tree comes out. No gemstones.
 - **Metal: yellow gold** (author's decision after Session 1, replaces "red gold" from the original brief).
 - **Never invent facts** in copy (dimensions only from the model data below; contacts are placeholders until the author provides them).
-- Model facts usable in HUD copy: bounding box 2.35 x 2.48 x 1.03 cm (23.5 x 24.8 x 10.3 mm); max deviation of the optimized model from the original < 0.07 mm; honeycomb pattern inside the shank.
+- Model facts usable in HUD copy: ring size 20.5 = inner diameter 20.5 mm, EU 64 (circumference pi x 20.5 = 64.4 mm) (from the author; act 1 spec list starts with "Ring size 20.5 (EU 64)"); bounding box 2.35 x 2.48 x 1.03 cm (23.5 x 24.8 x 10.3 mm); max deviation of the optimized model from the original < 0.07 mm; honeycomb pattern inside the shank.
 
 ## 3. Story: six acts (about 14 screens of scroll)
 

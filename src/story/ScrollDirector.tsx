@@ -7,6 +7,7 @@ import { TOTAL_SCREENS, actAt, actLocalProgress, temperatureAt } from '../config
 import { getAppState, subscribeApp } from './appState'
 import { master } from './master'
 import { setScrollToScreen } from './scrollControl'
+import { updateCues } from './cues'
 import { setAct, story } from './store'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -18,6 +19,7 @@ function apply(screen: number): void {
   story.temperature = temperatureAt(screen)
   setAct(win.id)
   master.time(story.screen)
+  updateCues(story.screen)
 }
 
 /** Lenis smooth scroll + one ScrollTrigger over #track. Writes story values; never sets React state. */

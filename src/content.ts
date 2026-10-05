@@ -15,6 +15,23 @@ export const content = {
     error: 'Something went wrong.',
     retry: 'Retry',
   },
+  intro: {
+    titleLines: ['From CAD', 'to Gold'],
+    subtitle: 'One signet ring in yellow gold, from file to finished piece',
+  },
+  idea: {
+    heading: 'It starts as a drawing',
+    caption: 'Every curve, band and honeycomb cell is modeled in CAD before anything physical exists.',
+    specs: [
+      { label: 'Ring size', value: '20.5 (EU 64)' },
+      { label: 'Height', value: '24.8 mm' },
+      { label: 'Width', value: '23.5 mm' },
+      { label: 'Depth', value: '10.3 mm' },
+      { label: 'Shank', value: 'Honeycomb' },
+      { label: 'Mesh deviation', value: '< 0.07 mm' },
+    ],
+    dims: { height: '24.8 mm', width: '23.5 mm' },
+  },
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,

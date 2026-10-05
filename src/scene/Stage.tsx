@@ -2,6 +2,7 @@ import { Component, Suspense, type ReactNode } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { setError } from '../story/appState'
 import { HeroRing } from './ring/HeroRing'
+import { IdeaScene } from '../acts/idea/IdeaScene'
 import { StudioEnvironment } from './StudioEnvironment'
 import { PostFX } from './PostFX'
 import { CameraRig } from './CameraRig'
@@ -48,6 +49,7 @@ export function Stage() {
         <Suspense fallback={null}>
           <StudioEnvironment />
           <HeroRing />
+          <IdeaScene />
           <Precompile />
         </Suspense>
       </SceneErrorBoundary>
