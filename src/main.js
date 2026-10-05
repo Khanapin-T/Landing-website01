@@ -1,5 +1,5 @@
 // App bootstrap. Builds the frozen `ctx` that scenes and the timeline build on:
-// ctx = { renderer, scene, camera, world, lights, rig, background, postfx, quality, loop }
+// ctx = { renderer, scene, camera, world, lights, rig, background, postfx, quality, loop, hero }
 import { MeshStandardMaterial, Mesh, SphereGeometry, BoxGeometry } from 'three';
 import { createRenderer } from './core/renderer.js';
 import { createScene } from './core/scene.js';
@@ -8,6 +8,8 @@ import { createRig } from './core/rig.js';
 import { createLoop } from './core/loop.js';
 import { createPostFx } from './core/postfx.js';
 import { detectTier, createAdaptive } from './core/quality.js';
+import { loadAssets } from './core/assets.js';
+import { createHero } from './hero.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -26,7 +28,7 @@ async function boot() {
   const postfx = createPostFx(renderer, tier, { onDirty: () => loop.markDirty() });
   postfx.enabled = params.get('post') !== '0'; // ?post=0 renders directly (A/B)
 
-  const ctx = { renderer, scene, camera: rig.camera, world, lights, rig, background, postfx, quality: null, loop: null };
+  const ctx = { renderer, scene, camera: rig.camera, world, lights, rig, background, postfx, quality: null, loop: null, hero: null };
 
   const loop = createLoop({
     render: () => {
@@ -72,6 +74,14 @@ async function boot() {
 
   window.addEventListener('resize', applySize);
   applySize();
+
+  const { heroGeo } = await loadAssets();
+  const hero = createHero(ctx, heroGeo);
+  // Foundation default view (three-quarter, honeycomb visible) until the timeline drives the hero.
+  hero.spin.rotation.y = -0.6;
+  rig.state.dist = 9.5;
+  rig.state.pitch = 0.2;
+  if (import.meta.env.DEV && params.has('hero')) hero.setState(params.get('hero')); // ?hero=cad|resin|rawGold|polished (screenshots)
 
   let resolveReady;
   const ready = new Promise((r) => (resolveReady = r));
