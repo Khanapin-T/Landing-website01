@@ -32,6 +32,11 @@ export const content = {
     ],
     dims: { height: '24.8 mm', width: '23.5 mm' },
   },
+  print: {
+    heading: 'Then it is printed',
+    caption: 'Castable resin, cured layer by layer. The ring grows upside down on a single sprue.',
+    chip: { sending: 'Sending to printer', printing: 'Printing', done: 'Printed' },
+  },
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,
