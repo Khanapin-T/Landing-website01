@@ -1,0 +1,8 @@
+# Local project inputs (brief, references, source models) — not committed
+ring-scrollytelling/
+node_modules/
+dist/
+shots/
+.playwright-cli/
+.vercel/
+*.log
