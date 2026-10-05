@@ -6,7 +6,7 @@ import { registerPlaceholder } from '../placeholder'
 import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
 import { CURE_OFF, PRINT, RING_HALF, printPose } from '../../config/print'
-import { RING_INITIAL, story } from '../../story/store'
+import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
 let tl: gsap.core.Timeline
 let offs: (() => void)[] = []
@@ -15,6 +15,7 @@ beforeEach(() => {
   Object.assign(idea, IDEA_INITIAL)
   Object.assign(print, PRINT_INITIAL)
   Object.assign(story.ring, RING_INITIAL)
+  Object.assign(story.stream, STREAM_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
   tl.set({}, {}, 14.5)
   offs = [registerIdea(tl), registerPrint(tl), registerPlaceholder(tl)]
@@ -26,11 +27,25 @@ afterEach(() => {
 })
 
 describe('act 2 timeline', () => {
-  it('raises the vat during the end of act 1', () => {
-    tl.time(1.75)
-    expect(print.vat).toBe(0)
-    tl.time(2.16)
-    expect(print.vat).toBe(1)
+  it('lights the resin bed as the act 1 points pour in, and keeps the points there', () => {
+    tl.time(2.1)
+    expect(print.bed).toBe(0)
+    tl.time(2.5)
+    expect(print.bed).toBe(1)
+    expect(story.stream.fall).toBe(1)
+    expect(story.stream.feed).toBe(0)
+    expect(story.stream.opacity).toBe(1)
+  })
+
+  it('feeds the stream into the cure front at the print pace, then the points are gone', () => {
+    for (const t of [2.9, 3.2, 3.5]) {
+      tl.time(t)
+      expect(story.stream.feed).toBeCloseTo(print.grow)
+      expect(story.stream.opacity).toBe(1)
+    }
+    tl.time(3.61)
+    expect(story.stream.feed).toBe(1)
+    expect(story.stream.opacity).toBe(0)
   })
 
   it('switches the ring at 2.5 while it is hidden under the cure plane', () => {
@@ -53,7 +68,7 @@ describe('act 2 timeline', () => {
     expect(story.ring.y + RING_HALF + PRINT.sprue.length).toBeLessThanOrEqual(PRINT.cureY + 1e-6)
   })
 
-  it('brings the plate down onto the vat floor before printing', () => {
+  it('brings the plate down onto the cure plane before printing', () => {
     tl.time(2.5)
     expect(print.plate).toBeCloseTo(PRINT.plate.parkedY)
     tl.time(2.75)
@@ -79,7 +94,7 @@ describe('act 2 timeline', () => {
     expect(print.grow).toBe(1)
     expect(print.glow).toBe(0)
     expect(print.plate).toBeCloseTo(PRINT.plate.parkedY)
-    expect(print.vat).toBe(0)
+    expect(print.bed).toBe(0)
     expect(story.ring.flip).toBeCloseTo(Math.PI * 2)
     expect(story.ring.y).toBeCloseTo(0)
     expect(story.ring.resin).toBe(1)
@@ -108,5 +123,6 @@ describe('act 2 timeline', () => {
     tl.time(0)
     expect(story.ring).toMatchObject(RING_INITIAL)
     expect(print).toMatchObject(PRINT_INITIAL)
+    expect(story.stream).toMatchObject(STREAM_INITIAL)
   })
 })

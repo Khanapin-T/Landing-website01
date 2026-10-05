@@ -20,7 +20,7 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   // Zero duration: a short blend would show a half-flipped, half-dithered ring before the clip engages.
   const instant = 0
 
-  seg.fromTo(print, { vat: 0 }, { vat: 1, duration: len(B.vatInFrom, B.vatInTo), ease: 'power2.out' }, B.vatInFrom)
+  seg.fromTo(print, { bed: 0 }, { bed: 1, duration: len(B.bedInFrom, B.bedInTo), ease: 'power2.out' }, B.bedInFrom)
 
   // Ring switch while hidden under the cure plane.
   seg.fromTo(
@@ -35,19 +35,22 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   // Printing: plate and part rise together, linearly, so they stay attached.
   const printing = len(B.printFrom, B.printTo)
   seg.fromTo(print, { grow: 0 }, { grow: 1, duration: printing }, B.printFrom)
+  // The resin stream feeds the cure front at the same pace; every point has arrived by printTo.
+  seg.fromTo(story.stream, { feed: 0 }, { feed: 1, duration: printing }, B.printFrom)
+  seg.fromTo(story.stream, { opacity: 1 }, { opacity: 0, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: start.plateY }, { plate: end.plateY, duration: printing }, B.printFrom)
   seg.fromTo(story.ring, { y: start.ringY }, { y: end.ringY, duration: printing }, B.printFrom)
   seg.fromTo(print, { glow: 0 }, { glow: 1, duration: 0.03 }, B.printFrom)
   seg.fromTo(print, { glow: 1 }, { glow: 0, duration: 0.03 }, B.printTo - 0.03)
 
-  // Done: clip off, plate away, ring flips upright to the center, vat sinks.
+  // Done: clip off, plate away, ring flips upright to the center, bed light off.
   seg.fromTo(story.ring, { cureY: PRINT.cureY }, { cureY: CURE_OFF, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: end.plateY }, { plate: PRINT.plate.parkedY, duration: len(B.liftFrom, B.liftTo), ease: 'power2.in' }, B.liftFrom)
   const flip = len(B.flipFrom, B.flipTo)
   seg.fromTo(story.ring, { flip: Math.PI }, { flip: TURN, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { y: end.ringY }, { y: 0, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { yaw: TURN }, { yaw: TURN + SETTLE_YAW, duration: flip, ease: 'sine.inOut' }, B.flipFrom)
-  seg.fromTo(print, { vat: 1 }, { vat: 0, duration: len(B.vatOutFrom, B.vatOutTo), ease: 'power2.in' }, B.vatOutFrom)
+  seg.fromTo(print, { bed: 1 }, { bed: 0, duration: len(B.bedOutFrom, B.bedOutTo), ease: 'power2.in' }, B.bedOutFrom)
 
   tl.add(seg, 0)
   return () => {

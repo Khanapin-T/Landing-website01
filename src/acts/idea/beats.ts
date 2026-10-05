@@ -18,9 +18,6 @@ export const IDEA_BEATS = {
   fillTo: 1.85,
   dissolveFrom: 2.0,
   dissolveTo: 2.45,
-  /** Points fade into the resin they landed on. */
-  pointsOutFrom: 2.4,
-  pointsOutTo: 2.5,
   copyOut: 2.3,
   gridOutFrom: 2.3,
   gridOutTo: 2.5,

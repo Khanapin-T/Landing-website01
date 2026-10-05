@@ -1,25 +1,32 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { PRINT } from '../../config/print'
-import { print } from './state'
 import { getAppState } from '../../story/appState'
+import { print } from './state'
 
 const { width, depth, thickness, parkedY } = PRINT.plate
-const ARM = { w: 0.06, h: 2.0, d: 0.06 }
+/** Mounting block on top of the plate and the slim shaft it hangs from (out of frame above). */
+const HUB = { w: 0.2, h: 0.05, d: 0.16 }
+const SHAFT = { r: 0.022, h: 2.2 }
 
-/** Aluminum build plate with a vertical arm (out of frame above). The group origin is the plate's bottom face. */
+/** Build plate: a rounded anodized-aluminum plate on a central mount. The group origin is the plate's bottom face. */
 export function BuildPlate() {
   const group = useRef<THREE.Group>(null)
 
-  const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
-  const aluminum = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#9aa3ad', metalness: 1, roughness: 0.45, envMapIntensity: 0.55 }),
+  const plate = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#77818d', metalness: 1, roughness: 0.32, envMapIntensity: 0.7 }),
     [],
   )
-
-  useEffect(() => () => box.dispose(), [box])
-  useEffect(() => () => aluminum.dispose(), [aluminum])
+  const dark = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#2b323c', metalness: 0.8, roughness: 0.4, envMapIntensity: 0.6 }),
+    [],
+  )
+  const shaft = useMemo(() => new THREE.CylinderGeometry(SHAFT.r, SHAFT.r, SHAFT.h, 20), [])
+  useEffect(() => () => plate.dispose(), [plate])
+  useEffect(() => () => dark.dispose(), [dark])
+  useEffect(() => () => shaft.dispose(), [shaft])
 
   useFrame(() => {
     const g = group.current
@@ -31,14 +38,9 @@ export function BuildPlate() {
   return (
     // Starts visible: Precompile (traverseVisible) runs before the first frame sets the real value.
     <group ref={group}>
-      <mesh geometry={box} material={aluminum} position={[0, thickness / 2, 0]} scale={[width, thickness, depth]} />
-      {/* arm on the back edge, rising from the plate top */}
-      <mesh
-        geometry={box}
-        material={aluminum}
-        position={[0, thickness + ARM.h / 2, -depth / 2 + ARM.d / 2]}
-        scale={[ARM.w, ARM.h, ARM.d]}
-      />
+      <RoundedBox args={[width, thickness, depth]} radius={0.018} smoothness={4} position={[0, thickness / 2, 0]} material={plate} />
+      <RoundedBox args={[HUB.w, HUB.h, HUB.d]} radius={0.012} smoothness={3} position={[0, thickness + HUB.h / 2, 0]} material={dark} />
+      <mesh geometry={shaft} material={dark} position={[0, thickness + HUB.h + SHAFT.h / 2, 0]} />
     </group>
   )
 }

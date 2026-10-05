@@ -6,64 +6,98 @@ import { useQuality } from '../quality/qualityStore'
 import { getAppState } from '../../story/appState'
 
 export interface ParticleCloudState {
-  /** Stream progress 0..1. */
+  /** First flight progress 0..1 (from -> to). */
   progress: number
   opacity: number
+  /** Second flight progress 0..1 (to -> front, each point at its own `arrive`). 0 when unused. */
+  feed: number
 }
+
+/** Feed progress a point needs to fly from the bed to its spot on the cure front. */
+const FEED_LEAD = 0.12
 
 // Point size: uSize (world units) projected to drawing-buffer px.
 // projectionMatrix[1][1] = 1 / tan(fov / 2); uScale = half the drawing-buffer height.
 // 0.006 at ~4.2 units with a 30 deg fov at 1080 px: 0.006 * 540 * 3.73 / 4.2 = ~2.9 px (x 0.6..1.4 per seed).
 const vertexShader = /* glsl */ `
 attribute vec3 aTo;
+attribute vec3 aFront;
 attribute float aDelay;
+attribute float aArrive;
 attribute float aSeed;
 uniform float uProgress;
+uniform float uFeed;
+uniform float uLead;
+uniform float uTime;
 uniform float uSize;
 uniform float uScale; // half the drawing-buffer height in px
 varying float vAlpha;
+varying float vTint;
 void main() {
+  // First flight: from the source shape into the bed, each point on its own delay.
   float k = smoothstep(aDelay, aDelay + 0.35, uProgress);
   vec3 p = mix(position, aTo, k * k);
   float flight = sin(3.14159265 * k);
   p.x += sin(aSeed * 40.0 + k * 6.0) * 0.04 * flight;
   p.z += cos(aSeed * 31.0 + k * 5.0) * 0.04 * flight;
+  // Second flight: picked up from the bed shortly before the cure front reaches the point's spot.
+  float f = clamp((uFeed - (aArrive - uLead)) / uLead, 0.0, 1.0);
+  float fe = f * f * (3.0 - 2.0 * f);
+  // Resting in the bed: a slow ambient drift, like liquid resin.
+  float rest = k * (1.0 - fe);
+  p.x += sin(uTime * 0.7 + aSeed * 30.0) * 0.008 * rest;
+  p.z += cos(uTime * 0.6 + aSeed * 17.0) * 0.008 * rest;
+  p = mix(p, aFront, fe);
+  p.y += sin(3.14159265 * fe) * 0.06;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = uSize * uScale * projectionMatrix[1][1] / -mv.z * (0.6 + 0.8 * aSeed);
-  vAlpha = 1.0 - 0.6 * smoothstep(0.8, 1.0, k);
+  float bed = 1.0 - 0.6 * smoothstep(0.8, 1.0, k);
+  // Brighten in flight, vanish on arrival (the printed surface takes over there).
+  vAlpha = mix(bed, 1.0, fe) * (1.0 - smoothstep(0.85, 1.0, f));
+  vTint = smoothstep(0.6, 1.0, k);
 }
 `
 
 // smoothstep needs edge0 < edge1 (reversed edges are undefined in GLSL), hence 1.0 - smoothstep(...).
 const fragmentShader = /* glsl */ `
 uniform vec3 uColor;
+uniform vec3 uTintColor;
 uniform float uOpacity;
 varying float vAlpha;
+varying float vTint;
 void main() {
   float d = length(gl_PointCoord - 0.5);
   float a = (1.0 - smoothstep(0.15, 0.5, d)) * vAlpha * uOpacity;
   if (a < 0.003) discard;
-  gl_FragColor = vec4(uColor * a, a);
+  gl_FragColor = vec4(mix(uColor, uTintColor, vTint) * a, a);
 }
 `
 
-/** The one particle shader: points flying from `from` to `to`, each on its own delay. Additive, no depth write. */
+/**
+ * The one particle shader: points fly from `from` to `to` (each on its own delay) and, optionally, on to `front`
+ * (each arriving at its own feed progress). They take on `tint` as they settle. Additive, no depth write.
+ */
 export function ParticleCloud({
   buffers,
   state,
   color = '#cfe0f5',
+  tint = color,
   size = 0.006,
 }: {
   buffers: ParticleBuffers
   state: Readonly<ParticleCloudState>
   color?: THREE.ColorRepresentation
+  tint?: THREE.ColorRepresentation
   size?: number
 }) {
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(buffers.from, 3))
     g.setAttribute('aTo', new THREE.BufferAttribute(buffers.to, 3))
+    // Without a second flight the points never get picked up (arrive beyond any feed value).
+    g.setAttribute('aFront', new THREE.BufferAttribute(buffers.front ?? buffers.to, 3))
+    g.setAttribute('aArrive', new THREE.BufferAttribute(buffers.arrive ?? new Float32Array(buffers.count).fill(2), 1))
     g.setAttribute('aDelay', new THREE.BufferAttribute(buffers.delay, 1))
     g.setAttribute('aSeed', new THREE.BufferAttribute(buffers.seed, 1))
     return g
@@ -76,10 +110,14 @@ export function ParticleCloud({
         fragmentShader,
         uniforms: {
           uProgress: { value: 0 },
+          uFeed: { value: 0 },
+          uLead: { value: FEED_LEAD },
+          uTime: { value: 0 },
           uOpacity: { value: 0 },
           uSize: { value: size },
           uScale: { value: 540 },
           uColor: { value: new THREE.Color(color) },
+          uTintColor: { value: new THREE.Color(tint) },
         },
         transparent: true,
         depthWrite: false,
@@ -88,7 +126,7 @@ export function ParticleCloud({
         // additive as SRC_ALPHA, ONE and the color is multiplied by alpha twice.
         premultipliedAlpha: true,
       }),
-    [color, size],
+    [color, tint, size],
   )
 
   useEffect(() => () => geometry.dispose(), [geometry])
@@ -102,9 +140,11 @@ export function ParticleCloud({
 
   const gl = useThree((s) => s.gl)
   const ref = useRef<THREE.Points>(null)
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const u = material.uniforms
     u.uProgress.value = state.progress
+    u.uFeed.value = state.feed
+    u.uTime.value = clock.elapsedTime
     u.uOpacity.value = state.opacity
     u.uScale.value = (gl.domElement.height || 1080) / 2
     if (ref.current) ref.current.visible = getAppState().phase === 'loading' || state.opacity > 0.001

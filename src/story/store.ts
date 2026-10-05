@@ -24,6 +24,17 @@ export interface RingState {
 
 export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF }
 
+/** The resin stream (one particle system across acts 1-2): the ring dissolves into it and is printed from it. */
+export interface StreamState {
+  /** 0..1: points pour from the dissolving ring into the resin bed (Act 1). */
+  fall: number
+  /** 0..1: print progress; each point flies to its spot on the ring as the cure front reaches it (Act 2). */
+  feed: number
+  opacity: number
+}
+
+export const STREAM_INITIAL: Readonly<StreamState> = { fall: 0, feed: 0, opacity: 0 }
+
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {
   /** Scroll position in screens, 0..TOTAL_SCREENS. */
@@ -35,9 +46,11 @@ export interface Story {
   temperature: number
   /** Hero ring values. */
   ring: RingState
+  /** Resin stream particles. */
+  stream: StreamState
 }
 
-export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL } }
+export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL }, stream: { ...STREAM_INITIAL } }
 
 const actListeners = new Set<() => void>()
 

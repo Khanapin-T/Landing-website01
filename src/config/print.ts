@@ -7,20 +7,16 @@ export const CURE_OFF = -1000
 /** Castable resin: translucent pale green (scene light, not a UI accent). Tuned in integration. */
 export const RESIN_COLOR = '#3fa772'
 
-/** Act 2 layout in world units (ring height = 1). Shared by the ring, the act props and Act 1's particle targets. */
+/** Act 2 layout in world units (ring height = 1). Shared by the ring, the act props and the resin stream particles. */
 export const PRINT = {
-  /** Vat floor = cure plane: the printed part only exists above it. */
-  cureY: -0.82,
-  /** Resin surface in the vat; Act 1 points land here. */
-  resinSurfaceY: -0.75,
-  /** Open tray, outer size; its inner floor sits at cureY. */
-  vat: { width: 1.45, depth: 0.8, wall: 0.025, height: 0.16 },
-  /** How far below its place the vat waits before it rises in. */
-  vatHiddenOffset: -0.7,
+  /** Cure plane (the vat floor): the printed part only exists above it. */
+  cureY: -0.6,
+  /** The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it. */
+  pool: { y: -0.615, thickness: 0.03, halfWidth: 0.6, halfDepth: 0.34 },
   /** One sprue on the shank bottom (the top while printing upside down). */
   sprue: { length: 0.25, radius: 0.045 },
   /** Build plate; plate Y values are its bottom face. parkedY is out of frame above. */
-  plate: { width: 1.05, depth: 0.65, thickness: 0.05, parkedY: 1.9 },
+  plate: { width: 1.0, depth: 0.62, thickness: 0.055, parkedY: 1.9 },
 } as const
 
 /**

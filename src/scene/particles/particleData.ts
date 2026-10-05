@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js'
+import { PRINT, RING_HALF } from '../../config/print'
 
 export interface ParticleBuffers {
   /** Start positions (xyz). Also the geometry's `position` attribute. */
@@ -10,6 +11,10 @@ export interface ParticleBuffers {
   delay: Float32Array
   /** Per-particle random 0..1 (size, swirl phase). */
   seed: Float32Array
+  /** Optional second flight: where each point goes when it is consumed (xyz). */
+  front?: Float32Array
+  /** Feed progress (0..1) at which each point reaches `front`. */
+  arrive?: Float32Array
   count: number
 }
 
@@ -33,12 +38,12 @@ export function sampleSurface(geometry: THREE.BufferGeometry, count: number, ran
   return out
 }
 
-/** Targets for "the model breaks into points that stream down": bottom points leave first, all end below floorY. */
-export function streamDown(
-  from: Float32Array,
-  rand: () => number,
-  { floorY = -1.4, drop = 0.5, spread = 0.6 }: { floorY?: number; drop?: number; spread?: number } = {},
-): ParticleBuffers {
+/**
+ * The resin stream: the dissolved CAD ring pours into the resin bed (bottom points first), and while printing each
+ * point flies back to its own spot on the ring, arriving when the cure front reaches it (printPose: the ring hangs
+ * upside down, flipped PI around Z, so x and y mirror and z stays).
+ */
+export function resinStream(from: Float32Array, rand: () => number): ParticleBuffers {
   const count = from.length / 3
   let minY = Infinity
   let maxY = -Infinity
@@ -47,20 +52,31 @@ export function streamDown(
     maxY = Math.max(maxY, from[i * 3 + 1])
   }
   const h = maxY - minY || 1
+  const { pool, cureY, sprue } = PRINT
+  const printed = 2 * RING_HALF + sprue.length
   const to = new Float32Array(count * 3)
+  const front = new Float32Array(count * 3)
   const delay = new Float32Array(count)
+  const arrive = new Float32Array(count)
   const seed = new Float32Array(count)
   for (let i = 0; i < count; i++) {
     const x = from[i * 3]
     const y = from[i * 3 + 1]
     const z = from[i * 3 + 2]
-    to[i * 3] = x * (1 + spread * rand())
-    to[i * 3 + 1] = floorY - drop * rand()
-    to[i * 3 + 2] = z * (1 + spread * rand())
+    // Elliptical bed, thinning toward its edge (no hard rectangle).
+    const angle = rand() * Math.PI * 2
+    const r = Math.pow(rand(), 0.62)
+    to[i * 3] = Math.cos(angle) * r * pool.halfWidth
+    to[i * 3 + 1] = pool.y + (rand() - 0.5) * pool.thickness * (1 - 0.6 * r)
+    to[i * 3 + 2] = Math.sin(angle) * r * pool.halfDepth
+    front[i * 3] = -x
+    front[i * 3 + 1] = cureY
+    front[i * 3 + 2] = z
     delay[i] = ((y - minY) / h) * 0.55 + rand() * 0.1
+    arrive[i] = Math.min(Math.max((y + RING_HALF + sprue.length) / printed, 0), 1)
     seed[i] = rand()
   }
-  return { from, to, delay, seed, count }
+  return { from, to, delay, seed, front, arrive, count }
 }
 
 /** Visible particle count for the current quality step. Changes only the draw range, never the buffers. */

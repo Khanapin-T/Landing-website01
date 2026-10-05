@@ -9,9 +9,9 @@ import { registerPlaceholder } from '../placeholder'
 import { PRINT_BEATS } from './beats'
 import { BuildPlate } from './BuildPlate'
 import { registerPrint } from './timeline'
-import { Vat } from './Vat'
+import { CureBed } from './CureBed'
 
-/** Act 2: resin vat and build plate. The ring itself (resin state, clip, sprue) is the persistent HeroRing. */
+/** Act 2: cure light under the resin bed and the build plate (the bed itself is ResinStream's points). The ring itself (resin state, clip, sprue) is the persistent HeroRing. */
 export function PrintScene() {
   useLayoutEffect(() => {
     const offs = [registerPrint(master), registerPlaceholder(master)]
@@ -28,7 +28,7 @@ export function PrintScene() {
 
   return (
     <group ref={root}>
-      <Vat />
+      <CureBed />
       <BuildPlate />
     </group>
   )
