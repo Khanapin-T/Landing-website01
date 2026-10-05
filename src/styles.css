@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-latin-wght.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@theme {
+  --color-ink: #0a1622;  /* blueprint navy, page base */
+  --color-line: #dbe6f2; /* HUD white */
+  --color-mute: #8aa0b8; /* blue-grey secondary */
+  --color-gold: #e3b04b; /* the only accent, act 5 onward */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  background: var(--color-ink);
+  color: var(--color-line);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+}
