@@ -11,7 +11,7 @@ import { RingPivot } from '../../scene/ring/RingPivot'
 import { useRingGeometry } from '../../scene/ring/useRingGeometry'
 import type { Box, Vec3 } from '../../scene/ring/normalize'
 import { ParticleCloud, type ParticleCloudState } from '../../scene/particles/ParticleCloud'
-import { sampleSurface, streamDown } from '../../scene/particles/particleData'
+import { sampleSurface, streamDown, type ParticleBuffers } from '../../scene/particles/particleData'
 import { registerPlaceholder } from '../placeholder'
 import { IDEA_BEATS } from './beats'
 import { dimLabelEls } from './DimLabels'
@@ -28,13 +28,35 @@ const PARTICLES = 24000
 const LABEL_GAP = 14
 const projected = new THREE.Vector3()
 
-/** Writes a DOM label's transform so it sits at a world point (no React state). */
+const lastPlaced = new WeakMap<HTMLElement, number>()
+
+/**
+ * Edge lines (~0.5 s on a 100k-tri ring) and particle targets, built once per ring geometry and kept for the
+ * app's lifetime like the ring itself, so StrictMode and re-renders never rebuild them.
+ */
+const derived = new WeakMap<THREE.BufferGeometry, { edgeGeometry: THREE.BufferGeometry; particles: ParticleBuffers }>()
+function ringDerived(ring: THREE.BufferGeometry) {
+  let d = derived.get(ring)
+  if (!d) {
+    d = {
+      edgeGeometry: buildEdgeGeometry(ring, 30),
+      particles: streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: -1.6 }),
+    }
+    derived.set(ring, d)
+  }
+  return d
+}
+
+/** Writes a DOM label's transform so it sits at a world point (no React state; skips unchanged positions). */
 function placeLabel(el: HTMLElement | null, world: THREE.Vector3, camera: THREE.Camera, w: number, h: number, dx: number, dy: number, centerX: boolean): void {
   if (!el) return
   projected.copy(world).project(camera)
-  const x = ((projected.x + 1) / 2) * w + dx
-  const y = ((1 - projected.y) / 2) * h + dy
-  el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(${centerX ? '-50%' : '0'}, ${centerX ? '0' : '-50%'})`
+  const x = Math.round((((projected.x + 1) / 2) * w + dx) * 2) / 2
+  const y = Math.round((((1 - projected.y) / 2) * h + dy) * 2) / 2
+  const key = x * 100000 + y
+  if (lastPlaced.get(el) === key) return
+  lastPlaced.set(el, key)
+  el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(${centerX ? '-50%' : '0'}, ${centerX ? '0' : '-50%'})`
 }
 
 /** Act 1: the ring drawn as blueprint lines on a grid, dimensioned, turned, filled, then dissolved into points. */
@@ -45,14 +67,10 @@ export function IdeaScene() {
     return { min: b.min.toArray() as Vec3, max: b.max.toArray() as Vec3 }
   }, [ring])
 
-  const edgeGeometry = useMemo(() => buildEdgeGeometry(ring, 30), [ring])
+  const { edgeGeometry, particles } = useMemo(() => ringDerived(ring), [ring])
   const dimGeometry = useMemo(() => toLineGeometry(dimensionSegments(box)), [box])
   const edges = useMemo(() => createLineDrawMaterial({ color: '#cfe0f5', hot: '#ffffff', hotIntensity: 2.6, span: 0.04, back: 0.28 }), [])
   const dims = useMemo(() => createLineDrawMaterial({ color: '#8aa0b8', hot: '#ffffff', hotIntensity: 1.8, span: 0.4, back: 1 }), [])
-  const particles = useMemo(
-    () => streamDown(sampleSurface(ring, PARTICLES, mulberry32(11)), mulberry32(12), { floorY: -1.6 }),
-    [ring],
-  )
   const cloud = useMemo<ParticleCloudState>(() => ({ progress: 0, opacity: 0 }), [])
   const anchors = useMemo(() => {
     const a = dimensionAnchors(box)
@@ -61,7 +79,6 @@ export function IdeaScene() {
   const camera = useThree((s) => s.camera)
   const size = useThree((s) => s.size)
 
-  useEffect(() => () => edgeGeometry.dispose(), [edgeGeometry])
   useEffect(() => () => dimGeometry.dispose(), [dimGeometry])
   useEffect(() => () => edges.material.dispose(), [edges])
   useEffect(() => () => dims.material.dispose(), [dims])
@@ -75,16 +92,15 @@ export function IdeaScene() {
   const root = useRef<THREE.Group>(null)
   const grid = useRef<THREE.Mesh>(null)
   useFrame(() => {
-    if (root.current) {
-      root.current.visible = shouldRender(getAppState().phase, story.screen, IDEA_BEATS.windowFrom, IDEA_BEATS.windowTo)
-    }
+    const visible = shouldRender(getAppState().phase, story.screen, IDEA_BEATS.windowFrom, IDEA_BEATS.windowTo)
+    if (root.current) root.current.visible = visible
     edges.uniforms.uDraw.value = idea.draw
     edges.uniforms.uOpacity.value = idea.edges
     dims.uniforms.uDraw.value = idea.dims
     dims.uniforms.uOpacity.value = idea.dimsOpacity
     cloud.progress = idea.dissolve
     cloud.opacity = idea.points
-    if (idea.dims > 0 && idea.dimsOpacity > 0) {
+    if (visible) {
       placeLabel(dimLabelEls.height, anchors.height, camera, size.width, size.height, LABEL_GAP, 0, false)
       placeLabel(dimLabelEls.width, anchors.width, camera, size.width, size.height, 0, LABEL_GAP, true)
     }

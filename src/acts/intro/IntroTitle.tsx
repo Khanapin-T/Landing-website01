@@ -75,15 +75,20 @@ export function IntroTitle() {
         at: INTRO_OUT,
         enter: () => {
           // Landing already past the title (reload mid-page): finish silently, no flash of a title fading out.
-          const untouched = intro.progress() === 0
-          intro.progress(1)
-          if (untouched) {
+          if (intro.progress() === 0) {
+            intro.progress(1)
             gsap.set(el, { autoAlpha: 0, y: reduce ? 0 : -24 })
             return
           }
+          // Leaving mid-draw: fade out from where the drawing is, no snap to the filled title.
+          intro.pause()
           gsap.to(el, { autoAlpha: 0, y: reduce ? 0 : -24, duration: reduce ? 0.2 : 0.5, ease: 'power2.in', overwrite: 'auto' })
         },
         leaveBack: () => {
+          // Come back as the finished title, fading in from the current opacity.
+          const opacity = Number(gsap.getProperty(el, 'opacity'))
+          intro.progress(1)
+          gsap.set(el, { autoAlpha: opacity })
           gsap.to(el, { autoAlpha: 1, y: 0, duration: reduce ? 0.2 : 0.6, ease: 'power2.out', overwrite: 'auto' })
         },
       })

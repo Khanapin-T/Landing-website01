@@ -5,6 +5,7 @@ import { SplitText } from 'gsap/SplitText'
 import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin'
 import { content } from '../../content'
 import { addCue } from '../../story/cues'
+import { story } from '../../story/store'
 import { IDEA_BEATS } from './beats'
 
 gsap.registerPlugin(useGSAP, SplitText, ScrambleTextPlugin)
@@ -62,6 +63,14 @@ export function IdeaHud() {
         gsap.to(el, { autoAlpha: 0, y: reduce ? 0 : -16, duration: reduce ? 0.2 : 0.4, ease: 'power2.in', overwrite: 'auto' })
       })
       const fadeBack = contextSafe!(() => {
+        // Jumped back above copyIn in one update (Home key, chapter click): the copy must end hidden,
+        // so reset the reveal silently instead of fading the column in while it reverses.
+        if (story.screen < IDEA_BEATS.copyIn) {
+          want = 'idle'
+          reveal.pause(0)
+          gsap.set(el, { autoAlpha: 1, y: 0, overwrite: true })
+          return
+        }
         gsap.to(el, { autoAlpha: 1, y: 0, duration: reduce ? 0.2 : 0.5, ease: 'power2.out', overwrite: 'auto' })
       })
 
@@ -69,6 +78,12 @@ export function IdeaHud() {
         at: IDEA_BEATS.copyIn,
         enter: () => {
           want = 'fwd'
+          // Jumped straight past copyOut: finish silently, the column ends hidden.
+          if (story.screen >= IDEA_BEATS.copyOut) {
+            reveal.progress(1).pause()
+            gsap.set(el, { autoAlpha: 0, y: reduce ? 0 : -16, overwrite: true })
+            return
+          }
           drive()
         },
         leaveBack: () => {

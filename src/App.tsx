@@ -28,6 +28,7 @@ export function App() {
   return (
     <>
       <h1 className="sr-only">{content.title}</h1>
+      <p className="sr-only">{content.intro.subtitle}</p>
       <StageBoundary>
         <Stage />
       </StageBoundary>

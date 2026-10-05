@@ -4,6 +4,7 @@ import { useGSAP } from '@gsap/react'
 import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin'
 import { content } from '../../content'
 import { addCue } from '../../story/cues'
+import { story } from '../../story/store'
 import { IDEA_BEATS } from './beats'
 
 gsap.registerPlugin(useGSAP, ScrambleTextPlugin)
@@ -31,16 +32,26 @@ export function DimLabels() {
     const els = items.map((i) => i.el)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     gsap.set(els, { autoAlpha: 0 })
+    // State-based, not edge-based: a jump that crosses both cues in one update (chapter click, Home key)
+    // must not flash the labels. Inside a cue callback story.screen is already the landing position.
+    let shown = false
     const show = () => {
-      gsap.set(els, { autoAlpha: 1 })
+      gsap.set(els, { autoAlpha: 1, overwrite: true })
       if (reduce) return
       items.forEach(({ el, text }, i) =>
-        gsap.to(el, { scrambleText: { text, chars: '0123456789.', speed: 0.5 }, duration: 0.7, delay: i * 0.08, overwrite: 'auto' }),
+        gsap.to(el, { scrambleText: { text, chars: '0123456789.', speed: 0.5 }, duration: 0.7, delay: i * 0.08 }),
       )
     }
-    const hide = () => gsap.to(els, { autoAlpha: 0, duration: reduce ? 0.1 : 0.3, overwrite: 'auto' })
-    const offIn = addCue({ at: IDEA_BEATS.dimLabelsIn, enter: show, leaveBack: hide })
-    const offOut = addCue({ at: IDEA_BEATS.dimLabelsOut, enter: hide, leaveBack: show })
+    const hide = () => gsap.to(els, { autoAlpha: 0, duration: reduce ? 0.1 : 0.3, overwrite: true })
+    const sync = () => {
+      const want = story.screen >= IDEA_BEATS.dimLabelsIn && story.screen < IDEA_BEATS.dimLabelsOut
+      if (want === shown) return
+      shown = want
+      if (want) show()
+      else hide()
+    }
+    const offIn = addCue({ at: IDEA_BEATS.dimLabelsIn, enter: sync, leaveBack: sync })
+    const offOut = addCue({ at: IDEA_BEATS.dimLabelsOut, enter: sync, leaveBack: sync })
     return () => {
       offIn()
       offOut()
