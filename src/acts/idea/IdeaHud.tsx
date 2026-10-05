@@ -47,11 +47,10 @@ export function IdeaHud() {
               .from(caption, { autoAlpha: 0, y: 12, duration: 0.6, ease: 'power2.out' }, 0.25)
               .from(labels, { autoAlpha: 0, duration: 0.3, stagger: 0.06 }, 0.4)
               .from(values, { autoAlpha: 0, duration: 0.01, stagger: 0.07 }, 0.4)
-              .to(
-                values,
-                { scrambleText: { text: '{original}', chars: '0123456789.<>', speed: 0.5 }, duration: 0.9, stagger: 0.07 },
-                0.4,
-              )
+            // Explicit text, not '{original}': the plugin reads innerHTML, where "<" is "&lt;" and the value got cut.
+            values.forEach((v, i) =>
+              reveal.to(v, { scrambleText: { text: c.specs[i].value, chars: '0123456789.', speed: 0.5 }, duration: 0.9 }, 0.4 + i * 0.07),
+            )
           }
           // Runs after SplitText has synced the returned timeline's time.
           queueMicrotask(drive)
