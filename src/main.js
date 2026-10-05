@@ -10,6 +10,7 @@ import { createPostFx } from './core/postfx.js';
 import { detectTier, createAdaptive } from './core/quality.js';
 import { loadAssets } from './core/assets.js';
 import { createHero } from './hero.js';
+import { loader } from './loader.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -75,7 +76,8 @@ async function boot() {
   window.addEventListener('resize', applySize);
   applySize();
 
-  const { heroGeo } = await loadAssets();
+  // Bootstrap: gate (entry.js) -> loader -> assets (0..90%) -> hero -> compileAsync (90..100%) -> reveal.
+  const { heroGeo } = await loadAssets((f) => loader.set(f * 0.9));
   const hero = createHero(ctx, heroGeo);
   // Foundation default view (three-quarter, honeycomb visible) until the timeline drives the hero.
   hero.spin.rotation.y = -0.6;
@@ -88,7 +90,10 @@ async function boot() {
   if (import.meta.env.DEV && params.has('demo')) addDemo(ctx);
   if (debug) debug.initDebug(ctx, { ready });
 
-  loop.renderNow();
+  if (!(import.meta.env.DEV && params.has('nowarm'))) await postfx.compileAsync(scene, rig.camera); // dev ?nowarm skips the warm-up (A/B)
+  loader.set(1);
+  loop.renderNow(); // first frame is drawn under the loader, so the reveal shows a finished scene
+  await loader.hide();
   resolveReady();
 }
 

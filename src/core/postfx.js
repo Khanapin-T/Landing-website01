@@ -378,6 +378,26 @@ export function createPostFx(renderer, tier, { onDirty = () => {} } = {}) {
     draw(compositeMat, null);
   };
 
+  // Warm-up: compiles the shader programs of `scene` (for the post render target it is drawn into)
+  // and of the post passes, so the first real frame does not stall. Resolves when all are ready.
+  fx.compileAsync = (scene, camera) => {
+    const prev = renderer.getRenderTarget();
+    const jobs = [];
+    // Programs depend on the active render target (tone mapping is applied by the composite),
+    // so each compile call is issued with the target its material is drawn into.
+    renderer.setRenderTarget(fx.enabled ? sceneRT : null);
+    jobs.push(renderer.compileAsync(scene, camera));
+    if (fx.enabled) {
+      for (const [material, target] of [[downMat, blurA], [blurMat, blurB], [compositeMat, null]]) {
+        quad.material = material;
+        renderer.setRenderTarget(target);
+        jobs.push(renderer.compileAsync(quadScene, quadCamera));
+      }
+    }
+    renderer.setRenderTarget(prev);
+    return Promise.all(jobs);
+  };
+
   fx.dispose = () => {
     sceneRT.dispose();
     blurA.dispose();
