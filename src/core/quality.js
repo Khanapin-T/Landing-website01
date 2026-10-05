@@ -1,18 +1,18 @@
 // Desktop only: three tiers, no mobile tier.
 // post: blur resolution divisor (blur texture = screen / div), blur passes (H+V pairs),
-// edge-blur / bloom / aberration toggles, MSAA samples of the post render target.
+// edge-blur / bloom / aberration toggles, MSAA samples of the post render target (0 = FXAA instead).
 export const TIERS = {
   high: {
     name: 'high',
     dprMax: 1.5,
     particleScale: 1,
-    post: { div: 4, iterations: 2, edgeBlur: true, bloom: true, aberration: true, samples: 4 },
+    post: { div: 4, iterations: 2, edgeBlur: true, bloom: true, aberration: true, samples: 0 },
   },
   medium: {
     name: 'medium',
     dprMax: 1.25,
     particleScale: 0.6,
-    post: { div: 4, iterations: 1, edgeBlur: true, bloom: true, aberration: true, samples: 4 },
+    post: { div: 4, iterations: 1, edgeBlur: true, bloom: true, aberration: true, samples: 0 },
   },
   low: {
     name: 'low',

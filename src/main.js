@@ -6,6 +6,7 @@ import { createScene } from './core/scene.js';
 import { createBackground } from './core/background.js';
 import { createRig } from './core/rig.js';
 import { createLoop } from './core/loop.js';
+import { createPostFx } from './core/postfx.js';
 import { detectTier, createAdaptive } from './core/quality.js';
 
 const params = new URLSearchParams(location.search);
@@ -17,41 +18,51 @@ async function boot() {
   const canvas = document.getElementById('gl');
   const { renderer, setDpr, getDpr } = createRenderer(canvas);
   const tier = detectTier(renderer.getContext(), params.get('tier'));
-  setDpr(Math.min(window.devicePixelRatio || 1, tier.dprMax));
+  if (params.has('msaa')) tier.post = { ...tier.post, samples: Number(params.get('msaa')) }; // A/B only
 
   const { scene, world, lights } = createScene(renderer);
   const background = createBackground(scene);
   const rig = createRig();
-  const postfx = null; // added by the post pass task
+  const postfx = createPostFx(renderer, tier, { onDirty: () => loop.markDirty() });
+  postfx.enabled = params.get('post') !== '0'; // ?post=0 renders directly (A/B)
 
   const ctx = { renderer, scene, camera: rig.camera, world, lights, rig, background, postfx, quality: null, loop: null };
 
   const loop = createLoop({
     render: () => {
       renderer.info.reset();
-      renderer.render(scene, rig.camera);
+      postfx.render(scene, rig.camera);
     },
   });
   ctx.loop = loop;
 
+  // Effective DPR: device ratio capped by the tier and by the adaptive quality steps.
+  let dprCap = Infinity;
+  const targetDpr = () => Math.min(window.devicePixelRatio || 1, tier.dprMax, dprCap);
+
   function applySize() {
+    setDpr(targetDpr());
     const w = window.innerWidth;
     const h = window.innerHeight;
     renderer.setSize(w, h, false);
     rig.resize(w, h);
     background.resize(w, h);
+    postfx.setSize(w, h, getDpr());
     loop.markDirty();
+  }
+
+  function capDpr(dpr) {
+    dprCap = dpr;
+    applySize();
   }
 
   const adaptive = createAdaptive({
     tier,
     getDpr,
-    setDpr: (dpr) => {
-      setDpr(dpr);
-      applySize();
-    },
+    setPost: (p) => postfx.setQuality(p),
+    setDpr: capDpr,
   });
-  ctx.quality = { tier, adaptive, getDpr, setDpr };
+  ctx.quality = { tier, adaptive, getDpr, setDpr: capDpr };
   loop.onFrame((ms, now) => adaptive.frame(ms, now));
 
   loop.add(() => {
@@ -86,9 +97,10 @@ function addDemo(ctx) {
   );
   glow.position.set(2.8, 0.7, 0);
   ctx.world.add(gold, box, glow);
-  ctx.demo = { gold, box, glow };
+  ctx.demo = { gold, box, glow, spin: !params.has('still') };
   ctx.rig.followTarget = gold;
   ctx.loop.add((dt) => {
+    if (!ctx.demo.spin) return;
     box.rotation.y += dt * 0.5;
     box.rotation.x += dt * 0.2;
     ctx.loop.markDirty();

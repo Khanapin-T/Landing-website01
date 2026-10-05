@@ -45,24 +45,30 @@ export function initDebug(ctx, { ready }) {
     return out;
   }
 
-  // Synchronous GPU+CPU cost per frame: render n frames, forcing completion with a 1px readback.
-  function bench(n = 120, { post } = {}) {
+  // GPU+CPU cost per frame. Default: render n frames back to back and wait once at the end with a
+  // 1px readback (steady-state throughput, like a GPU-bound loop). { sync: true } waits after
+  // every frame instead (includes pipeline latency).
+  function bench(n = 120, { post, sync = false } = {}) {
     const gl = renderer.getContext();
     const px = new Uint8Array(4);
     const fx = ctx.postfx;
     const prev = fx ? fx.enabled : false;
     if (fx && post !== undefined) fx.enabled = post;
-    const once = () => {
-      loop.renderNow();
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const read = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const run = (count) => {
+      for (let i = 0; i < count; i++) {
+        loop.renderNow();
+        if (sync) read();
+      }
+      if (!sync) read();
     };
-    for (let i = 0; i < 15; i++) once();
+    run(15);
     const t0 = performance.now();
-    for (let i = 0; i < n; i++) once();
+    run(n);
     const avgMs = (performance.now() - t0) / n;
     if (fx) fx.enabled = prev;
     loop.markDirty();
-    return { n, post: post === undefined ? prev : post, avgMs: +avgMs.toFixed(3) };
+    return { n, sync, post: post === undefined ? prev : post, avgMs: +avgMs.toFixed(3) };
   }
 
   const app = {
