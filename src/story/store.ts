@@ -20,9 +20,20 @@ export interface RingState {
   sprue: number
   /** World Y of the print cure plane; the ring is clipped below it. CURE_OFF = no clip. */
   cureY: number
+  /** 0..1 blend from the pose above into tree slot 0 (Act 3). */
+  tree: number
 }
 
-export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF }
+export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0 }
+
+/** Camera dolly: world Y and Z of the camera (x stays 0, it looks straight down -Z). */
+export interface CamState {
+  y: number
+  z: number
+}
+
+/** Must equal the Stage camera position. */
+export const CAM_INITIAL: Readonly<CamState> = { y: 0.15, z: 4.2 }
 
 /** The resin stream (one particle system across acts 1-2): the ring dissolves into it and is printed from it. */
 export interface StreamState {
@@ -48,9 +59,19 @@ export interface Story {
   ring: RingState
   /** Resin stream particles. */
   stream: StreamState
+  /** Camera dolly (Act 3). */
+  cam: CamState
 }
 
-export const story: Story = { screen: 0, act: 'intro', actProgress: 0, temperature: 0, ring: { ...RING_INITIAL }, stream: { ...STREAM_INITIAL } }
+export const story: Story = {
+  screen: 0,
+  act: 'intro',
+  actProgress: 0,
+  temperature: 0,
+  ring: { ...RING_INITIAL },
+  stream: { ...STREAM_INITIAL },
+  cam: { ...CAM_INITIAL },
+}
 
 const actListeners = new Set<() => void>()
 

@@ -1,0 +1,21 @@
+/** Scroll-scrubbed Act 3 values, written by the master timeline and read in useFrame. */
+export interface MoldState {
+  /** Rubber base: 0 = below the frame, 1 = in place. */
+  base: number
+  /** Trunk growth 0..1. */
+  trunk: number
+  /** Clone rings 0..1 (scale about the sprue tip). */
+  clones: [number, number, number]
+  /** Flask: 0 = high above its seat, 1 = seated. */
+  flask: number
+  /** Tape wrap progress 0..1 (also drives the flask spin). */
+  tape: number
+  /** Investment level 0..1. */
+  fill: number
+  /** Vacuum boil strength 0..1. */
+  boil: number
+}
+
+export const MOLD_INITIAL: Readonly<MoldState> = { base: 0, trunk: 0, clones: [0, 0, 0], flask: 0, tape: 0, fill: 0, boil: 0 }
+
+export const mold: MoldState = { ...MOLD_INITIAL, clones: [0, 0, 0] }
