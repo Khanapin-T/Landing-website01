@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
+import { FLASK_RADIUS, HOLE_RADIUS, holeCenters } from './flaskMaterial'
 
 /** Milk-white investment with a faint warm cast, fully opaque (the steel flask hides the inside). */
 export const INVESTMENT_COLOR = '#f1efe8'
@@ -13,6 +14,24 @@ export const SHEEN = 0.18
 export const INVESTMENT_RADIUS = MOLD.flask.innerRadius - 0.01
 /** Default level, far below the flask bottom: nothing of the body shows before the first frame sets it. */
 export const LEVEL_OFF = -100
+
+const PLUG_SEGMENTS = 20
+const PLUG_RINGS = 3
+/**
+ * Investment plug in every flask hole (the tape covers the holes from outside, so the slurry fills them flush with
+ * the outer wall). `radius` stays 0.01 inside the bore, `bulge` = dome height of the outer face past the outer wall
+ * (the tape sits 0.012 out, on top of it), `sink` = how far the inner end reaches into the body column (no gap),
+ * `segments` around, `rings` across the dome.
+ */
+export const PLUG = {
+  radius: HOLE_RADIUS - 0.01,
+  bulge: 0.006,
+  sink: 0.005,
+  segments: PLUG_SEGMENTS,
+  rings: PLUG_RINGS,
+  /** Side tube (inner and outer ring) plus the dome (rings and a center vertex). */
+  verticesPerPlug: (PLUG_SEGMENTS + 1) * 2 + PLUG_RINGS * (PLUG_SEGMENTS + 1) + 1,
+} as const
 
 /**
  * Where the stream falls, poured from the side so it misses the tree and the rings (radius in world units from the
@@ -39,6 +58,90 @@ export type InvestmentPart = 'body' | 'surface' | 'stream'
 /** Impact point of the stream on the surface (flask-local x, z). */
 export function pourPoint(): { x: number; z: number } {
   return { x: POUR.radius * Math.cos(POUR.azimuth), z: -POUR.radius * Math.sin(POUR.azimuth) }
+}
+
+const TAU = Math.PI * 2
+
+/**
+ * Every investment plug in one geometry, in flask-local space (y = 0 at the middle of the flask, like the bores), one
+ * per hole from holeCenters(). Each plug is a straight radial cylinder on its hole axis: an open side tube from just
+ * inside the body column (PLUG.sink) to the outer wall surface (its outer end follows the outer cylinder, so the rim
+ * is flush with the steel all around), and a low dome over it (PLUG.bulge at the center). No inner cap: the inner end
+ * sits inside the body. Drawn as one plain mesh with the body material, so it shares the body's program exactly (an
+ * InstancedMesh would compile an extra instancing variant) and is cut at the level like the body.
+ */
+export function createPlugGeometry(): THREE.BufferGeometry {
+  const centers = holeCenters()
+  const { radius: rp, bulge, sink, segments: n, rings } = PLUG
+  const R = FLASK_RADIUS
+  const RB = INVESTMENT_RADIUS
+  const count = centers.length * PLUG.verticesPerPlug
+  const position = new Float32Array(count * 3)
+  const normal = new Float32Array(count * 3)
+  const index: number[] = []
+  const nv = new THREE.Vector3()
+  let v = 0
+  for (const c of centers) {
+    // Axis direction d (outward, azimuth convention atan2(-z, x)), horizontal tangent t, and world up.
+    const dx = Math.cos(c.azimuth)
+    const dz = -Math.sin(c.azimuth)
+    const tx = Math.sin(c.azimuth)
+    const tz = Math.cos(c.azimuth)
+    /** Vertex at distance `a` along d, offsets `u` along t and `w` up; normal given in (d, t, up). */
+    const put = (a: number, u: number, w: number, nd: number, nt: number, nu: number) => {
+      position.set([a * dx + u * tx, c.y + w, a * dz + u * tz], v * 3)
+      nv.set(nd * dx + nt * tx, nu, nd * dz + nt * tz).normalize()
+      normal.set([nv.x, nv.y, nv.z], v * 3)
+      v++
+    }
+
+    // Side tube: vertex 2i on the inner end (in the body), 2i + 1 on the outer wall surface. Normals away from the axis.
+    const side = v
+    for (let i = 0; i <= n; i++) {
+      const th = (i / n) * TAU
+      const cs = Math.cos(th)
+      const sn = Math.sin(th)
+      const u = rp * cs
+      const w = rp * sn
+      put(Math.sqrt(RB * RB - u * u) - sink, u, w, 0, cs, sn)
+      put(Math.sqrt(R * R - u * u), u, w, 0, cs, sn)
+    }
+    for (let i = 0; i < n; i++) {
+      const in0 = side + 2 * i
+      const out0 = in0 + 1
+      const in1 = in0 + 2
+      const out1 = in0 + 3
+      index.push(in0, out0, in1, out0, out1, in1)
+    }
+
+    // Dome: height field over the outer cylinder, a(u, w) = sqrt(R^2 - u^2) + bulge * (1 - (u^2 + w^2) / rp^2).
+    const center = v
+    put(R + bulge, 0, 0, 1, 0, 0)
+    for (let j = 1; j <= rings; j++) {
+      const s = j / rings
+      for (let i = 0; i <= n; i++) {
+        const th = (i / n) * TAU
+        const u = rp * s * Math.cos(th)
+        const w = rp * s * Math.sin(th)
+        const wall = Math.sqrt(R * R - u * u)
+        const au = -u / wall - (2 * bulge * u) / (rp * rp)
+        const aw = (-2 * bulge * w) / (rp * rp)
+        put(wall + bulge * (1 - s * s), u, w, 1, -au, -aw)
+      }
+    }
+    const ring = (j: number, i: number) => center + 1 + (j - 1) * (n + 1) + i
+    for (let i = 0; i < n; i++) index.push(center, ring(1, i + 1), ring(1, i))
+    for (let j = 1; j < rings; j++) {
+      for (let i = 0; i < n; i++) {
+        index.push(ring(j, i), ring(j, i + 1), ring(j + 1, i), ring(j, i + 1), ring(j + 1, i + 1), ring(j + 1, i))
+      }
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3))
+  geometry.setIndex(index)
+  return geometry
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))

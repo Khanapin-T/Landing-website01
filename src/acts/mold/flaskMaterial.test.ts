@@ -204,6 +204,22 @@ describe('flask material', () => {
   })
 })
 
+describe('flask height and the layout derived from it', () => {
+  it('is 4.2 tall (one centimetre = 0.4 taller than before) on the same bottom', () => {
+    expect(MOLD.flask.height).toBeCloseTo(4.2)
+    expect(MOLD.flask.bottomY).toBeCloseTo(-1.4)
+    expect(TOP).toBeCloseTo(2.8)
+  })
+
+  it('fills the investment from the flask bottom to 0.1 under the top and keeps the trunk at 40% of the height', () => {
+    expect(MOLD.investment.bottomY).toBeCloseTo(MOLD.flask.bottomY)
+    expect(MOLD.investment.topY).toBeCloseTo(TOP - 0.1)
+    expect(MOLD.investment.topY).toBeCloseTo(2.7)
+    expect(MOLD.trunk.topY).toBeCloseTo(MOLD.flask.bottomY + 0.4 * H)
+    expect(MOLD.trunk.topY).toBeCloseTo(0.28)
+  })
+})
+
 describe('thick tube wall', () => {
   it('is a real tube: 0.08 wall between the inner and the outer surface', () => {
     expect(MOLD.flask.wall).toBeCloseTo(0.08)
@@ -366,11 +382,29 @@ describe('rubber base', () => {
 describe('hole pattern', () => {
   const centers = holeCenters()
 
-  it('has few large holes: 4 per row, 6 staggered rows, 0.40 diameter', () => {
-    expect(HOLE_COLUMNS).toBe(4)
-    expect(HOLE_ROWS).toBe(6)
-    expect(HOLE_RADIUS).toBeCloseTo(0.2)
+  it('has about 1.5x the old 24 holes, a bit smaller: 5 per row, 7 staggered rows, 0.32 diameter', () => {
+    expect(HOLE_COLUMNS).toBe(5)
+    expect(HOLE_ROWS).toBe(7)
+    expect(HOLE_RADIUS).toBeCloseTo(0.16)
     expect(centers.length).toBe(HOLE_COLUMNS * HOLE_ROWS)
+    expect(centers.length).toBeGreaterThanOrEqual(33)
+    expect(centers.length).toBeLessThanOrEqual(38)
+  })
+
+  it('starts the holes about one centimetre (0.4) higher above the flange than before', () => {
+    expect(HOLE_BAND.bottom).toBeCloseTo(0.82)
+    expect(HOLE_BAND.top).toBeCloseTo(0.18)
+    const neckTop = -H / 2 + FOOT.height + FLANGE.height + NECK.height
+    const lowest = Math.min(...centers.map((c) => c.y)) - HOLE_RADIUS
+    // The old first row left 0.137 of steel between the neck top and the hole edge.
+    expect(lowest - neckTop).toBeGreaterThan(0.137 + 0.35)
+    expect(lowest - neckTop).toBeLessThan(0.137 + 0.45)
+  })
+
+  it('keeps every hole under the full investment level (each hole gets an investment plug)', () => {
+    for (const c of centers) {
+      expect(MOLD.flask.bottomY + H / 2 + c.y + HOLE_RADIUS).toBeLessThan(MOLD.investment.topY - 0.05)
+    }
   })
 
   it('puts a hole facing the camera on the first row (azimuth -PI/2) and staggers the next row by half a column', () => {

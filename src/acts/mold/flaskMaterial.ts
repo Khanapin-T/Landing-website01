@@ -9,15 +9,18 @@ export const FLASK_RADIUS = MOLD.flask.innerRadius + MOLD.flask.wall
 export const FLASK_INNER_RADIUS = MOLD.flask.innerRadius
 
 /**
- * Perforation (after the reference flask): few large round holes, HOLE_COLUMNS around each row, HOLE_ROWS rows,
- * every other row shifted by half a column (staggered). Each hole is a straight radial bore through the wall.
+ * Perforation (after the reference flask): round holes, HOLE_COLUMNS around each row, HOLE_ROWS rows, every other
+ * row shifted by half a column (staggered, nearly hexagonal). Each hole is a straight radial bore through the wall.
  */
-export const HOLE_COLUMNS = 4
-export const HOLE_ROWS = 6
+export const HOLE_COLUMNS = 5
+export const HOLE_ROWS = 7
 /** Bore radius in world units. */
-export const HOLE_RADIUS = 0.2
-/** Plain steel left below the first row cell (foot, flange, neck) and above the last one (rim), world units. */
-export const HOLE_BAND = { bottom: 0.42, top: 0.18 } as const
+export const HOLE_RADIUS = 0.16
+/**
+ * Plain steel left below the first row cell (foot, flange, neck plus about one centimetre) and above the last one
+ * (rim), world units.
+ */
+export const HOLE_BAND = { bottom: 0.82, top: 0.18 } as const
 /** Object-space azimuth of the first row's column 0 (facing the camera at rest, see the azimuth convention). */
 export const HOLE_AZIMUTH0 = -Math.PI / 2
 /** Thin bright highlight on the steel just outside each cut, world units (about 1.5 px on screen). */

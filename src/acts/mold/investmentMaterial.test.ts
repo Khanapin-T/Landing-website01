@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
+import { FLASK_INNER_RADIUS, FLASK_RADIUS, HOLE_RADIUS, flaskHoleDistance, holeCenters } from './flaskMaterial'
 import {
   INVESTMENT_COLOR,
+  INVESTMENT_RADIUS,
   INVESTMENT_RENDER_ORDER,
   LEVEL_OFF,
+  PLUG,
   POUR,
   STREAM_GROW,
   createInvestmentMaterial,
   createInvestmentUniforms,
+  createPlugGeometry,
   pourPoint,
   pourStrength,
   streamSpan,
@@ -155,6 +159,110 @@ describe('investment material', () => {
     expect(stream.uniforms.uStream.value).toBe(1)
     expect(stream.uniforms.uSurface.value).toBe(0)
     expect(INVESTMENT_RENDER_ORDER.surface).toBeGreaterThan(INVESTMENT_RENDER_ORDER.body)
+  })
+})
+
+describe('investment plugs in the flask holes', () => {
+  const g = createPlugGeometry()
+  const pos = g.getAttribute('position')
+  const nor = g.getAttribute('normal')
+  const index = g.getIndex()!
+  const centers = holeCenters()
+  const perPlug = pos.count / centers.length
+  /** Tape radius (Tape.tsx): just outside the steel. */
+  const TAPE_R = MOLD.flask.innerRadius + MOLD.flask.wall + 0.012
+
+  /** Vertex k in the frame of its hole: radial distance from the flask axis, offsets (u, v) from the hole axis. */
+  const local = (k: number) => {
+    const c = centers[Math.floor(k / perPlug)]
+    const x = pos.getX(k)
+    const z = pos.getZ(k)
+    const d = { x: Math.cos(c.azimuth), z: -Math.sin(c.azimuth) }
+    const t = { x: Math.sin(c.azimuth), z: Math.cos(c.azimuth) }
+    return { along: x * d.x + z * d.z, u: x * t.x + z * t.z, v: pos.getY(k) - c.y, rho: Math.hypot(x, z) }
+  }
+
+  it('has one plug per hole, cheap (one draw, a few thousand triangles)', () => {
+    expect(Number.isInteger(perPlug)).toBe(true)
+    expect(perPlug).toBe(PLUG.verticesPerPlug)
+    expect(pos.count).toBe(centers.length * PLUG.verticesPerPlug)
+    expect(index.count / 3).toBeLessThan(6000)
+  })
+
+  it('is a cylinder of radius HOLE_RADIUS - 0.01 on each hole axis, inside the bore tube', () => {
+    expect(PLUG.radius).toBeCloseTo(HOLE_RADIUS - 0.01)
+    let rimMax = 0
+    for (let k = 0; k < pos.count; k++) {
+      const { u, v, rho } = local(k)
+      const off = Math.hypot(u, v)
+      expect(off).toBeLessThanOrEqual(PLUG.radius + 1e-6)
+      rimMax = Math.max(rimMax, off)
+      // Distance to the nearest bore wall (the shader's cut): at least 0.01 inside the hole.
+      const x = pos.getX(k)
+      const z = pos.getZ(k)
+      expect(flaskHoleDistance(pos.getY(k), Math.atan2(-z, x), rho)).toBeLessThanOrEqual(PLUG.radius - HOLE_RADIUS + 1e-6)
+    }
+    expect(rimMax).toBeCloseTo(PLUG.radius, 5)
+  })
+
+  it('runs radially from inside the investment body to the outer wall surface, with a low dome under the tape', () => {
+    expect(PLUG.bulge).toBeGreaterThan(0)
+    expect(PLUG.bulge).toBeLessThanOrEqual(0.008)
+    for (let h = 0; h < centers.length; h++) {
+      let lo = Infinity
+      let hi = -Infinity
+      for (let k = h * perPlug; k < (h + 1) * perPlug; k++) {
+        const { rho } = local(k)
+        lo = Math.min(lo, rho)
+        hi = Math.max(hi, rho)
+      }
+      // Starts in (overlapping) the body, so no gap shows between the body and the plug.
+      expect(lo).toBeLessThanOrEqual(INVESTMENT_RADIUS)
+      expect(lo).toBeGreaterThan(INVESTMENT_RADIUS - 0.03)
+      expect(lo).toBeLessThan(FLASK_INNER_RADIUS)
+      // Ends flush with the outer wall, domed at most 0.008 proud, and the tape stays on top of it.
+      expect(hi).toBeGreaterThan(FLASK_RADIUS)
+      expect(hi).toBeLessThanOrEqual(FLASK_RADIUS + 0.008 + 1e-9)
+      expect(hi).toBeCloseTo(FLASK_RADIUS + PLUG.bulge, 5)
+      expect(TAPE_R - hi).toBeGreaterThan(0.003)
+    }
+  })
+
+  it('meets the outer wall surface at its rim (flush, no step at the hole edge) and fills the hole there', () => {
+    let rim = 0
+    for (let k = 0; k < pos.count; k++) {
+      const { u, v, rho } = local(k)
+      if (Math.abs(Math.hypot(u, v) - PLUG.radius) > 1e-6) continue
+      if (rho < FLASK_INNER_RADIUS) continue
+      expect(rho).toBeCloseTo(FLASK_RADIUS, 5)
+      rim++
+    }
+    expect(rim).toBeGreaterThanOrEqual(centers.length * 2 * PLUG.segments)
+  })
+
+  it('faces outward: the side away from the hole axis, the cap away from the flask axis, with a matching winding', () => {
+    const a = new THREE.Vector3()
+    const b = new THREE.Vector3()
+    const c = new THREE.Vector3()
+    const n = new THREE.Vector3()
+    for (let t = 0; t < index.count; t += 3) {
+      const [i, j, k] = [index.getX(t), index.getX(t + 1), index.getX(t + 2)]
+      a.fromBufferAttribute(pos, i)
+      b.fromBufferAttribute(pos, j)
+      c.fromBufferAttribute(pos, k)
+      const face = b.clone().sub(a).cross(c.clone().sub(a))
+      n.fromBufferAttribute(nor, i)
+      expect(face.dot(n)).toBeGreaterThan(0)
+    }
+    for (let k = 0; k < pos.count; k++) {
+      n.fromBufferAttribute(nor, k)
+      expect(n.length()).toBeCloseTo(1, 5)
+      const { rho } = local(k)
+      a.fromBufferAttribute(pos, k)
+      const outward = new THREE.Vector3(a.x, 0, a.z).normalize()
+      // Cap vertices (outside the outer wall or on it, off the rim) face out of the flask.
+      if (rho > FLASK_RADIUS + 1e-4) expect(n.dot(outward)).toBeGreaterThan(0.9)
+    }
   })
 })
 

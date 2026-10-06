@@ -11,6 +11,7 @@ import {
   STREAM_TOP_Y,
   createInvestmentMaterial,
   createInvestmentUniforms,
+  createPlugGeometry,
   pourPoint,
   pourStrength,
   streamSpan,
@@ -18,11 +19,15 @@ import {
 
 const { bottomY, topY } = MOLD.investment
 const POUR_AT = pourPoint()
+/** The plugs are built around the middle of the flask (like the bores in Flask.tsx). */
+const FLASK_MIDDLE_Y = MOLD.flask.bottomY + MOLD.flask.height / 2
 
 /**
  * The investment in flask-local space (the flask is seated and at rest while it shows, so flask-local Y = world Y):
- * the opaque liquid column cut at the level, the surface disc and the pour stream falling at the side of the flask.
- * Reads mold.fill / mold.boil and the clock in useFrame; no React state.
+ * the opaque liquid column cut at the level, a plug in every flask hole (body material, cut at the same level; the
+ * tape hides them until it comes off, then the holes show flush white plaster), the surface disc and the pour stream
+ * falling at the side of the flask. The plugs line up with the holes because the flask spinner is at a whole number
+ * of turns whenever the investment shows. Reads mold.fill / mold.boil and the clock in useFrame; no React state.
  */
 export function Investment() {
   const shared = useMemo(createInvestmentUniforms, [])
@@ -39,6 +44,7 @@ export function Investment() {
     [],
   )
   // A disc with radial subdivisions (a CircleGeometry has no inner vertices to ripple), laid flat, normal +Y.
+  const plugs = useMemo(createPlugGeometry, [])
   const disc = useMemo(() => new THREE.RingGeometry(0, INVESTMENT_RADIUS, 128, 40).rotateX(-Math.PI / 2), [])
   // Unit stream from y = 0 down to y = -1 (capped ends), scaled to the current span.
   const stream = useMemo(() => new THREE.CylinderGeometry(STREAM_RADIUS, STREAM_RADIUS, 1, 16, 48, false).translate(0, -0.5, 0), [])
@@ -46,10 +52,11 @@ export function Investment() {
   useEffect(
     () => () => {
       body.dispose()
+      plugs.dispose()
       disc.dispose()
       stream.dispose()
     },
-    [body, disc, stream],
+    [body, plugs, disc, stream],
   )
   useEffect(() => () => Object.values(mats).forEach((m) => m.material.dispose()), [mats])
 
@@ -86,6 +93,12 @@ export function Investment() {
     <group>
       <group ref={bodyRef}>
         <mesh geometry={body} material={mats.body.material} renderOrder={INVESTMENT_RENDER_ORDER.body} />
+        <mesh
+          geometry={plugs}
+          material={mats.body.material}
+          renderOrder={INVESTMENT_RENDER_ORDER.body}
+          position-y={FLASK_MIDDLE_Y}
+        />
         <mesh
           ref={surfaceRef}
           geometry={disc}

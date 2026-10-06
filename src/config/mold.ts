@@ -4,7 +4,9 @@ const TAU = Math.PI * 2
 const mod = (a: number, n: number) => ((a % n) + n) % n
 
 /** `wall` = steel tube thickness: outer surface at innerRadius + wall. */
-const FLASK = { innerRadius: 1.3, wall: 0.08, bottomY: -1.4, height: 3.8, dropHeight: 5.4 } as const
+const FLASK = { innerRadius: 1.3, wall: 0.08, bottomY: -1.4, height: 4.2, dropHeight: 5.4 } as const
+/** The investment fills the flask up to this far under its top rim. */
+const INVESTMENT_GAP = 0.1
 
 const BASE_HEIGHT = 0.55
 
@@ -25,7 +27,7 @@ export const MOLD = {
     dropOffset: -(BASE_HEIGHT + 3.2),
   },
   flask: FLASK,
-  investment: { bottomY: -1.4, topY: 2.3 },
+  investment: { bottomY: FLASK.bottomY, topY: FLASK.bottomY + FLASK.height - INVESTMENT_GAP },
   /** The trunk is 40% of the flask height. */
   trunk: { radius: 0.08, bottomY: -1.18, topY: FLASK.bottomY + 0.4 * FLASK.height },
   /** The whole tree is turned about Y (45 deg: the four branches form an X seen from the camera). */
@@ -76,8 +78,8 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
  * tilted down so the top opening of the flask (the pour and the boil) is visible. Tuned by eye.
  */
 export const CAM = {
-  tree: { y: 0.3, z: 12.5, look: 0.3 },
-  pour: { y: 8.2, z: 11.5, look: 0.3 },
+  tree: { y: 0.4, z: 13.4, look: 0.4 },
+  pour: { y: 8.6, z: 12.4, look: 0.4 },
 } as const
 
 /**
