@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MOLD, investmentLevelY } from '../../config/mold'
+import { funnelProfile } from '../../scene/furnace/funnel'
 import { getAppState } from '../../story/appState'
+import { story } from '../../story/store'
 import { mold } from './state'
 import {
   INVESTMENT_RADIUS,
@@ -12,6 +14,7 @@ import {
   createInvestmentMaterial,
   createInvestmentUniforms,
   createPlugGeometry,
+  investmentClipLevel,
   pourPoint,
   pourStrength,
   streamSpan,
@@ -36,6 +39,7 @@ export function Investment() {
       body: createInvestmentMaterial('body', shared),
       surface: createInvestmentMaterial('surface', shared),
       stream: createInvestmentMaterial('stream', shared),
+      funnel: createInvestmentMaterial('funnel', shared),
     }),
     [shared],
   )
@@ -48,6 +52,15 @@ export function Investment() {
   const disc = useMemo(() => new THREE.RingGeometry(0, INVESTMENT_RADIUS, 128, 40).rotateX(-Math.PI / 2), [])
   // Unit stream from y = 0 down to y = -1 (capped ends), scaled to the current span.
   const stream = useMemo(() => new THREE.CylinderGeometry(STREAM_RADIUS, STREAM_RADIUS, 1, 16, 48, false).translate(0, -0.5, 0), [])
+  // The funnel wall the crucible former leaves in the investment (world Y, from the flask bottom up to the trunk).
+  const funnel = useMemo(() => new THREE.LatheGeometry(funnelProfile().map(([x, y]) => new THREE.Vector2(x, y)), 48), [])
+  // Bottom cap: a flat annulus facing down at the investment bottom, its hole = the funnel mouth. Once the rubber base
+  // has gone it closes the open column bottom (the body is front-face only), and it is the face that turns up when
+  // the flask flips.
+  const cap = useMemo(
+    () => new THREE.RingGeometry(MOLD.base.coneRadius, INVESTMENT_RADIUS, 64).rotateX(Math.PI / 2).translate(0, bottomY, 0),
+    [],
+  )
 
   useEffect(
     () => () => {
@@ -55,25 +68,33 @@ export function Investment() {
       plugs.dispose()
       disc.dispose()
       stream.dispose()
+      funnel.dispose()
+      cap.dispose()
     },
-    [body, plugs, disc, stream],
+    [body, plugs, disc, stream, funnel, cap],
   )
   useEffect(() => () => Object.values(mats).forEach((m) => m.material.dispose()), [mats])
 
   const bodyRef = useRef<THREE.Group>(null)
   const surfaceRef = useRef<THREE.Mesh>(null)
   const streamRef = useRef<THREE.Mesh>(null)
+  const capRef = useRef<THREE.Mesh>(null)
+  const funnelRef = useRef<THREE.Mesh>(null)
 
   useFrame(({ clock }) => {
     const loading = getAppState().phase === 'loading'
     const fill = mold.fill
     const level = investmentLevelY(fill)
-    shared.uLevelY.value = level
+    shared.uLevelY.value = investmentClipLevel(level, story.flask.flip)
     shared.uTime.value = clock.elapsedTime
     shared.uBoil.value = mold.boil
     shared.uPour.value = pourStrength(fill)
 
     if (bodyRef.current) bodyRef.current.visible = loading || fill > 0.001
+    // The cap and the funnel show only once the rubber base (and its cone) is gone: before that they would z-fight with it.
+    const open = loading || mold.base <= 0.001
+    if (capRef.current) capRef.current.visible = open
+    if (funnelRef.current) funnelRef.current.visible = open
     if (surfaceRef.current) surfaceRef.current.position.y = level
     const s = streamRef.current
     if (s) {
@@ -99,6 +120,8 @@ export function Investment() {
           renderOrder={INVESTMENT_RENDER_ORDER.body}
           position-y={FLASK_MIDDLE_Y}
         />
+        <mesh ref={capRef} geometry={cap} material={mats.body.material} renderOrder={INVESTMENT_RENDER_ORDER.body} />
+        <mesh ref={funnelRef} geometry={funnel} material={mats.funnel.material} renderOrder={INVESTMENT_RENDER_ORDER.body} />
         <mesh
           ref={surfaceRef}
           geometry={disc}

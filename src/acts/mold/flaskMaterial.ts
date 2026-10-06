@@ -1,5 +1,6 @@
 ﻿import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
+import { heatUniforms, xrayUniform } from '../../scene/furnace/uniforms'
 
 const TAU = Math.PI * 2
 
@@ -311,6 +312,11 @@ const FRAGMENT_PARS = [
   `#define BRUSH_CELLS_COARSE ${BRUSH.cellsCoarse.toFixed(1)}`,
   `#define BRUSH_ROUGHNESS ${f(BRUSH.roughness)}`,
   `#define BRUSH_TINT ${f(BRUSH.tint)}`,
+  'uniform float uXray;',
+  'uniform float uHeat;',
+  'uniform vec3 uHeatColor;',
+  '// Interleaved gradient noise on the pixel: a fixed per-pixel threshold for the screen-door X-ray dissolve.',
+  'float xrayDither() { return fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))); }',
   '// Mirrors flaskHoleDistance() in flaskMaterial.ts: distance to the nearest radial bore wall, negative inside.',
   'float flaskHoleDistance(vec3 p) {',
   '  float az = atan(-p.z, p.x);',
@@ -360,6 +366,7 @@ const FRAGMENT_HOLES = [
   '// through the rest.',
   'if (flaskHole < 0.0) discard;',
   '#endif',
+  'if (uXray > 0.001 && xrayDither() < uXray) discard;',
 ].join('\n')
 
 const FRAGMENT_TINT = '#include <color_fragment>\ndiffuseColor.rgb *= 1.0 + flaskBrush * BRUSH_TINT;'
@@ -379,6 +386,11 @@ const FRAGMENT_EDGES = [
   '  outgoingLight = mix(outgoingLight, flaskLit, flaskEdge);',
   '}',
   '#endif',
+  '{',
+  '  // Furnace heat: the steel reddens and glows, hottest toward the silhouette.',
+  '  float flaskHot = 0.4 + 0.6 * pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.0);',
+  '  outgoingLight = mix(outgoingLight, outgoingLight * vec3(1.0, 0.42, 0.28), uHeat * 0.75) + uHeatColor * uHeat * flaskHot * 0.55;',
+  '}',
   '#include <opaque_fragment>',
 ].join('\n')
 
@@ -392,6 +404,9 @@ function createSteel(side: THREE.Side, holes: boolean): THREE.MeshStandardMateri
   })
   const pars = holes ? FRAGMENT_PARS : `#define FLASK_NO_HOLES\n${FRAGMENT_PARS}`
   material.onBeforeCompile = (shader) => {
+    shader.uniforms.uXray = xrayUniform
+    shader.uniforms.uHeat = heatUniforms.uHeat
+    shader.uniforms.uHeatColor = heatUniforms.uHeatColor
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', VERTEX_VARYINGS)
       .replace('#include <begin_vertex>', VERTEX_LOCAL)
@@ -402,7 +417,7 @@ function createSteel(side: THREE.Side, holes: boolean): THREE.MeshStandardMateri
       .replace('#include <roughnessmap_fragment>', FRAGMENT_ROUGHNESS)
       .replace('#include <opaque_fragment>', FRAGMENT_EDGES)
   }
-  material.customProgramCacheKey = () => (holes ? 'flask-steel-v3' : 'flask-steel-plain-v3')
+  material.customProgramCacheKey = () => (holes ? 'flask-steel-v4' : 'flask-steel-plain-v4')
   return material
 }
 
