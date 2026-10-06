@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+﻿import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
 
 const TAU = Math.PI * 2
@@ -31,15 +31,17 @@ export const BORE_SEGMENTS = 24
 const BORE_OVERSHOOT = 0.002
 
 /**
- * Bottom of the flask (after the reference photo), from the floor up: a short foot cylinder (a little smaller than
- * the flange, it sits in the rubber cup), a wide chunky flange plate with chamfered edges, and a small neck where the
- * tube meets the plate. World units; `FOOT.inset` = foot radius below the flange radius.
+ * Bottom of the flask (after the reference photos): a wide flat flange plate with chamfered edges on the flask
+ * bottom (MOLD.flask.bottomY) with a small neck where the tube meets it, and under the plate the foot: a plain
+ * steel tube of the same radii as the perforated part (it stands in the rubber cup), hanging FOOT.height below the
+ * flask bottom, with a small chamfer on its lower outer rim. World units.
  */
-export const FOOT = { height: 0.12, inset: 0.22, chamfer: 0.015 } as const
+export const FOOT = { height: 0.6, chamfer: 0.02 } as const
 export const FLANGE = { height: 0.16, overhang: 0.6, chamferTop: 0.05, chamferBottom: 0.025 } as const
 export const NECK = { height: 0.07, overhang: 0.035, chamfer: 0.025 } as const
 export const FLANGE_RADIUS = FLASK_RADIUS + FLANGE.overhang
-export const FOOT_RADIUS = FLANGE_RADIUS - FOOT.inset
+/** The foot is the same tube as the perforated part. */
+export const FOOT_RADIUS = FLASK_RADIUS
 /** Flat top rim between the two wall surfaces, with rolled edges of this radius. */
 export const RIM = { round: 0.02 } as const
 /**
@@ -49,6 +51,15 @@ export const RIM = { round: 0.02 } as const
 export const SHELL = (() => {
   const bottom = -MOLD.flask.height / 2
   const top = MOLD.flask.height / 2 - RIM.round
+  return { bottom, top, height: top - bottom, center: (top + bottom) / 2 } as const
+})()
+/**
+ * The inner surface runs on down through the foot to its bottom (same flask-local space): one continuous bore with
+ * one shade; no holes are cut below the hole band.
+ */
+export const INNER_SHELL = (() => {
+  const bottom = SHELL.bottom - FOOT.height
+  const top = SHELL.top
   return { bottom, top, height: top - bottom, center: (top + bottom) / 2 } as const
 })()
 
@@ -129,24 +140,20 @@ function profileBuilder() {
 }
 
 /**
- * Foot, flange plate and neck (y in the Flask group, foot on MOLD.flask.bottomY): the foot's bottom face outward, up
- * its side, outward along the plate underside, up the chamfered plate edge, inward across the plate top, up the neck
- * and its chamfer onto the tube, then down the inner face, which stays inside the wall.
+ * Flange plate and neck (y in the Flask group, plate underside on MOLD.flask.bottomY): outward along the plate
+ * underside, up the chamfered plate edge, inward across the plate top, up the neck and its chamfer onto the tube,
+ * then down the inner face, which stays inside the wall.
  */
 export function flangeProfile(): Profile {
   const { pts, hard } = profileBuilder()
   const ri = FLASK_RADIUS - 0.004
   const rn = FLASK_RADIUS + NECK.overhang
   const y0 = MOLD.flask.bottomY
-  const yf = y0 + FOOT.height
-  const y1 = yf + FLANGE.height
+  const y1 = y0 + FLANGE.height
   const yn = y1 + NECK.height
   pts.push([ri, y0])
-  hard(FOOT_RADIUS - FOOT.chamfer, y0)
-  hard(FOOT_RADIUS, y0 + FOOT.chamfer)
-  hard(FOOT_RADIUS, yf)
-  hard(FLANGE_RADIUS - FLANGE.chamferBottom, yf)
-  hard(FLANGE_RADIUS, yf + FLANGE.chamferBottom)
+  hard(FLANGE_RADIUS - FLANGE.chamferBottom, y0)
+  hard(FLANGE_RADIUS, y0 + FLANGE.chamferBottom)
   hard(FLANGE_RADIUS, y1 - FLANGE.chamferTop)
   hard(FLANGE_RADIUS - FLANGE.chamferTop, y1)
   hard(rn, y1)
@@ -170,27 +177,43 @@ export function rimProfile(): Profile {
 }
 
 /**
- * Black rubber cup under the flange (world y, top face on MOLD.baseTopY): rounded outer edges, a raised lip ring
- * right around the flask foot, a flat floor under the foot and inside the flask, and the crucible-former cone in the
- * middle up to the trunk bottom.
+ * Foot (y in the Flask group): the plain steel tube under the flange, from the bottom ring (from the inner surface
+ * outward, where INNER_SHELL carries the bore wall down) over the chamfered lower rim and straight up the outside to
+ * the plate underside on MOLD.flask.bottomY.
+ */
+export function footProfile(): Profile {
+  const { pts, hard } = profileBuilder()
+  const top = MOLD.flask.bottomY
+  const bottom = top - FOOT.height
+  pts.push([FLASK_INNER_RADIUS, bottom])
+  hard(FOOT_RADIUS - FOOT.chamfer, bottom)
+  hard(FOOT_RADIUS, bottom + FOOT.chamfer)
+  pts.push([FOOT_RADIUS, top])
+  return pts
+}
+
+/**
+ * Black rubber cup around the flask foot (world y, top face on MOLD.baseTopY against the flange underside): rounded
+ * outer edges, a bore `clearance` wider than the foot down to a thin floor the foot stands on, and in the middle the
+ * crucible former: a post from the floor up to the cup top (hidden inside the foot), then the flared cone up to the
+ * trunk bottom.
  */
 export function baseProfile(): Profile {
   const { pts, soft, hard, arc } = profileBuilder()
-  const { radius, height, edge, lip, coneRadius, coneHeight } = MOLD.base
+  const { radius, height, edge, floor, clearance, coneRadius, coneHeight } = MOLD.base
   const top = MOLD.baseTopY
   const bottom = top - height
-  const lipIn = FOOT_RADIUS + 0.004
-  const lipOut = FOOT_RADIUS + lip.width
-  const coneTop = top + coneHeight
+  const floorY = bottom + floor
+  const bore = FOOT_RADIUS + clearance
+  const coneTop = floorY + coneHeight
   const coneRise = coneTop - top
 
   soft(0, bottom)
   arc(radius - edge, bottom + edge, edge, -Math.PI / 2, 0)
   arc(radius - edge, top - edge, edge, 0, Math.PI / 2)
-  if (lipOut < radius - edge - 1e-6) hard(lipOut, top)
-  hard(lipOut - lip.height * 0.6, top + lip.height)
-  hard(lipIn, top + lip.height)
-  hard(lipIn, top)
+  hard(bore, top)
+  hard(bore, floorY)
+  hard(coneRadius, floorY)
   hard(coneRadius, top)
   // Crucible former: a flared cone, steeper toward the top where the trunk starts.
   soft(coneRadius * 0.75, top + coneRise * 0.24)

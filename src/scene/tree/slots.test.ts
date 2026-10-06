@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Vector3 } from 'three'
+import { FLANGE_RADIUS } from '../../acts/mold/flaskMaterial'
 import { MOLD, TREE_SLOTS } from '../../config/mold'
 import { PRINT, RING_HALF } from '../../config/print'
 import { RING_HALF_EXTENTS, ringBoxCorners, slotPose } from './slots'
@@ -121,7 +122,9 @@ describe('tree slots', () => {
       for (const c of ringBoxCorners(i)) expect(Math.hypot(c.x - line.x, c.z - line.z)).toBeGreaterThanOrEqual(POUR_CLEARANCE)
     })
     expect(MOLD.pour.radius).toBeLessThan(MOLD.flask.innerRadius - MARGIN)
-    expect(MOLD.base.radius).toBeGreaterThanOrEqual(1.85)
+    // The rubber cup wraps the foot (same radius as the tube) with a real rim and stays under the flange.
+    expect(MOLD.base.radius).toBeGreaterThanOrEqual(MOLD.flask.innerRadius + MOLD.flask.wall + 0.3)
+    expect(MOLD.base.radius).toBeLessThan(FLANGE_RADIUS)
   })
 
   it('keeps the rings of different slots 0.06 apart (shell-point proxy of the real rings, sprue ends excluded)', () => {

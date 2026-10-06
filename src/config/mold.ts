@@ -8,28 +8,37 @@ const FLASK = { innerRadius: 1.3, wall: 0.08, bottomY: -1.4, height: 4.2, dropHe
 /** The investment fills the flask up to this far under its top rim. */
 const INVESTMENT_GAP = 0.1
 
-const BASE_HEIGHT = 0.55
+/** Rubber cup depth: the flask foot (0.6) plus a thin floor under it. */
+const BASE_HEIGHT = 0.65
+const BASE_FLOOR = 0.05
+/** Rubber around the foot: one centimetre (0.4) past the foot, which has the tube's outer radius. */
+const BASE_RADIUS = FLASK.innerRadius + FLASK.wall + 0.4
+/** The crucible-former cone rises from the cup floor to the trunk bottom (MOLD.trunk.bottomY). */
+const TRUNK_BOTTOM_Y = -1.18
 
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
   baseTopY: -1.4,
   /**
-   * Tall black rubber cup under the flask flange (top face at baseTopY, the flange overhangs it a little).
-   * `edge` = rounded outer edges, `lip` = raised ring around the flask foot, `dropOffset` = fully below the frame.
+   * Black rubber cup around the flask foot (after the reference photo): top face at baseTopY against the flange
+   * underside, a bore `clearance` wider than the foot that takes it down to a `floor` thick bottom, and the
+   * crucible-former cone in the middle (inside the foot). `edge` = rounded outer edges, `dropOffset` = fully below the
+   * frame.
    */
   base: {
-    radius: 1.85,
+    radius: BASE_RADIUS,
     height: BASE_HEIGHT,
     edge: 0.035,
-    lip: { width: 0.05, height: 0.035 },
+    floor: BASE_FLOOR,
+    clearance: 0.01,
     coneRadius: 0.32,
-    coneHeight: 0.22,
+    coneHeight: TRUNK_BOTTOM_Y - (FLASK.bottomY - BASE_HEIGHT + BASE_FLOOR),
     dropOffset: -(BASE_HEIGHT + 3.2),
   },
   flask: FLASK,
   investment: { bottomY: FLASK.bottomY, topY: FLASK.bottomY + FLASK.height - INVESTMENT_GAP },
   /** The trunk is 40% of the flask height. */
-  trunk: { radius: 0.08, bottomY: -1.18, topY: FLASK.bottomY + 0.4 * FLASK.height },
+  trunk: { radius: 0.08, bottomY: TRUNK_BOTTOM_Y, topY: FLASK.bottomY + 0.4 * FLASK.height },
   /** The whole tree is turned about Y (45 deg: the four branches form an X seen from the camera). */
   yaw: Math.PI / 4,
   /** The investment stream: a vertical line at this radius and azimuth (far side, between two branches). */

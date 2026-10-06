@@ -11,8 +11,9 @@ const { dropOffset } = MOLD.base
 const RUBBER = { color: '#15181c', roughness: 0.85 } as const
 
 /**
- * Tall black rubber cup under the flask flange, with the crucible-former cone in the middle (profile and sizes:
- * baseProfile() and MOLD.base). Rises from below the frame with mold.base and drops away after.
+ * Black rubber cup around the flask foot (the foot drops into its bore and the flange lands on its top face), with
+ * the crucible-former cone in the middle (profile and sizes: baseProfile() and MOLD.base). Rises from below the
+ * frame with mold.base and drops away after.
  */
 export function RubberBase() {
   const geometry = useMemo(

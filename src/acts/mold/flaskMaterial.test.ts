@@ -15,6 +15,7 @@ import {
   HOLE_EDGE,
   HOLE_RADIUS,
   HOLE_ROWS,
+  INNER_SHELL,
   NECK,
   RIM,
   SHELL,
@@ -25,6 +26,7 @@ import {
   createSteelMaterial,
   flangeProfile,
   flaskHoleDistance,
+  footProfile,
   holeCenters,
   rimProfile,
 } from './flaskMaterial'
@@ -238,6 +240,17 @@ describe('thick tube wall', () => {
     expect(SHELL.height).toBeCloseTo(SHELL.top - SHELL.bottom)
     expect(SHELL.center).toBeCloseTo((SHELL.top + SHELL.bottom) / 2)
   })
+
+  it('runs the inner surface on down through the foot to its bottom (one continuous bore, one shade)', () => {
+    expect(INNER_SHELL.top).toBeCloseTo(SHELL.top)
+    expect(INNER_SHELL.bottom).toBeCloseTo(-H / 2 - FOOT.height)
+    expect(INNER_SHELL.height).toBeCloseTo(INNER_SHELL.top - INNER_SHELL.bottom)
+    expect(INNER_SHELL.center).toBeCloseTo((INNER_SHELL.top + INNER_SHELL.bottom) / 2)
+    // No hole is cut in the foot part of the inner surface.
+    for (const y of [-H / 2 - 0.05, -H / 2 - FOOT.height / 2, -H / 2 - FOOT.height + 0.01]) {
+      for (let az = -Math.PI; az < Math.PI; az += 0.2) expect(flaskHoleDistance(y, az, FLASK_INNER_RADIUS)).toBeGreaterThan(0.3)
+    }
+  })
 })
 
 describe('top rim', () => {
@@ -275,42 +288,31 @@ describe('top rim', () => {
   })
 })
 
-describe('flange and foot', () => {
+describe('flange', () => {
   const pts = flangeProfile()
   const xs = pts.map((p) => p[0])
   const ys = pts.map((p) => p[1])
   const y0 = MOLD.flask.bottomY
-  const yf = y0 + FOOT.height
-  const y1 = yf + FLANGE.height
+  const y1 = y0 + FLANGE.height
 
-  it('is a chunky flange: outer radius = outer tube + 0.60, plate 0.16 high, on a short foot, with a small neck above', () => {
+  it('is a chunky flat flange on the flask bottom: outer radius = outer tube + 0.60, plate 0.16 high, small neck above', () => {
     expect(FLANGE.overhang).toBeCloseTo(0.6)
     expect(FLANGE.height).toBeCloseTo(0.16)
     expect(FLANGE_RADIUS).toBeCloseTo(FLASK_RADIUS + 0.6)
     expect(Math.max(...xs)).toBeCloseTo(FLANGE_RADIUS)
+    // The plate underside is the flask bottom (where the rubber cup top meets it).
     expect(Math.min(...ys)).toBeCloseTo(y0)
-    expect(Math.max(...ys)).toBeCloseTo(y0 + FOOT.height + FLANGE.height + NECK.height)
+    expect(Math.max(...ys)).toBeCloseTo(y0 + FLANGE.height + NECK.height)
     // The neck stays a thin ring around the body, much narrower and lower than the plate.
     expect(NECK.overhang).toBeGreaterThan(0.01)
     expect(NECK.overhang).toBeLessThan(FLANGE.overhang / 8)
     expect(NECK.height).toBeLessThan(FLANGE.height)
   })
 
-  it('stands on a short foot cylinder, slightly smaller than the flange, at the flask bottom', () => {
-    expect(FOOT.height).toBeCloseTo(0.12)
-    expect(FOOT_RADIUS).toBeCloseTo(FLANGE_RADIUS - FOOT.inset)
-    expect(FOOT_RADIUS).toBeLessThan(FLANGE_RADIUS - 0.1)
-    expect(FOOT_RADIUS).toBeGreaterThan(FLASK_RADIUS + FLANGE.overhang / 2)
-    // The foot side runs straight up from its chamfer to the underside of the plate.
-    expect(hasPoint(pts, FOOT_RADIUS, yf)).toBe(true)
-    expect(hasPoint(pts, FOOT_RADIUS, y0 + FOOT.chamfer)).toBe(true)
-    expect(hasPoint(pts, FOOT_RADIUS, y0)).toBe(false)
-  })
-
   it('has thick chamfered plate edges (no point sits on an outer corner)', () => {
-    expect(hasPoint(pts, FLANGE_RADIUS, yf)).toBe(false)
+    expect(hasPoint(pts, FLANGE_RADIUS, y0)).toBe(false)
     expect(hasPoint(pts, FLANGE_RADIUS, y1)).toBe(false)
-    expect(hasPoint(pts, FLANGE_RADIUS, yf + FLANGE.chamferBottom)).toBe(true)
+    expect(hasPoint(pts, FLANGE_RADIUS, y0 + FLANGE.chamferBottom)).toBe(true)
     expect(hasPoint(pts, FLANGE_RADIUS, y1 - FLANGE.chamferTop)).toBe(true)
     expect(FLANGE.chamferTop).toBeGreaterThanOrEqual(0.04)
     expect(FLANGE.chamferBottom).toBeGreaterThanOrEqual(0.02)
@@ -323,59 +325,130 @@ describe('flange and foot', () => {
   })
 })
 
+describe('foot under the flange', () => {
+  const pts = footProfile()
+  const xs = pts.map((p) => p[0])
+  const ys = pts.map((p) => p[1])
+  const top = MOLD.flask.bottomY
+  const bottom = top - FOOT.height
+
+  it('is the same steel tube as the perforated part: outer radius = tube outer radius, hollow down to the tube bore', () => {
+    expect(FOOT_RADIUS).toBeCloseTo(FLASK_RADIUS)
+    expect(Math.max(...xs)).toBeCloseTo(FLASK_RADIUS)
+    // Its bottom ring reaches in to the inner surface (INNER_SHELL carries the bore wall down through the foot).
+    expect(Math.min(...xs)).toBeCloseTo(FLASK_INNER_RADIUS)
+  })
+
+  it('hangs 0.6 below the flange: from the flask bottom down, the flange and everything above stay put', () => {
+    expect(FOOT.height).toBeCloseTo(0.6)
+    expect(Math.max(...ys)).toBeCloseTo(top)
+    expect(Math.min(...ys)).toBeCloseTo(bottom)
+    expect(bottom).toBeCloseTo(-2.0)
+  })
+
+  it('has a small chamfer on its lower outer rim', () => {
+    expect(FOOT.chamfer).toBeGreaterThanOrEqual(0.01)
+    expect(FOOT.chamfer).toBeLessThanOrEqual(0.04)
+    expect(hasPoint(pts, FLASK_RADIUS, bottom)).toBe(false)
+    expect(hasPoint(pts, FLASK_RADIUS - FOOT.chamfer, bottom)).toBe(true)
+    expect(hasPoint(pts, FLASK_RADIUS, bottom + FOOT.chamfer)).toBe(true)
+    // Straight side from the chamfer up to the plate underside.
+    expect(hasPoint(pts, FLASK_RADIUS, top)).toBe(true)
+  })
+
+  it('runs outward along the bottom and up the outside (outward normals in LatheGeometry)', () => {
+    for (const v of latheVertices(pts)) {
+      if (v.r > FLASK_RADIUS - 1e-6 && v.y > bottom + FOOT.chamfer - 1e-9) expect(v.nr).toBeGreaterThan(0.5)
+      if (Math.abs(v.y - bottom) < 1e-9 && v.r < FLASK_RADIUS - FOOT.chamfer + 1e-9) expect(v.ny).toBeLessThan(-0.5)
+    }
+  })
+})
+
 describe('rubber base', () => {
   const { base, baseTopY } = MOLD
   const pts = baseProfile()
   const xs = pts.map((p) => p[0])
   const ys = pts.map((p) => p[1])
+  const bottom = baseTopY - base.height
+  const floorY = bottom + base.floor
+  const boreR = FOOT_RADIUS + base.clearance
+  const footBottom = MOLD.flask.bottomY - FOOT.height
 
-  it('is a tall cup under the flange: top at the flask bottom, 0.55 high', () => {
+  it('is a cup around the foot: top at the flange underside, 0.65 deep', () => {
     expect(baseTopY).toBeCloseTo(MOLD.flask.bottomY)
-    expect(base.height).toBeCloseTo(0.55)
-    expect(Math.min(...ys)).toBeCloseTo(baseTopY - base.height)
+    expect(Math.min(...flangeProfile().map((p) => p[1]))).toBeCloseTo(baseTopY)
+    expect(base.height).toBeCloseTo(0.65)
+    expect(Math.min(...ys)).toBeCloseTo(bottom)
+    // The rubber top face is the highest rubber (no lip ring): only the cone rises above it, inside the bore.
+    for (const p of pts) if (p[1] > baseTopY + 1e-9) expect(p[0]).toBeLessThan(boreR)
   })
 
-  it('sits just inside the flange edge (the flange overhangs it) and around the foot with a raised lip', () => {
-    expect(base.radius).toBeLessThan(FLANGE_RADIUS)
-    expect(base.radius).toBeGreaterThanOrEqual(FLANGE_RADIUS - 0.2)
+  it('is one centimetre (0.4) of rubber around the foot, under the flange overhang', () => {
+    expect(base.radius).toBeCloseTo(FOOT_RADIUS + 0.4)
+    expect(base.radius).toBeCloseTo(1.78)
     expect(Math.max(...xs)).toBeCloseTo(base.radius)
-    // Lip: a raised ring right outside the foot, inside the rounded outer edge.
-    expect(FOOT_RADIUS + base.lip.width).toBeLessThanOrEqual(base.radius - base.edge + 1e-9)
-    expect(base.lip.height).toBeGreaterThan(0.01)
-    expect(base.lip.height).toBeLessThan(FOOT.height / 2)
-    const lipTop = pts.filter((p) => Math.abs(p[1] - (baseTopY + base.lip.height)) < 1e-9)
-    expect(lipTop.length).toBeGreaterThanOrEqual(2)
-    for (const p of lipTop) {
-      expect(p[0]).toBeGreaterThan(FOOT_RADIUS)
-      expect(p[0]).toBeLessThan(FOOT_RADIUS + base.lip.width)
-    }
+    expect(base.radius).toBeLessThan(FLANGE_RADIUS)
+  })
+
+  it('takes the foot in a bore 0.01 wider than it, down to a thin floor the foot stands on', () => {
+    expect(base.clearance).toBeCloseTo(0.01)
+    expect(hasPoint(pts, boreR, baseTopY)).toBe(true)
+    expect(hasPoint(pts, boreR, floorY)).toBe(true)
+    expect(base.floor).toBeGreaterThan(0.02)
+    expect(base.floor).toBeLessThanOrEqual(0.08)
+    // The seated foot goes down to the floor (no gap under it, no overlap with the rubber).
+    expect(footBottom).toBeGreaterThanOrEqual(floorY - 1e-9)
+    expect(footBottom - floorY).toBeLessThan(0.02)
+    expect(boreR).toBeGreaterThan(FOOT_RADIUS)
   })
 
   it('has rounded outer edges (no point on the sharp corners)', () => {
     expect(base.edge).toBeGreaterThan(0.015)
     expect(hasPoint(pts, base.radius, baseTopY)).toBe(false)
-    expect(hasPoint(pts, base.radius, baseTopY - base.height)).toBe(false)
+    expect(hasPoint(pts, base.radius, bottom)).toBe(false)
   })
 
-  it('keeps the crucible-former cone in the middle, from the base top up to the trunk bottom', () => {
+  it('keeps the crucible-former cone in the middle, from the cup floor up to the trunk bottom, inside the foot', () => {
     expect(pts[pts.length - 1][0]).toBeCloseTo(0)
-    expect(pts[pts.length - 1][1]).toBeCloseTo(baseTopY + base.coneHeight)
-    expect(baseTopY + base.coneHeight).toBeCloseTo(MOLD.trunk.bottomY)
-    expect(hasPoint(pts, base.coneRadius, baseTopY)).toBe(true)
-    expect(base.coneRadius).toBeLessThan(FLASK_INNER_RADIUS)
+    expect(pts[pts.length - 1][1]).toBeCloseTo(floorY + base.coneHeight)
+    expect(floorY + base.coneHeight).toBeCloseTo(MOLD.trunk.bottomY)
+    expect(hasPoint(pts, base.coneRadius, floorY)).toBe(true)
+    expect(base.coneRadius).toBeLessThan(FLASK_INNER_RADIUS - 0.3)
   })
 
   it('drops fully out of frame when hidden', () => {
     expect(base.dropOffset).toBeCloseTo(-(base.height + 3.2))
   })
 
-  it('profile runs outward along the bottom, up the side and inward across the top (outward normals)', () => {
+  it('profile faces outward: bottom down, outer side out, top and floor up, the bore wall toward the axis', () => {
     for (const v of latheVertices(pts)) {
       if (v.r > base.radius - 1e-6) expect(v.nr).toBeGreaterThan(0.5)
-      if (Math.abs(v.y - (baseTopY - base.height)) < 1e-9) expect(v.ny).toBeLessThan(-0.5)
-      // Lip top and the floor face up.
-      if (Math.abs(v.y - (baseTopY + base.lip.height)) < 1e-9) expect(v.ny).toBeGreaterThan(0.5)
+      if (Math.abs(v.y - bottom) < 1e-9) expect(v.ny).toBeLessThan(-0.5)
     }
+    // Per profile segment: LatheGeometry's outward normal of a segment (dx, dy) is (dy, -dx) in (radius, y).
+    const seen = { top: 0, bore: 0, floor: 0 }
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x0, y0] = pts[i]
+      const [x1, y1] = pts[i + 1]
+      const len = Math.hypot(x1 - x0, y1 - y0)
+      if (len < 1e-9) continue
+      const nr = (y1 - y0) / len
+      const ny = -(x1 - x0) / len
+      const flatAt = (y: number) => Math.abs(y0 - y) < 1e-9 && Math.abs(y1 - y) < 1e-9
+      if (flatAt(baseTopY) && Math.min(x0, x1) >= boreR - 1e-9) {
+        expect(ny).toBeGreaterThan(0.99)
+        seen.top++
+      }
+      if (Math.abs(x0 - boreR) < 1e-9 && Math.abs(x1 - boreR) < 1e-9) {
+        expect(nr).toBeLessThan(-0.99)
+        seen.bore++
+      }
+      if (flatAt(floorY)) {
+        expect(ny).toBeGreaterThan(0.99)
+        seen.floor++
+      }
+    }
+    expect(seen).toEqual({ top: 1, bore: 1, floor: 1 })
   })
 })
 
@@ -394,11 +467,12 @@ describe('hole pattern', () => {
   it('starts the holes about one centimetre (0.4) higher above the flange than before', () => {
     expect(HOLE_BAND.bottom).toBeCloseTo(0.82)
     expect(HOLE_BAND.top).toBeCloseTo(0.18)
-    const neckTop = -H / 2 + FOOT.height + FLANGE.height + NECK.height
     const lowest = Math.min(...centers.map((c) => c.y)) - HOLE_RADIUS
-    // The old first row left 0.137 of steel between the neck top and the hole edge.
-    expect(lowest - neckTop).toBeGreaterThan(0.137 + 0.35)
-    expect(lowest - neckTop).toBeLessThan(0.137 + 0.45)
+    // The old first row's hole edge sat 0.487 above the flask bottom; the holes stay where the author approved them
+    // (the flange now sits on the flask bottom with the foot hanging below, so the steel above the neck is wider).
+    expect(lowest + H / 2).toBeGreaterThan(0.487 + 0.35)
+    expect(lowest + H / 2).toBeLessThan(0.487 + 0.45)
+    expect(lowest - (-H / 2 + FLANGE.height + NECK.height)).toBeGreaterThan(0.5)
   })
 
   it('keeps every hole under the full investment level (each hole gets an investment plug)', () => {
@@ -450,7 +524,7 @@ describe('hole pattern', () => {
 
   it('keeps every hole inside the band, clear of the neck and the top rim', () => {
     for (const c of centers) {
-      expect(c.y - HOLE_RADIUS - HOLE_EDGE.edge).toBeGreaterThan(-H / 2 + FOOT.height + FLANGE.height + NECK.height + 0.08)
+      expect(c.y - HOLE_RADIUS - HOLE_EDGE.edge).toBeGreaterThan(-H / 2 + FLANGE.height + NECK.height + 0.08)
       expect(c.y + HOLE_RADIUS + HOLE_EDGE.edge).toBeLessThan(H / 2 - HOLE_BAND.top / 2)
       expect(c.y + HOLE_RADIUS + HOLE_EDGE.edge).toBeLessThan(SHELL.top - 0.15)
     }
