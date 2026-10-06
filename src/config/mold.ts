@@ -3,13 +3,27 @@ import { PRINT, RING_HALF } from './print'
 const TAU = Math.PI * 2
 const mod = (a: number, n: number) => ((a % n) + n) % n
 
-const FLASK = { innerRadius: 1.3, wall: 0.03, bottomY: -1.4, height: 3.8, dropHeight: 5.4 } as const
+/** `wall` = steel tube thickness: outer surface at innerRadius + wall. */
+const FLASK = { innerRadius: 1.3, wall: 0.08, bottomY: -1.4, height: 3.8, dropHeight: 5.4 } as const
+
+const BASE_HEIGHT = 0.55
 
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
   baseTopY: -1.4,
-  /** The rubber base stays wider than the flask flange. */
-  base: { radius: 1.85, thickness: 0.2, coneRadius: 0.32, coneHeight: 0.22, dropOffset: -3.2 },
+  /**
+   * Tall black rubber cup under the flask flange (top face at baseTopY, the flange overhangs it a little).
+   * `edge` = rounded outer edges, `lip` = raised ring around the flask foot, `dropOffset` = fully below the frame.
+   */
+  base: {
+    radius: 1.85,
+    height: BASE_HEIGHT,
+    edge: 0.035,
+    lip: { width: 0.05, height: 0.035 },
+    coneRadius: 0.32,
+    coneHeight: 0.22,
+    dropOffset: -(BASE_HEIGHT + 3.2),
+  },
   flask: FLASK,
   investment: { bottomY: -1.4, topY: 2.3 },
   /** The trunk is 40% of the flask height. */

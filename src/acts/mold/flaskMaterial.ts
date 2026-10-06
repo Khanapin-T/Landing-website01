@@ -3,39 +3,57 @@ import { MOLD } from '../../config/mold'
 
 const TAU = Math.PI * 2
 
-/** Radius of the steel shell (the flask is modeled as one surface at its outer radius). */
+/** Outer surface of the steel tube. */
 export const FLASK_RADIUS = MOLD.flask.innerRadius + MOLD.flask.wall
+/** Inner surface of the steel tube (seen through the top opening and through the holes). */
+export const FLASK_INNER_RADIUS = MOLD.flask.innerRadius
 
 /**
- * Perforation (after the reference flask): HOLE_COLUMNS holes around each row, HOLE_ROWS rows, every other row
- * shifted by half a column, so the holes form staggered vertical columns (2 x HOLE_COLUMNS of them).
+ * Perforation (after the reference flask): few large round holes, HOLE_COLUMNS around each row, HOLE_ROWS rows,
+ * every other row shifted by half a column (staggered). Each hole is a straight radial bore through the wall.
  */
-export const HOLE_COLUMNS = 6
-export const HOLE_ROWS = 11
-/** Hole radius in world units (the cut in the outer sheet). */
-export const HOLE_RADIUS = 0.12
-/** Plain steel left below the first row (flange) and above the last row (rim), world units. */
-export const HOLE_BAND = { bottom: 0.34, top: 0.22 } as const
+export const HOLE_COLUMNS = 4
+export const HOLE_ROWS = 6
+/** Bore radius in world units. */
+export const HOLE_RADIUS = 0.2
+/** Plain steel left below the first row cell (foot, flange, neck) and above the last one (rim), world units. */
+export const HOLE_BAND = { bottom: 0.42, top: 0.18 } as const
 /** Object-space azimuth of the first row's column 0 (facing the camera at rest, see the azimuth convention). */
 export const HOLE_AZIMUTH0 = -Math.PI / 2
-/**
- * Sheet thickness at the hole edges, world units (each at least ~1 px wide on screen):
- * `bore` = dark ring just inside the cut (the wall of the punched hole), `edge` = thin bright highlight on the rim
- * just outside it.
- */
-export const HOLE_EDGE = { bore: 0.018, edge: 0.012 } as const
+/** Thin bright highlight on the steel just outside each cut, world units (about 1.5 px on screen). */
+export const HOLE_EDGE = { edge: 0.012 } as const
+/** Sides of each bore tube. */
+export const BORE_SEGMENTS = 24
+/** Bore tubes poke this far past both wall surfaces so no crack shows at the cut. */
+const BORE_OVERSHOOT = 0.002
 
 /**
- * Flange at the flask foot (after the reference photo): a wide flat steel plate with chamfered edges, and a short
- * neck above it, a thin reinforcing ring where the body meets the plate. World units.
+ * Bottom of the flask (after the reference photo), from the floor up: a short foot cylinder (a little smaller than
+ * the flange, it sits in the rubber cup), a wide chunky flange plate with chamfered edges, and a small neck where the
+ * tube meets the plate. World units; `FOOT.inset` = foot radius below the flange radius.
  */
-export const FLANGE = { height: 0.12, overhang: 0.3, chamferTop: 0.04, chamferBottom: 0.015 } as const
+export const FOOT = { height: 0.12, inset: 0.22, chamfer: 0.015 } as const
+export const FLANGE = { height: 0.16, overhang: 0.6, chamferTop: 0.05, chamferBottom: 0.025 } as const
 export const NECK = { height: 0.07, overhang: 0.035, chamfer: 0.025 } as const
-/** Thin rolled rim at the top. */
-export const RIM = { tube: 0.024 } as const
+export const FLANGE_RADIUS = FLASK_RADIUS + FLANGE.overhang
+export const FOOT_RADIUS = FLANGE_RADIUS - FOOT.inset
+/** Flat top rim between the two wall surfaces, with rolled edges of this radius. */
+export const RIM = { round: 0.02 } as const
+/**
+ * Both shell surfaces in flask-local space (y = 0 at the middle of the flask): from the flask bottom up to where the
+ * rolled rim edges start.
+ */
+export const SHELL = (() => {
+  const bottom = -MOLD.flask.height / 2
+  const top = MOLD.flask.height / 2 - RIM.round
+  return { bottom, top, height: top - bottom, center: (top + bottom) / 2 } as const
+})()
+
+/** Quarter-circle steps of the rounded profile edges. */
+const ARC_STEPS = 4
 
 /** Brushed stainless steel. */
-export const STEEL = { color: '#aeb6bf', roughness: 0.34, envMapIntensity: 1.2 } as const
+export const STEEL = { color: '#d2d9e0', roughness: 0.42, envMapIntensity: 3.2 } as const
 /**
  * Brushing: value noise stretched around the circumference. `fine` / `coarse` = streak frequency per world unit
  * along the height (and along the radius on flat faces), `cellsFine` / `cellsCoarse` = noise cells around the
@@ -44,14 +62,15 @@ export const STEEL = { color: '#aeb6bf', roughness: 0.34, envMapIntensity: 1.2 }
 export const BRUSH = { fine: 160, coarse: 42, cellsFine: 36, cellsCoarse: 13, roughness: 0.07, tint: 0.07 } as const
 
 const ROW_PITCH = (MOLD.flask.height - HOLE_BAND.bottom - HOLE_BAND.top) / HOLE_ROWS
-const ARC_PITCH = (FLASK_RADIUS * TAU) / HOLE_COLUMNS
 
 /**
- * Signed distance (world units, along the surface) from a shell point to the nearest hole edge: negative inside a
- * hole. `y` is the flask-local height with 0 at the middle of the flask, `azimuth` = atan2(-z, x). The fragment
+ * Signed distance (world units) from a wall point to the nearest bore wall: negative inside a hole. Each bore is a
+ * straight radial cylinder, so the distance is measured to its axis (height offset and `radius * sin` of the azimuth
+ * offset), which cuts the same cross-section on the outer and the inner surface. `y` = flask-local height (0 at the
+ * middle of the flask), `azimuth` = atan2(-z, x), `radius` = distance of the point from the flask axis. The fragment
  * shader mirrors this function exactly.
  */
-export function flaskHoleDistance(y: number, azimuth: number): number {
+export function flaskHoleDistance(y: number, azimuth: number, radius: number = FLASK_RADIUS): number {
   const rowCoord = (y + MOLD.flask.height / 2 - HOLE_BAND.bottom) / ROW_PITCH - 0.5
   const r0 = Math.floor(rowCoord)
   const colBase = ((azimuth - HOLE_AZIMUTH0) / TAU) * HOLE_COLUMNS
@@ -60,7 +79,7 @@ export function flaskHoleDistance(y: number, azimuth: number): number {
     const r = r0 + i
     if (r < 0 || r > HOLE_ROWS - 1) continue
     const c = colBase - 0.5 * (r % 2)
-    const dx = (c - Math.floor(c + 0.5)) * ARC_PITCH
+    const dx = radius * Math.sin(((c - Math.floor(c + 0.5)) * TAU) / HOLE_COLUMNS)
     const dy = (rowCoord - r) * ROW_PITCH
     best = Math.min(best, Math.hypot(dx, dy))
   }
@@ -81,31 +100,155 @@ export function holeCenters(): { y: number; azimuth: number }[] {
 }
 
 /**
- * Lathe profile (x = radius, y = height in the Flask group, foot at MOLD.flask.bottomY) of the flange plate and its
- * neck: bottom face outward, up the chamfered outer edge, inward across the plate top, up the neck and its chamfer
- * onto the body, then down the inner face (that order gives outward-facing triangles). Every corner point is given
- * twice: LatheGeometry then puts a zero-length segment between them and each face keeps its own normal (hard edge).
+ * Lathe profiles below (x = radius, y = height) all run outward along the bottom, up the outer side, inward across
+ * the top and down the inner side: that order gives outward-facing normals and triangles in LatheGeometry. A corner
+ * point given twice puts a zero-length segment between its faces, so each keeps its own normal (hard edge); arc
+ * points are given once (smooth rounded edge).
  */
-export function flangeProfile(): [number, number][] {
-  const pts: [number, number][] = []
-  const hard = (x: number, y: number) => pts.push([x, y], [x, y])
+type Profile = [number, number][]
+
+function profileBuilder() {
+  const pts: Profile = []
+  const soft = (x: number, y: number) => {
+    pts.push([x, y])
+  }
+  const hard = (x: number, y: number) => {
+    pts.push([x, y], [x, y])
+  }
+  /** Quarter-ish arc of radius r around (cx, cy) from angle a0 to a1, both ends included. */
+  const arc = (cx: number, cy: number, r: number, a0: number, a1: number) => {
+    for (let i = 0; i <= ARC_STEPS; i++) {
+      const a = a0 + ((a1 - a0) * i) / ARC_STEPS
+      soft(cx + r * Math.cos(a), cy + r * Math.sin(a))
+    }
+  }
+  return { pts, soft, hard, arc }
+}
+
+/**
+ * Foot, flange plate and neck (y in the Flask group, foot on MOLD.flask.bottomY): the foot's bottom face outward, up
+ * its side, outward along the plate underside, up the chamfered plate edge, inward across the plate top, up the neck
+ * and its chamfer onto the tube, then down the inner face, which stays inside the wall.
+ */
+export function flangeProfile(): Profile {
+  const { pts, hard } = profileBuilder()
   const ri = FLASK_RADIUS - 0.004
-  const ro = FLASK_RADIUS + FLANGE.overhang
   const rn = FLASK_RADIUS + NECK.overhang
   const y0 = MOLD.flask.bottomY
-  const y1 = y0 + FLANGE.height
+  const yf = y0 + FOOT.height
+  const y1 = yf + FLANGE.height
   const yn = y1 + NECK.height
   pts.push([ri, y0])
-  hard(ro - FLANGE.chamferBottom, y0)
-  hard(ro, y0 + FLANGE.chamferBottom)
-  hard(ro, y1 - FLANGE.chamferTop)
-  hard(ro - FLANGE.chamferTop, y1)
+  hard(FOOT_RADIUS - FOOT.chamfer, y0)
+  hard(FOOT_RADIUS, y0 + FOOT.chamfer)
+  hard(FOOT_RADIUS, yf)
+  hard(FLANGE_RADIUS - FLANGE.chamferBottom, yf)
+  hard(FLANGE_RADIUS, yf + FLANGE.chamferBottom)
+  hard(FLANGE_RADIUS, y1 - FLANGE.chamferTop)
+  hard(FLANGE_RADIUS - FLANGE.chamferTop, y1)
   hard(rn, y1)
   hard(rn, yn - NECK.chamfer)
   hard(FLASK_RADIUS, yn)
   hard(ri, yn)
   pts.push([ri, y0])
   return pts
+}
+
+/**
+ * Top rim (y in the Flask group): a flat annulus between the outer and the inner wall surface with rolled edges,
+ * from where the outer shell stops, over the top, down to where the inner shell stops.
+ */
+export function rimProfile(): Profile {
+  const { pts, arc } = profileBuilder()
+  const ys = MOLD.flask.bottomY + MOLD.flask.height / 2 + SHELL.top
+  arc(FLASK_RADIUS - RIM.round, ys, RIM.round, 0, Math.PI / 2)
+  arc(FLASK_INNER_RADIUS + RIM.round, ys, RIM.round, Math.PI / 2, Math.PI)
+  return pts
+}
+
+/**
+ * Black rubber cup under the flange (world y, top face on MOLD.baseTopY): rounded outer edges, a raised lip ring
+ * right around the flask foot, a flat floor under the foot and inside the flask, and the crucible-former cone in the
+ * middle up to the trunk bottom.
+ */
+export function baseProfile(): Profile {
+  const { pts, soft, hard, arc } = profileBuilder()
+  const { radius, height, edge, lip, coneRadius, coneHeight } = MOLD.base
+  const top = MOLD.baseTopY
+  const bottom = top - height
+  const lipIn = FOOT_RADIUS + 0.004
+  const lipOut = FOOT_RADIUS + lip.width
+  const coneTop = top + coneHeight
+  const coneRise = coneTop - top
+
+  soft(0, bottom)
+  arc(radius - edge, bottom + edge, edge, -Math.PI / 2, 0)
+  arc(radius - edge, top - edge, edge, 0, Math.PI / 2)
+  if (lipOut < radius - edge - 1e-6) hard(lipOut, top)
+  hard(lipOut - lip.height * 0.6, top + lip.height)
+  hard(lipIn, top + lip.height)
+  hard(lipIn, top)
+  hard(coneRadius, top)
+  // Crucible former: a flared cone, steeper toward the top where the trunk starts.
+  soft(coneRadius * 0.75, top + coneRise * 0.24)
+  soft(coneRadius * 0.53, top + coneRise * 0.55)
+  hard(MOLD.trunk.radius * 1.4, coneTop)
+  soft(0, coneTop)
+  return pts
+}
+
+/**
+ * One short open tube per hole, through the whole wall, in flask-local space (like the shells). Each tube is a
+ * straight radial cylinder (the cross-section the shader cuts), circumscribed around the cut circle so no gap shows
+ * at the cut; its ends follow the outer and the inner cylinder (plus a hair of overshoot). Normals and winding face
+ * the bore axis: the tube is seen from inside the hole only, so it renders FrontSide with the plain steel.
+ */
+export function createBoreGeometry(): THREE.BufferGeometry {
+  const centers = holeCenters()
+  const n = BORE_SEGMENTS
+  const rb = HOLE_RADIUS / Math.cos(Math.PI / n)
+  const count = centers.length * (n + 1) * 2
+  const position = new Float32Array(count * 3)
+  const normal = new Float32Array(count * 3)
+  const index: number[] = []
+  let v = 0
+  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+    position.set([x, y, z], v * 3)
+    normal.set([nx, ny, nz], v * 3)
+    v++
+  }
+  for (const c of centers) {
+    // Axis direction d (outward, azimuth convention atan2(-z, x)) and the horizontal tangent t.
+    const dx = Math.cos(c.azimuth)
+    const dz = -Math.sin(c.azimuth)
+    const tx = Math.sin(c.azimuth)
+    const tz = Math.cos(c.azimuth)
+    const first = v
+    for (let i = 0; i <= n; i++) {
+      const th = (i / n) * TAU
+      const cs = Math.cos(th)
+      const sn = Math.sin(th)
+      const u = rb * cs
+      const y = c.y + rb * sn
+      // Vertex 2i on the outer surface, 2i + 1 on the inner one.
+      const so = Math.sqrt(FLASK_RADIUS * FLASK_RADIUS - u * u) + BORE_OVERSHOOT
+      const si = Math.sqrt(FLASK_INNER_RADIUS * FLASK_INNER_RADIUS - u * u) - BORE_OVERSHOOT
+      put(so * dx + u * tx, y, so * dz + u * tz, -cs * tx, -sn, -cs * tz)
+      put(si * dx + u * tx, y, si * dz + u * tz, -cs * tx, -sn, -cs * tz)
+    }
+    for (let i = 0; i < n; i++) {
+      const out0 = first + 2 * i
+      const in0 = out0 + 1
+      const out1 = out0 + 2
+      const in1 = out0 + 3
+      index.push(out0, in0, out1, in0, in1, out1)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3))
+  geometry.setIndex(index)
+  return geometry
 }
 
 export interface FlaskMaterialHandle {
@@ -129,10 +272,7 @@ const FRAGMENT_PARS = [
   `#define HOLE_BAND_BOTTOM ${f(HOLE_BAND.bottom)}`,
   `#define HOLE_AZIMUTH0 (${f(HOLE_AZIMUTH0)})`,
   `#define ROW_PITCH ${f(ROW_PITCH)}`,
-  `#define ARC_PITCH ${f(ARC_PITCH)}`,
-  `#define HOLE_BORE_WIDTH ${f(HOLE_EDGE.bore)}`,
   `#define HOLE_EDGE_WIDTH ${f(HOLE_EDGE.edge)}`,
-  '#define HOLE_BORE_SHADE 0.32',
   // Rim highlight: brighten the lit steel, lift the dark side a little, never past the bloom threshold (0.85).
   '#define HOLE_EDGE_GAIN 0.7',
   '#define HOLE_EDGE_LIFT 0.035',
@@ -144,7 +284,7 @@ const FRAGMENT_PARS = [
   `#define BRUSH_CELLS_COARSE ${BRUSH.cellsCoarse.toFixed(1)}`,
   `#define BRUSH_ROUGHNESS ${f(BRUSH.roughness)}`,
   `#define BRUSH_TINT ${f(BRUSH.tint)}`,
-  '// Mirrors flaskHoleDistance() in flaskMaterial.ts: distance to the nearest hole edge, negative inside.',
+  '// Mirrors flaskHoleDistance() in flaskMaterial.ts: distance to the nearest radial bore wall, negative inside.',
   'float flaskHoleDistance(vec3 p) {',
   '  float az = atan(-p.z, p.x);',
   '  float rowCoord = (p.y + FLASK_H * 0.5 - HOLE_BAND_BOTTOM) / ROW_PITCH - 0.5;',
@@ -155,7 +295,7 @@ const FRAGMENT_PARS = [
   '    float r = r0 + float(i);',
   '    if (r < 0.0 || r > HOLE_ROWS - 1.0) continue;',
   '    float c = colBase - 0.5 * mod(r, 2.0);',
-  '    float dx = (c - floor(c + 0.5)) * ARC_PITCH;',
+  '    float dx = length(p.xz) * sin((c - floor(c + 0.5)) * PI2 / HOLE_COLUMNS);',
   '    float dy = (rowCoord - r) * ROW_PITCH;',
   '    best = min(best, length(vec2(dx, dy)));',
   '  }',
@@ -189,8 +329,9 @@ const FRAGMENT_HOLES = [
   '#ifndef FLASK_NO_HOLES',
   'float flaskHole = flaskHoleDistance(vFlaskLocal);',
   'float flaskAA = max(fwidth(flaskHole), 1e-4);',
-  '// Hard cut behind the bore ring: through the holes only the tree and the investment show.',
-  'if (flaskHole < -max(HOLE_BORE_WIDTH, flaskAA)) discard;',
+  '// Hard cut at the bore wall: the bore tube geometry shows the wall thickness, the tree and the investment show',
+  '// through the rest.',
+  'if (flaskHole < 0.0) discard;',
   '#endif',
 ].join('\n')
 
@@ -205,12 +346,10 @@ const FRAGMENT_EDGES = [
   '#endif',
   '#ifndef FLASK_NO_HOLES',
   '{',
-  '  float flaskBore = 1.0 - smoothstep(-flaskAA, flaskAA, flaskHole);',
   '  float ew = max(HOLE_EDGE_WIDTH, flaskAA);',
-  '  float flaskEdge = (1.0 - smoothstep(ew - flaskAA, ew + flaskAA, flaskHole)) * (1.0 - flaskBore);',
+  '  float flaskEdge = 1.0 - smoothstep(ew - flaskAA, ew + flaskAA, flaskHole);',
   '  vec3 flaskLit = max(outgoingLight, min(outgoingLight * (1.0 + HOLE_EDGE_GAIN) + HOLE_EDGE_LIFT, vec3(HOLE_EDGE_CAP)));',
   '  outgoingLight = mix(outgoingLight, flaskLit, flaskEdge);',
-  '  outgoingLight *= mix(1.0, HOLE_BORE_SHADE, flaskBore);',
   '}',
   '#endif',
   '#include <opaque_fragment>',
@@ -236,23 +375,24 @@ function createSteel(side: THREE.Side, holes: boolean): THREE.MeshStandardMateri
       .replace('#include <roughnessmap_fragment>', FRAGMENT_ROUGHNESS)
       .replace('#include <opaque_fragment>', FRAGMENT_EDGES)
   }
-  material.customProgramCacheKey = () => (holes ? 'flask-steel-v2' : 'flask-steel-plain-v2')
+  material.customProgramCacheKey = () => (holes ? 'flask-steel-v3' : 'flask-steel-plain-v3')
   return material
 }
 
 /**
- * Perforated brushed-steel flask, fully opaque. Both halves share one shader source and program cache key and
- * differ only in `side` (three compiles one program per side, FLIP_SIDED on the back; both during the loader).
- * - back: BackSide, the inner wall seen through the holes, a little darker.
- * - front: FrontSide, the outer wall.
- * Holes are discarded on both, so the tree and the investment are visible only through them; each hole shows a
- * dark bore ring inside the cut and a thin bright highlight on its rim.
+ * Perforated brushed-steel flask wall, fully opaque. Both surfaces share one shader source and program cache key
+ * and differ only in `side` (three compiles one program per side, FLIP_SIDED on the back; both during the loader).
+ * - back: BackSide on the inner surface (FLASK_INNER_RADIUS), seen through the top opening and the holes, a little
+ *   darker.
+ * - front: FrontSide on the outer surface (FLASK_RADIUS).
+ * The bores are discarded on both (same radial cross-section), the bore tubes (createBoreGeometry) show the wall
+ * thickness in every hole, and a thin bright highlight runs around each cut.
  */
 export function createFlaskMaterial(side: 'back' | 'front'): FlaskMaterialHandle {
   return { material: createSteel(side === 'front' ? THREE.FrontSide : THREE.BackSide, true) }
 }
 
-/** Opaque brushed steel for the flange and the rim (same look as the shell, no holes). */
+/** Opaque brushed steel for the foot, flange, rim and bore tubes (same look as the wall, no holes). */
 export function createSteelMaterial(): THREE.MeshStandardMaterial {
   return createSteel(THREE.FrontSide, false)
 }
