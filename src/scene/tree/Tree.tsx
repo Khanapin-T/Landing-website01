@@ -9,11 +9,11 @@ import { getRingMaterial } from '../ring/sharedMaterial'
 import { createSprueGeometry } from '../ring/sprue'
 import { useRingLightGeometry } from '../ring/useRingGeometry'
 import { slotPose } from './slots'
+import { createTrunkGeometry } from './trunk'
 
 const CLONE_SLOTS = [1, 2, 3] as const
 /** Ring origin relative to the sprue tip, in the slot's local space. */
 const TIP_TO_RING = new THREE.Vector3(0, RING_HALF + PRINT.sprue.length, 0)
-const TRUNK_TOP_SCALE = 0.85
 
 interface CloneLayout {
   /** World position of the sprue tip (the scale pivot). */
@@ -34,12 +34,7 @@ export function Tree() {
   const sprueGeometry = useMemo(() => createSprueGeometry(), [])
   useEffect(() => () => sprueGeometry.dispose(), [sprueGeometry])
 
-  const trunkGeometry = useMemo(() => {
-    const { radius, bottomY, topY } = MOLD.trunk
-    const g = new THREE.CylinderGeometry(radius * TRUNK_TOP_SCALE, radius, topY - bottomY, 20, 1, false)
-    g.translate(0, (topY - bottomY) / 2, 0)
-    return g
-  }, [])
+  const trunkGeometry = useMemo(() => createTrunkGeometry(), [])
   useEffect(() => () => trunkGeometry.dispose(), [trunkGeometry])
 
   const wax = useMemo(

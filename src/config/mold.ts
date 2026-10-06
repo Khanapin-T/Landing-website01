@@ -42,6 +42,8 @@ export const MOLD = {
     dropOffset: -(BASE_HEIGHT + 3.2 + BASE_GAP),
   },
   flask: FLASK,
+  /** Plain steel tube under the flange (FOOT in flaskMaterial.ts takes its height from here). */
+  foot: { height: 0.8 },
   investment: { bottomY: FLASK.bottomY, topY: FLASK.bottomY + FLASK.height - INVESTMENT_GAP },
   /** The trunk is 40% of the flask height. */
   trunk: { radius: 0.08, bottomY: TRUNK_BOTTOM_Y, topY: FLASK.bottomY + 0.4 * FLASK.height },

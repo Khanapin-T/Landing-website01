@@ -42,6 +42,12 @@ export const content = {
     caption: 'The rings are mounted on a tree, sealed in a taped flask and covered with investment. A short vacuum pulls the air out of it.',
     steps: ['Tree', 'Flask', 'Tape', 'Investment', 'Vacuum', 'Tape off'],
   },
+  fire: {
+    heading: 'Then the resin burns out',
+    caption:
+      'The flask goes into a furnace. The resin burns out and leaves a hollow in the investment in the exact shape of the tree. The flask is then turned over for casting.',
+    steps: ['Furnace', 'Burnout', 'Flip'],
+  },
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,

@@ -1,3 +1,4 @@
+import { stepIndex } from '../../hud/stepIndex'
 import { MOLD_BEATS } from './beats'
 
 const STARTS = [
@@ -14,9 +15,5 @@ export const STEP_STARTS: readonly number[] = STARTS
 
 /** Current step for a scroll position: -1 before the first, else the last step whose start is <= screen. */
 export function stepAt(screen: number): number {
-  let current = -1
-  for (let i = 0; i < STARTS.length; i++) {
-    if (screen >= STARTS[i]) current = i
-  }
-  return current
+  return stepIndex(STARTS, screen)
 }

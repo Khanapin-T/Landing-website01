@@ -36,7 +36,7 @@ const BORE_OVERSHOOT = 0.002
  * steel tube of the same radii as the perforated part (it stands in the rubber cup), hanging FOOT.height below the
  * flask bottom, with a small chamfer on its lower outer rim. World units.
  */
-export const FOOT = { height: 0.8, chamfer: 0.02 } as const
+export const FOOT = { height: MOLD.foot.height, chamfer: 0.02 } as const
 export const FLANGE = { height: 0.16, overhang: 0.6, chamferTop: 0.05, chamferBottom: 0.025 } as const
 export const NECK = { height: 0.07, overhang: 0.035, chamfer: 0.025 } as const
 export const FLANGE_RADIUS = FLASK_RADIUS + FLANGE.overhang
