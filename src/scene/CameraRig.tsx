@@ -1,7 +1,8 @@
 import { useLayoutEffect } from 'react'
-import { useThree } from '@react-three/fiber'
+import { useThree, useFrame } from '@react-three/fiber'
 import type { PerspectiveCamera } from 'three'
 import { focusOffsetX } from './cameraMath'
+import { story } from '../story/store'
 
 /** Keeps the scene center at 58% of the width (room for the copy column on the left). */
 export function CameraRig() {
@@ -15,6 +16,11 @@ export function CameraRig() {
       camera.clearViewOffset()
     }
   }, [camera, size.width, size.height])
+
+  useFrame(() => {
+    camera.position.y = story.cam.y
+    camera.position.z = story.cam.z
+  })
 
   return null
 }
