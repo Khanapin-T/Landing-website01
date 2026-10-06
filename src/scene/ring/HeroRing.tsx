@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
-import { createRingMaterial } from './ringMaterial'
+import { getRingMaterial } from './sharedMaterial'
 import { RingPivot } from './RingPivot'
 import { createSprueGeometry } from './sprue'
 import { useRingGeometry } from './useRingGeometry'
@@ -11,8 +11,8 @@ import { story } from '../../story/store'
 /** The one persistent hero ring (with its sprue). Its state comes from story.ring (written by the acts' tweens). */
 export function HeroRing() {
   const geometry = useRingGeometry()
-  const { material, uniforms } = useMemo(() => createRingMaterial(), [])
-  useEffect(() => () => material.dispose(), [material])
+  // Shared with the tree clones; the singleton is never disposed (the page owns the context).
+  const { material, uniforms } = getRingMaterial()
   const sprueGeometry = useMemo(() => createSprueGeometry(), [])
   useEffect(() => () => sprueGeometry.dispose(), [sprueGeometry])
 
