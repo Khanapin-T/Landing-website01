@@ -36,7 +36,7 @@ const BORE_OVERSHOOT = 0.002
  * steel tube of the same radii as the perforated part (it stands in the rubber cup), hanging FOOT.height below the
  * flask bottom, with a small chamfer on its lower outer rim. World units.
  */
-export const FOOT = { height: 0.6, chamfer: 0.02 } as const
+export const FOOT = { height: 0.8, chamfer: 0.02 } as const
 export const FLANGE = { height: 0.16, overhang: 0.6, chamferTop: 0.05, chamferBottom: 0.025 } as const
 export const NECK = { height: 0.07, overhang: 0.035, chamfer: 0.025 } as const
 export const FLANGE_RADIUS = FLASK_RADIUS + FLANGE.overhang
@@ -193,10 +193,10 @@ export function footProfile(): Profile {
 }
 
 /**
- * Black rubber cup around the flask foot (world y, top face on MOLD.baseTopY against the flange underside): rounded
- * outer edges, a bore `clearance` wider than the foot down to a thin floor the foot stands on, and in the middle the
- * crucible former: a post from the floor up to the cup top (hidden inside the foot), then the flared cone up to the
- * trunk bottom.
+ * Black rubber cup around the flask foot (world y, top face on MOLD.baseTopY, MOLD.base.gap under the flange
+ * underside): rounded outer edges, a bore `clearance` wider than the foot down to a thin floor the foot stands on,
+ * and in the middle the crucible former: a post from the floor up to the flask bottom (hidden inside the foot), then
+ * the flared cone up to the trunk bottom.
  */
 export function baseProfile(): Profile {
   const { pts, soft, hard, arc } = profileBuilder()
@@ -206,7 +206,8 @@ export function baseProfile(): Profile {
   const floorY = bottom + floor
   const bore = FOOT_RADIUS + clearance
   const coneTop = floorY + coneHeight
-  const coneRise = coneTop - top
+  const flareFrom = MOLD.flask.bottomY
+  const coneRise = coneTop - flareFrom
 
   soft(0, bottom)
   arc(radius - edge, bottom + edge, edge, -Math.PI / 2, 0)
@@ -214,10 +215,10 @@ export function baseProfile(): Profile {
   hard(bore, top)
   hard(bore, floorY)
   hard(coneRadius, floorY)
-  hard(coneRadius, top)
+  hard(coneRadius, flareFrom)
   // Crucible former: a flared cone, steeper toward the top where the trunk starts.
-  soft(coneRadius * 0.75, top + coneRise * 0.24)
-  soft(coneRadius * 0.53, top + coneRise * 0.55)
+  soft(coneRadius * 0.75, flareFrom + coneRise * 0.24)
+  soft(coneRadius * 0.53, flareFrom + coneRise * 0.55)
   hard(MOLD.trunk.radius * 1.4, coneTop)
   soft(0, coneTop)
   return pts

@@ -1,4 +1,4 @@
-import { PRINT, RING_HALF } from './print'
+﻿import { PRINT, RING_HALF } from './print'
 
 const TAU = Math.PI * 2
 const mod = (a: number, n: number) => ((a % n) + n) % n
@@ -8,32 +8,38 @@ const FLASK = { innerRadius: 1.3, wall: 0.08, bottomY: -1.4, height: 4.2, dropHe
 /** The investment fills the flask up to this far under its top rim. */
 const INVESTMENT_GAP = 0.1
 
-/** Rubber cup depth: the flask foot (0.6) plus a thin floor under it. */
+/**
+ * Rubber cup depth: the part of the flask foot (0.8 long, FOOT in flaskMaterial.ts) below the rim plus a thin floor
+ * under it. The cup top sits BASE_GAP (half a centimetre) under the flange, so that much plain foot shows.
+ */
 const BASE_HEIGHT = 0.65
 const BASE_FLOOR = 0.05
-/** Rubber around the foot: one centimetre (0.4) past the foot, which has the tube's outer radius. */
-const BASE_RADIUS = FLASK.innerRadius + FLASK.wall + 0.4
+const BASE_GAP = 0.2
+const BASE_TOP_Y = FLASK.bottomY - BASE_GAP
+/** Rubber wall around the foot: half a centimetre (0.2) past the foot, which has the tube's outer radius. */
+const BASE_RADIUS = FLASK.innerRadius + FLASK.wall + 0.2
 /** The crucible-former cone rises from the cup floor to the trunk bottom (MOLD.trunk.bottomY). */
 const TRUNK_BOTTOM_Y = -1.18
 
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
-  baseTopY: -1.4,
+  baseTopY: BASE_TOP_Y,
   /**
-   * Black rubber cup around the flask foot (after the reference photo): top face at baseTopY against the flange
-   * underside, a bore `clearance` wider than the foot that takes it down to a `floor` thick bottom, and the
-   * crucible-former cone in the middle (inside the foot). `edge` = rounded outer edges, `dropOffset` = fully below the
-   * frame.
+   * Black rubber cup around the flask foot (after the reference photo): top face at baseTopY, `gap` under the flange
+   * underside, a bore `clearance` wider than the foot that takes it down to a `floor` thick bottom the foot stands
+   * on, and the crucible-former cone in the middle (inside the foot). `edge` = rounded outer edges, `dropOffset` =
+   * fully below the frame.
    */
   base: {
     radius: BASE_RADIUS,
     height: BASE_HEIGHT,
+    gap: BASE_GAP,
     edge: 0.035,
     floor: BASE_FLOOR,
     clearance: 0.01,
     coneRadius: 0.32,
-    coneHeight: TRUNK_BOTTOM_Y - (FLASK.bottomY - BASE_HEIGHT + BASE_FLOOR),
-    dropOffset: -(BASE_HEIGHT + 3.2),
+    coneHeight: TRUNK_BOTTOM_Y - (BASE_TOP_Y - BASE_HEIGHT + BASE_FLOOR),
+    dropOffset: -(BASE_HEIGHT + 3.2 + BASE_GAP),
   },
   flask: FLASK,
   investment: { bottomY: FLASK.bottomY, topY: FLASK.bottomY + FLASK.height - INVESTMENT_GAP },
@@ -87,7 +93,7 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
  * tilted down so the top opening of the flask (the pour and the boil) is visible. Tuned by eye.
  */
 export const CAM = {
-  tree: { y: 0.4, z: 13.4, look: 0.4 },
+  tree: { y: 0.25, z: 13.4, look: 0.25 },
   pour: { y: 8.6, z: 12.4, look: 0.4 },
 } as const
 

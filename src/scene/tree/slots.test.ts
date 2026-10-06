@@ -123,7 +123,7 @@ describe('tree slots', () => {
     })
     expect(MOLD.pour.radius).toBeLessThan(MOLD.flask.innerRadius - MARGIN)
     // The rubber cup wraps the foot (same radius as the tube) with a real rim and stays under the flange.
-    expect(MOLD.base.radius).toBeGreaterThanOrEqual(MOLD.flask.innerRadius + MOLD.flask.wall + 0.3)
+    expect(MOLD.base.radius).toBeGreaterThanOrEqual(MOLD.flask.innerRadius + MOLD.flask.wall + 0.15)
     expect(MOLD.base.radius).toBeLessThan(FLANGE_RADIUS)
   })
 

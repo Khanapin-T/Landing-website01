@@ -339,11 +339,11 @@ describe('foot under the flange', () => {
     expect(Math.min(...xs)).toBeCloseTo(FLASK_INNER_RADIUS)
   })
 
-  it('hangs 0.6 below the flange: from the flask bottom down, the flange and everything above stay put', () => {
-    expect(FOOT.height).toBeCloseTo(0.6)
+  it('hangs 0.8 below the flange: from the flask bottom down, the flange and everything above stay put', () => {
+    expect(FOOT.height).toBeCloseTo(0.8)
     expect(Math.max(...ys)).toBeCloseTo(top)
     expect(Math.min(...ys)).toBeCloseTo(bottom)
-    expect(bottom).toBeCloseTo(-2.0)
+    expect(bottom).toBeCloseTo(-2.2)
   })
 
   it('has a small chamfer on its lower outer rim', () => {
@@ -374,20 +374,25 @@ describe('rubber base', () => {
   const boreR = FOOT_RADIUS + base.clearance
   const footBottom = MOLD.flask.bottomY - FOOT.height
 
-  it('is a cup around the foot: top at the flange underside, 0.65 deep', () => {
-    expect(baseTopY).toBeCloseTo(MOLD.flask.bottomY)
-    expect(Math.min(...flangeProfile().map((p) => p[1]))).toBeCloseTo(baseTopY)
+  it('is a cup around the foot, 0.65 deep, its top half a centimetre (0.2) under the flange underside', () => {
+    expect(base.gap).toBeCloseTo(0.2)
+    expect(baseTopY).toBeCloseTo(MOLD.flask.bottomY - base.gap)
+    expect(baseTopY).toBeCloseTo(-1.6)
+    expect(Math.min(...flangeProfile().map((p) => p[1])) - baseTopY).toBeCloseTo(base.gap)
     expect(base.height).toBeCloseTo(0.65)
     expect(Math.min(...ys)).toBeCloseTo(bottom)
+    expect(bottom).toBeCloseTo(-2.25)
     // The rubber top face is the highest rubber (no lip ring): only the cone rises above it, inside the bore.
     for (const p of pts) if (p[1] > baseTopY + 1e-9) expect(p[0]).toBeLessThan(boreR)
   })
 
-  it('is one centimetre (0.4) of rubber around the foot, under the flange overhang', () => {
-    expect(base.radius).toBeCloseTo(FOOT_RADIUS + 0.4)
-    expect(base.radius).toBeCloseTo(1.78)
+  it('is a thin wall of rubber (0.2, half a centimetre) around the foot, under the flange overhang', () => {
+    expect(base.radius).toBeCloseTo(FOOT_RADIUS + 0.2)
+    expect(base.radius).toBeCloseTo(1.58)
     expect(Math.max(...xs)).toBeCloseTo(base.radius)
     expect(base.radius).toBeLessThan(FLANGE_RADIUS)
+    // The rounded edges still leave a flat top ring.
+    expect(base.radius - base.edge - boreR).toBeGreaterThan(0.1)
   })
 
   it('takes the foot in a bore 0.01 wider than it, down to a thin floor the foot stands on', () => {
@@ -396,10 +401,23 @@ describe('rubber base', () => {
     expect(hasPoint(pts, boreR, floorY)).toBe(true)
     expect(base.floor).toBeGreaterThan(0.02)
     expect(base.floor).toBeLessThanOrEqual(0.08)
-    // The seated foot goes down to the floor (no gap under it, no overlap with the rubber).
-    expect(footBottom).toBeGreaterThanOrEqual(floorY - 1e-9)
-    expect(footBottom - floorY).toBeLessThan(0.02)
-    expect(boreR).toBeGreaterThan(FOOT_RADIUS)
+    // The seated foot (mold.flask = 1) rests on the floor: no gap under it, no overlap with the rubber.
+    expect(footBottom).toBeCloseTo(floorY)
+    expect(floorY).toBeCloseTo(-2.2)
+    expect(boreR).toBeCloseTo(1.39)
+  })
+
+  it('lets the descending foot slide into the bore without touching the wall, then shows 0.2 of foot above the rim', () => {
+    // The foot tube occupies radii [inner, outer] at every descent height; the rubber above the floor is all outside boreR.
+    for (const p of pts) {
+      if (p[1] > floorY + 1e-9 && p[0] > base.coneRadius + 1e-9) expect(p[0]).toBeGreaterThanOrEqual(boreR - 1e-9)
+    }
+    expect(boreR - FOOT_RADIUS).toBeGreaterThan(0.005)
+    // The crucible former stays inside the foot's bore.
+    expect(base.coneRadius).toBeLessThan(FLASK_INNER_RADIUS)
+    // Seated: 0.2 of plain foot shows between the flange underside and the rubber rim.
+    expect(MOLD.flask.bottomY - baseTopY).toBeCloseTo(0.2)
+    expect(footBottom).toBeLessThan(baseTopY)
   })
 
   it('has rounded outer edges (no point on the sharp corners)', () => {
@@ -413,11 +431,14 @@ describe('rubber base', () => {
     expect(pts[pts.length - 1][1]).toBeCloseTo(floorY + base.coneHeight)
     expect(floorY + base.coneHeight).toBeCloseTo(MOLD.trunk.bottomY)
     expect(hasPoint(pts, base.coneRadius, floorY)).toBe(true)
+    // The post runs up to the flask bottom; the visible flare above it keeps its old shape (0.22 up to the trunk).
+    expect(hasPoint(pts, base.coneRadius, MOLD.flask.bottomY)).toBe(true)
+    expect(MOLD.trunk.bottomY - MOLD.flask.bottomY).toBeCloseTo(0.22)
     expect(base.coneRadius).toBeLessThan(FLASK_INNER_RADIUS - 0.3)
   })
 
   it('drops fully out of frame when hidden', () => {
-    expect(base.dropOffset).toBeCloseTo(-(base.height + 3.2))
+    expect(base.dropOffset).toBeCloseTo(-(base.height + 3.2 + base.gap))
   })
 
   it('profile faces outward: bottom down, outer side out, top and floor up, the bore wall toward the axis', () => {
