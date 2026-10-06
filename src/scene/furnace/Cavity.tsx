@@ -25,7 +25,7 @@ export function Cavity() {
   const trunk = useMemo(() => createTrunkGeometry(), [])
   const funnel = useMemo(() => new THREE.LatheGeometry(funnelProfile().map(([x, y]) => new THREE.Vector2(x, y)), 48), [])
   const poses = useMemo(() => [0, 1, 2, 3].map((i) => slotPose(i)), [])
-  const { material, uniforms } = useMemo(() => createXrayMaterial(CAVITY_COLOR, { power: 1.6, base: 0.12 }), [])
+  const { material, uniforms } = useMemo(() => createXrayMaterial(CAVITY_COLOR, { power: 1.6, base: 0.12, pushBack: true }), [])
   useEffect(() => () => sprue.dispose(), [sprue])
   useEffect(() => () => trunk.dispose(), [trunk])
   useEffect(() => () => funnel.dispose(), [funnel])

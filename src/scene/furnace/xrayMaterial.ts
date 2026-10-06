@@ -38,9 +38,12 @@ void main() {
 
 /**
  * The X-ray look: an additive fresnel shell. `power` = how tightly the glow hugs the silhouette, `base` = the glow of
- * the face-on middle. Color may be HDR (crosses the bloom threshold). All instances share one program.
+ * the face-on middle, `pushBack` = polygon offset behind coplanar surfaces. Color may be HDR (crosses the bloom threshold). All instances share one program.
  */
-export function createXrayMaterial(color: THREE.ColorRepresentation, { power = 2, base = 0.06 }: { power?: number; base?: number } = {}): XrayMaterialHandle {
+export function createXrayMaterial(
+  color: THREE.ColorRepresentation,
+  { power = 2, base = 0.06, pushBack = false }: { power?: number; base?: number; pushBack?: boolean } = {},
+): XrayMaterialHandle {
   const uniforms: XrayMaterialHandle['uniforms'] = {
     uColor: { value: new THREE.Color(color) },
     uAlpha: { value: 0 },
@@ -57,6 +60,13 @@ export function createXrayMaterial(color: THREE.ColorRepresentation, { power = 2
     side: THREE.DoubleSide,
     premultipliedAlpha: true,
   })
+  if (pushBack) {
+    // Render state, not shader source: sinks the shell behind coplanar opaque surfaces (ring surfaces use 1/1), so it
+    // never shows through geometry that has not burned away yet. The program key stays shared.
+    material.polygonOffset = true
+    material.polygonOffsetFactor = 2
+    material.polygonOffsetUnits = 4
+  }
   material.customProgramCacheKey = () => 'xray-fresnel-v1'
   return { material, uniforms }
 }

@@ -119,8 +119,12 @@ describe('investment material', () => {
       expect(shader.fragmentShader).toContain(line)
     }
     // The displacement must come after `transformed` is declared, the normal after `objectNormal`.
-    expect(shader.vertexShader.indexOf('transformed.y += invDisp;')).toBeGreaterThan(shader.vertexShader.indexOf('vec3 transformed'))
-    expect(shader.vertexShader.indexOf('objectNormal = normalize(')).toBeGreaterThan(shader.vertexShader.indexOf('vec3 objectNormal'))
+    // (The raw three shader still holds `#include` chunks, so those are the anchors.)
+    for (const anchor of ['#include <begin_vertex>', '#include <beginnormal_vertex>', 'objectNormal = normalize(']) {
+      expect(shader.vertexShader).toContain(anchor)
+    }
+    expect(shader.vertexShader.indexOf('transformed.y += invDisp;')).toBeGreaterThan(shader.vertexShader.indexOf('#include <begin_vertex>'))
+    expect(shader.vertexShader.indexOf('objectNormal = normalize(')).toBeGreaterThan(shader.vertexShader.indexOf('#include <beginnormal_vertex>'))
     // The sheen must be added before the final color write.
     expect(shader.fragmentShader.indexOf('invSheen')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
   })
@@ -178,6 +182,7 @@ describe('investment X-ray, heat and the funnel part', () => {
     expect(shader.uniforms.uXray).toBe(xrayUniform)
     expect(shader.uniforms.uHeatColor).toBe(heatUniforms.uHeatColor)
     expect(shader.fragmentShader).toContain('if (uXray > 0.001 && xrayDither() < uXray) discard;')
+    expect(shader.fragmentShader).toContain('uHeatColor * uHeat')
     expect(shader.fragmentShader.indexOf('uHeatColor * uHeat')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
   })
 

@@ -21,6 +21,21 @@ describe('createXrayMaterial', () => {
     expect(uniforms.uColor.value).toBeInstanceOf(THREE.Color)
   })
 
+  it('does not push back by default (polygon offset off)', () => {
+    const { material } = createXrayMaterial('#7fdcff')
+    expect(material.polygonOffset).toBe(false)
+  })
+
+  it('pushBack sets a polygon offset behind coplanar surfaces without changing the program', () => {
+    const plain = createXrayMaterial('#7fdcff').material
+    const { material } = createXrayMaterial('#7fdcff', { pushBack: true })
+    expect(material.polygonOffset).toBe(true)
+    expect(material.polygonOffsetFactor).toBe(2)
+    expect(material.polygonOffsetUnits).toBe(4)
+    expect(material.customProgramCacheKey()).toBe('xray-fresnel-v1')
+    expect(material.customProgramCacheKey()).toBe(plain.customProgramCacheKey())
+  })
+
   it('shares one program across instances', () => {
     expect(createXrayMaterial('#fff').material.customProgramCacheKey()).toBe(createXrayMaterial('#000').material.customProgramCacheKey())
   })
