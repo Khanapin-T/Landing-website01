@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cavityAlpha } from './cavity'
+import { cavityAlpha } from './cavityAlpha'
 
 describe('cavityAlpha', () => {
   it('is invisible without X-ray, whatever the burn', () => {

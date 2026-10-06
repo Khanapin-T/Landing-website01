@@ -8,7 +8,7 @@ import { createSprueGeometry } from '../ring/sprue'
 import { useRingLightGeometry } from '../ring/useRingGeometry'
 import { slotPose } from '../tree/slots'
 import { createTrunkGeometry } from '../tree/trunk'
-import { cavityAlpha } from './cavity'
+import { cavityAlpha } from './cavityAlpha'
 import { funnelProfile } from './funnel'
 import { createXrayMaterial } from './xrayMaterial'
 

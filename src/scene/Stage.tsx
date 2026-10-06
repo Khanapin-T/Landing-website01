@@ -5,6 +5,7 @@ import { HeroRing } from './ring/HeroRing'
 import { IdeaScene } from '../acts/idea/IdeaScene'
 import { PrintScene } from '../acts/print/PrintScene'
 import { MoldScene } from '../acts/mold/MoldScene'
+import { FireScene } from '../acts/fire/FireScene'
 import { CAM_INITIAL } from '../story/store'
 import { ResinStream } from './particles/ResinStream'
 import { StudioEnvironment } from './StudioEnvironment'
@@ -56,6 +57,7 @@ export function Stage() {
           <IdeaScene />
           <PrintScene />
           <MoldScene />
+          <FireScene />
           <ResinStream />
           <Precompile />
         </Suspense>
