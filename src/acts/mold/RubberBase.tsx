@@ -3,13 +3,18 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
 import { getAppState } from '../../story/appState'
+import { FLASK_RADIUS } from './flaskMaterial'
 import { mold } from './state'
 
 const { baseTopY } = MOLD
 const { radius, thickness, coneRadius, coneHeight, dropOffset } = MOLD.base
-/** Shallow recess inside the flask seat and the chamfer on the outer edges. */
+/**
+ * Shallow recess under the flask body (its radius = the body radius + a small margin), so the flange plate rests on
+ * the flat lip around it; the base radius (MOLD.base.radius) is wider than the flange, so the black lip shows all
+ * around. CHAMFER = the outer edges.
+ */
 const RECESS_DEPTH = 0.035
-const RECESS_RADIUS = MOLD.flask.innerRadius - 0.06
+const RECESS_RADIUS = FLASK_RADIUS + 0.02
 const CHAMFER = 0.03
 
 /**

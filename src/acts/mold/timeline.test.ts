@@ -44,8 +44,7 @@ describe('act 3 timeline', () => {
 
   it('pulls the camera back and raises the base, then lands the hero ring on the trunk', () => {
     tl.time(4.4)
-    expect(story.cam.y).toBeCloseTo(CAM.tree.y)
-    expect(story.cam.z).toBeCloseTo(CAM.tree.z)
+    expect(snap(story.cam)).toEqual(CAM.tree)
     expect(mold.base).toBe(1)
     tl.time(4.6)
     expect(story.ring.tree).toBe(1)
@@ -71,25 +70,30 @@ describe('act 3 timeline', () => {
     expect(mold.fill).toBe(1)
   })
 
-  it('boils under vacuum only between 6.0 and 6.25 and pushes the camera in', () => {
+  it('raises the camera for the pour (before the investment) and keeps it there', () => {
+    tl.time(5.5)
+    expect(snap(story.cam)).toEqual(CAM.tree)
+    tl.time(5.8)
+    expect(snap(story.cam)).toEqual(CAM.pour)
+    tl.time(6.2)
+    expect(snap(story.cam)).toEqual(CAM.pour)
+  })
+
+  it('boils under vacuum only between 6.0 and 6.25', () => {
     tl.time(6.0)
     expect(mold.boil).toBe(0)
     tl.time(6.125)
     expect(mold.boil).toBe(1)
-    tl.time(6.1)
-    expect(story.cam.z).toBeCloseTo(CAM.vacuum.z)
-    expect(story.cam.y).toBeCloseTo(CAM.vacuum.y)
     tl.time(6.25)
     expect(mold.boil).toBe(0)
   })
 
-  it('unwinds the tape, returns the camera, drops the base, then holds', () => {
+  it('unwinds the tape, drops the base (the camera stays raised), then holds', () => {
     tl.time(6.45)
     expect(mold.tape).toBe(0)
     tl.time(6.5)
     expect(mold.base).toBe(0)
-    expect(story.cam.y).toBeCloseTo(CAM.tree.y)
-    expect(story.cam.z).toBeCloseTo(CAM.tree.z)
+    expect(snap(story.cam)).toEqual(CAM.pour)
     const held = { mold: snap(mold), ring: snap(story.ring), cam: snap(story.cam) }
     tl.time(4.0)
     const yaw = story.ring.yaw

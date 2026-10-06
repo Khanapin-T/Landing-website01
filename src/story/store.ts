@@ -26,14 +26,15 @@ export interface RingState {
 
 export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0 }
 
-/** Camera dolly: world Y and Z of the camera (x stays 0, it looks straight down -Z). */
+/** Camera rig: world Y and Z of the camera (x stays 0) and the world Y of the point on the Y axis it looks at (look == y: straight down -Z). */
 export interface CamState {
   y: number
   z: number
+  look: number
 }
 
 /** Must equal the Stage camera position. */
-export const CAM_INITIAL: Readonly<CamState> = { y: 0.15, z: 4.2 }
+export const CAM_INITIAL: Readonly<CamState> = { y: 0.15, z: 4.2, look: 0.15 }
 
 /** The resin stream (one particle system across acts 1-2): the ring dissolves into it and is printed from it. */
 export interface StreamState {

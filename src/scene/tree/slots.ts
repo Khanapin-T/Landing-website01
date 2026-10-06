@@ -10,14 +10,16 @@ const Z = new Vector3(0, 0, 1)
 export const RING_HALF_EXTENTS = new Vector3(2.35 / 2.48 / 2, 0.5, 1.03 / 2.48 / 2)
 
 /**
- * Where slot `i` puts a ring (ring-local -> world): Ry(azimuth) * Rz(-tilt), translated so the sprue tip
- * (ring-local (0, -(RING_HALF + sprue), 0)) lies on the trunk surface at height `y`.
+ * Where slot `i` puts a ring (ring-local -> world): Ry(azimuth) * Rz(-tilt) * Ry(roll), translated so the sprue tip
+ * (ring-local (0, -(RING_HALF + sprue), 0)) lies on the trunk surface at height `y`. The roll turns the ring about its
+ * own sprue axis, so it does not move the tip.
  */
 export function slotPose(i: number, out: Pose = newPose()): Pose {
   const s = TREE_SLOTS[i]
   const qTilt = new Quaternion().setFromAxisAngle(Z, -s.tilt)
   const qAz = new Quaternion().setFromAxisAngle(Y, s.azimuth)
-  out.quaternion.copy(qAz).multiply(qTilt)
+  const qRoll = new Quaternion().setFromAxisAngle(Y, s.roll)
+  out.quaternion.copy(qAz).multiply(qTilt).multiply(qRoll)
   out.position
     .set(0, RING_HALF + PRINT.sprue.length, 0)
     .applyQuaternion(qTilt)

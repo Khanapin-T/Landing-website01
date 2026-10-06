@@ -12,29 +12,36 @@ export const FLASK_RADIUS = MOLD.flask.innerRadius + MOLD.flask.wall
  */
 export const HOLE_COLUMNS = 6
 export const HOLE_ROWS = 11
-/** Hole radius in world units. */
+/** Hole radius in world units (the cut in the outer sheet). */
 export const HOLE_RADIUS = 0.12
 /** Plain steel left below the first row (flange) and above the last row (rim), world units. */
 export const HOLE_BAND = { bottom: 0.34, top: 0.22 } as const
 /** Object-space azimuth of the first row's column 0 (facing the camera at rest, see the azimuth convention). */
 export const HOLE_AZIMUTH0 = -Math.PI / 2
+/**
+ * Sheet thickness at the hole edges, world units (each at least ~1 px wide on screen):
+ * `bore` = dark ring just inside the cut (the wall of the punched hole), `edge` = thin bright highlight on the rim
+ * just outside it.
+ */
+export const HOLE_EDGE = { bore: 0.018, edge: 0.012 } as const
 
-/** Flange at the flask bottom (sits on the rubber base) and the rolled rim at the top, world units. */
-export const FLANGE = { height: 0.07, overhang: 0.09 } as const
-export const RIM = { tube: 0.018 } as const
+/**
+ * Flange at the flask foot (after the reference photo): a wide flat steel plate with chamfered edges, and a short
+ * neck above it, a thin reinforcing ring where the body meets the plate. World units.
+ */
+export const FLANGE = { height: 0.12, overhang: 0.3, chamferTop: 0.04, chamferBottom: 0.015 } as const
+export const NECK = { height: 0.07, overhang: 0.035, chamfer: 0.025 } as const
+/** Thin rolled rim at the top. */
+export const RIM = { tube: 0.024 } as const
 
-/** Front (ghost) half: alpha of the flat steel, outline width (world units) and colors. */
-export const FRONT_ALPHA = 0.12
-export const OUTLINE_WIDTH = 0.014
-/** Hole outlines: cool white, slightly over the bloom threshold (0.85). */
-export const OUTLINE_COLOR = '#dce8f5'
-export const OUTLINE_INTENSITY = 1.2
-/** Fresnel rim on the silhouette edges. */
-export const RIM_COLOR = '#c6d4e3'
-export const RIM_INTENSITY = 0.55
-export const RIM_ALPHA = 0.45
-/** Steel surface. */
-export const STEEL_COLOR = '#9aa3ad'
+/** Brushed stainless steel. */
+export const STEEL = { color: '#aeb6bf', roughness: 0.34, envMapIntensity: 1.2 } as const
+/**
+ * Brushing: value noise stretched around the circumference. `fine` / `coarse` = streak frequency per world unit
+ * along the height (and along the radius on flat faces), `cellsFine` / `cellsCoarse` = noise cells around the
+ * circumference, `roughness` / `tint` = swing of the roughness and of the brightness.
+ */
+export const BRUSH = { fine: 160, coarse: 42, cellsFine: 36, cellsCoarse: 13, roughness: 0.07, tint: 0.07 } as const
 
 const ROW_PITCH = (MOLD.flask.height - HOLE_BAND.bottom - HOLE_BAND.top) / HOLE_ROWS
 const ARC_PITCH = (FLASK_RADIUS * TAU) / HOLE_COLUMNS
@@ -73,16 +80,36 @@ export function holeCenters(): { y: number; azimuth: number }[] {
   return out
 }
 
+/**
+ * Lathe profile (x = radius, y = height in the Flask group, foot at MOLD.flask.bottomY) of the flange plate and its
+ * neck: bottom face outward, up the chamfered outer edge, inward across the plate top, up the neck and its chamfer
+ * onto the body, then down the inner face (that order gives outward-facing triangles). Every corner point is given
+ * twice: LatheGeometry then puts a zero-length segment between them and each face keeps its own normal (hard edge).
+ */
+export function flangeProfile(): [number, number][] {
+  const pts: [number, number][] = []
+  const hard = (x: number, y: number) => pts.push([x, y], [x, y])
+  const ri = FLASK_RADIUS - 0.004
+  const ro = FLASK_RADIUS + FLANGE.overhang
+  const rn = FLASK_RADIUS + NECK.overhang
+  const y0 = MOLD.flask.bottomY
+  const y1 = y0 + FLANGE.height
+  const yn = y1 + NECK.height
+  pts.push([ri, y0])
+  hard(ro - FLANGE.chamferBottom, y0)
+  hard(ro, y0 + FLANGE.chamferBottom)
+  hard(ro, y1 - FLANGE.chamferTop)
+  hard(ro - FLANGE.chamferTop, y1)
+  hard(rn, y1)
+  hard(rn, yn - NECK.chamfer)
+  hard(FLASK_RADIUS, yn)
+  hard(ri, yn)
+  pts.push([ri, y0])
+  return pts
+}
+
 export interface FlaskMaterialHandle {
   material: THREE.MeshStandardMaterial
-  uniforms: {
-    /** 0 = opaque inner steel (back half), 1 = ghosted outline (front half). */
-    uGhost: { value: number }
-    uAlpha: { value: number }
-    uOutlineColor: { value: THREE.Color }
-    uRimColor: { value: THREE.Color }
-    uRimAlpha: { value: number }
-  }
 }
 
 const f = (n: number) => n.toFixed(6)
@@ -93,11 +120,6 @@ const VERTEX_LOCAL = '#include <begin_vertex>\nvFlaskLocal = position;'
 
 const FRAGMENT_PARS = [
   '#include <common>',
-  'uniform float uGhost;',
-  'uniform float uAlpha;',
-  'uniform vec3 uOutlineColor;',
-  'uniform vec3 uRimColor;',
-  'uniform float uRimAlpha;',
   'varying vec3 vFlaskLocal;',
   `#define FLASK_R ${f(FLASK_RADIUS)}`,
   `#define FLASK_H ${f(MOLD.flask.height)}`,
@@ -108,10 +130,20 @@ const FRAGMENT_PARS = [
   `#define HOLE_AZIMUTH0 (${f(HOLE_AZIMUTH0)})`,
   `#define ROW_PITCH ${f(ROW_PITCH)}`,
   `#define ARC_PITCH ${f(ARC_PITCH)}`,
-  `#define OUTLINE_WIDTH ${f(OUTLINE_WIDTH)}`,
-  '#define HOLE_EDGE_WIDTH 0.03',
-  '#define HOLE_EDGE_SHADE 0.55',
-  '#define INNER_SHADE 0.8',
+  `#define HOLE_BORE_WIDTH ${f(HOLE_EDGE.bore)}`,
+  `#define HOLE_EDGE_WIDTH ${f(HOLE_EDGE.edge)}`,
+  '#define HOLE_BORE_SHADE 0.32',
+  // Rim highlight: brighten the lit steel, lift the dark side a little, never past the bloom threshold (0.85).
+  '#define HOLE_EDGE_GAIN 0.7',
+  '#define HOLE_EDGE_LIFT 0.035',
+  '#define HOLE_EDGE_CAP 0.72',
+  '#define INNER_SHADE 0.78',
+  `#define BRUSH_FINE ${f(BRUSH.fine)}`,
+  `#define BRUSH_COARSE ${f(BRUSH.coarse)}`,
+  `#define BRUSH_CELLS_FINE ${BRUSH.cellsFine.toFixed(1)}`,
+  `#define BRUSH_CELLS_COARSE ${BRUSH.cellsCoarse.toFixed(1)}`,
+  `#define BRUSH_ROUGHNESS ${f(BRUSH.roughness)}`,
+  `#define BRUSH_TINT ${f(BRUSH.tint)}`,
   '// Mirrors flaskHoleDistance() in flaskMaterial.ts: distance to the nearest hole edge, negative inside.',
   'float flaskHoleDistance(vec3 p) {',
   '  float az = atan(-p.z, p.x);',
@@ -129,77 +161,98 @@ const FRAGMENT_PARS = [
   '  }',
   '  return best - HOLE_RADIUS;',
   '}',
+  'float flaskHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }',
+  '// Value noise, periodic in x with `period` cells (seamless around the circumference).',
+  'float flaskNoise(vec2 q, float period) {',
+  '  vec2 i = floor(q);',
+  '  vec2 t = fract(q);',
+  '  t = t * t * (3.0 - 2.0 * t);',
+  '  float x0 = mod(i.x, period);',
+  '  float x1 = mod(i.x + 1.0, period);',
+  '  float a = mix(flaskHash(vec2(x0, i.y)), flaskHash(vec2(x1, i.y)), t.x);',
+  '  float b = mix(flaskHash(vec2(x0, i.y + 1.0)), flaskHash(vec2(x1, i.y + 1.0)), t.x);',
+  '  return mix(a, b, t.y);',
+  '}',
 ].join('\n')
 
-// Derivatives are taken before any discard (uniform control flow). The distance is continuous across atan's
-// +-PI jump (the column coordinate jumps by a whole number of columns), so fwidth has no seam.
+// All derivatives are taken before the discard (uniform control flow). The hole distance is continuous across
+// atan's +-PI jump (the column coordinate jumps by a whole number of columns), so fwidth has no seam; the brushing
+// noise is periodic around the circumference for the same reason.
 const FRAGMENT_HOLES = [
   '#include <clipping_planes_fragment>',
+  'float flaskU = atan(-vFlaskLocal.z, vFlaskLocal.x) / PI2 + 0.5;',
+  '// Streak coordinate: the height on the shell, the radius on flat faces (concentric rings on the flange top).',
+  'float flaskS = vFlaskLocal.y + length(vFlaskLocal.xz);',
+  'float flaskFineFade = 1.0 - smoothstep(0.5, 1.0, fwidth(flaskS) * BRUSH_FINE);',
+  'float flaskBrush = flaskNoise(vec2(flaskU * BRUSH_CELLS_COARSE, flaskS * BRUSH_COARSE), BRUSH_CELLS_COARSE) - 0.5;',
+  'flaskBrush += (flaskNoise(vec2(flaskU * BRUSH_CELLS_FINE, flaskS * BRUSH_FINE), BRUSH_CELLS_FINE) - 0.5) * flaskFineFade;',
+  '#ifndef FLASK_NO_HOLES',
   'float flaskHole = flaskHoleDistance(vFlaskLocal);',
   'float flaskAA = max(fwidth(flaskHole), 1e-4);',
-  '// Back: hard cut. Front: the last pixel fades out through alpha below.',
-  'if (flaskHole < -flaskAA * uGhost) discard;',
+  '// Hard cut behind the bore ring: through the holes only the tree and the investment show.',
+  'if (flaskHole < -max(HOLE_BORE_WIDTH, flaskAA)) discard;',
+  '#endif',
 ].join('\n')
 
-// Runs right before opaque_fragment: `normal` (view space, already flipped for BackSide), `vViewPosition` and
-// `outgoingLight` are in scope; tone mapping and color space conversion still follow.
-const FRAGMENT_GHOST = [
+const FRAGMENT_TINT = '#include <color_fragment>\ndiffuseColor.rgb *= 1.0 + flaskBrush * BRUSH_TINT;'
+const FRAGMENT_ROUGHNESS =
+  '#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + flaskBrush * BRUSH_ROUGHNESS, 0.05, 1.0);'
+
+// Runs right before opaque_fragment, on the lit color (tone mapping and color space conversion still follow).
+const FRAGMENT_EDGES = [
+  '#ifdef FLIP_SIDED',
+  '  outgoingLight *= INNER_SHADE; // inner wall: less light reaches inside the tube',
+  '#endif',
+  '#ifndef FLASK_NO_HOLES',
   '{',
-  '  float flaskFres = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 3.0);',
-  '  // Back (inner wall): a little darker overall, and darker along the cut edge of each hole.',
-  '  float holeEdge = 1.0 - smoothstep(0.0, HOLE_EDGE_WIDTH, flaskHole);',
-  '  outgoingLight *= mix(INNER_SHADE * (1.0 - HOLE_EDGE_SHADE * holeEdge), 1.0, uGhost);',
-  '  // Front: thin bright outline around each hole (at least ~1 px wide), plus a fresnel rim on the silhouette.',
-  '  float ow = max(OUTLINE_WIDTH, flaskAA * 1.25);',
-  '  float inHole = smoothstep(-flaskAA, flaskAA, flaskHole);',
-  '  float outline = (1.0 - smoothstep(ow - flaskAA, ow + flaskAA, flaskHole)) * inHole;',
-  '  outgoingLight += uGhost * (outline * uOutlineColor + flaskFres * uRimColor);',
-  '  float ghostAlpha = clamp(uAlpha + 0.85 * outline + uRimAlpha * flaskFres, 0.0, 1.0) * inHole;',
-  '  diffuseColor.a = mix(1.0, ghostAlpha, uGhost);',
+  '  float flaskBore = 1.0 - smoothstep(-flaskAA, flaskAA, flaskHole);',
+  '  float ew = max(HOLE_EDGE_WIDTH, flaskAA);',
+  '  float flaskEdge = (1.0 - smoothstep(ew - flaskAA, ew + flaskAA, flaskHole)) * (1.0 - flaskBore);',
+  '  vec3 flaskLit = max(outgoingLight, min(outgoingLight * (1.0 + HOLE_EDGE_GAIN) + HOLE_EDGE_LIFT, vec3(HOLE_EDGE_CAP)));',
+  '  outgoingLight = mix(outgoingLight, flaskLit, flaskEdge);',
+  '  outgoingLight *= mix(1.0, HOLE_BORE_SHADE, flaskBore);',
   '}',
+  '#endif',
   '#include <opaque_fragment>',
 ].join('\n')
 
-/**
- * Perforated steel flask. Both halves share one shader source and program cache key; they differ only through
- * uniforms (uGhost, uAlpha) and the material flags side / transparent / depthWrite. (three still compiles one
- * program per side and per opaque/transparent pipeline from those flags; both are compiled during the loader.)
- * - back: BackSide, opaque. The inside of the tube; holes discarded, darker hole edges.
- * - front: FrontSide, transparent, no depth write. Faint steel, bright hole outlines, fresnel rim, clear holes.
- */
-export function createFlaskMaterial(side: 'back' | 'front'): FlaskMaterialHandle {
-  const front = side === 'front'
-  const uniforms: FlaskMaterialHandle['uniforms'] = {
-    uGhost: { value: front ? 1 : 0 },
-    uAlpha: { value: FRONT_ALPHA },
-    uOutlineColor: { value: new THREE.Color(OUTLINE_COLOR).multiplyScalar(OUTLINE_INTENSITY) },
-    uRimColor: { value: new THREE.Color(RIM_COLOR).multiplyScalar(RIM_INTENSITY) },
-    uRimAlpha: { value: RIM_ALPHA },
-  }
+function createSteel(side: THREE.Side, holes: boolean): THREE.MeshStandardMaterial {
   const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(STEEL_COLOR),
+    color: new THREE.Color(STEEL.color),
     metalness: 1,
-    roughness: 0.38,
-    envMapIntensity: 0.9,
-    side: front ? THREE.FrontSide : THREE.BackSide,
-    transparent: front,
-    depthWrite: !front,
+    roughness: STEEL.roughness,
+    envMapIntensity: STEEL.envMapIntensity,
+    side,
   })
+  const pars = holes ? FRAGMENT_PARS : `#define FLASK_NO_HOLES\n${FRAGMENT_PARS}`
   material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms)
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', VERTEX_VARYINGS)
       .replace('#include <begin_vertex>', VERTEX_LOCAL)
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', FRAGMENT_PARS)
+      .replace('#include <common>', pars)
       .replace('#include <clipping_planes_fragment>', FRAGMENT_HOLES)
-      .replace('#include <opaque_fragment>', FRAGMENT_GHOST)
+      .replace('#include <color_fragment>', FRAGMENT_TINT)
+      .replace('#include <roughnessmap_fragment>', FRAGMENT_ROUGHNESS)
+      .replace('#include <opaque_fragment>', FRAGMENT_EDGES)
   }
-  material.customProgramCacheKey = () => 'flask-steel-v1'
-  return { material, uniforms }
+  material.customProgramCacheKey = () => (holes ? 'flask-steel-v2' : 'flask-steel-plain-v2')
+  return material
 }
 
-/** Plain opaque steel for the flange and the rim (same look as the shell, no holes). */
+/**
+ * Perforated brushed-steel flask, fully opaque. Both halves share one shader source and program cache key and
+ * differ only in `side` (three compiles one program per side, FLIP_SIDED on the back; both during the loader).
+ * - back: BackSide, the inner wall seen through the holes, a little darker.
+ * - front: FrontSide, the outer wall.
+ * Holes are discarded on both, so the tree and the investment are visible only through them; each hole shows a
+ * dark bore ring inside the cut and a thin bright highlight on its rim.
+ */
+export function createFlaskMaterial(side: 'back' | 'front'): FlaskMaterialHandle {
+  return { material: createSteel(side === 'front' ? THREE.FrontSide : THREE.BackSide, true) }
+}
+
+/** Opaque brushed steel for the flange and the rim (same look as the shell, no holes). */
 export function createSteelMaterial(): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color: new THREE.Color(STEEL_COLOR), metalness: 1, roughness: 0.34, envMapIntensity: 0.9 })
+  return createSteel(THREE.FrontSide, false)
 }

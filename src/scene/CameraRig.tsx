@@ -20,6 +20,8 @@ export function CameraRig() {
   useFrame(() => {
     camera.position.y = story.cam.y
     camera.position.z = story.cam.z
+    // look == y keeps the camera level (identical to the default -Z view); a higher camera tilts down at the target.
+    camera.lookAt(0, story.cam.look, 0)
   })
 
   return null

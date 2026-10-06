@@ -3,13 +3,21 @@ import { PRINT, RING_HALF } from './print'
 const TAU = Math.PI * 2
 const mod = (a: number, n: number) => ((a % n) + n) % n
 
+const FLASK = { innerRadius: 1.3, wall: 0.03, bottomY: -1.4, height: 3.8, dropHeight: 5.4 } as const
+
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
   baseTopY: -1.4,
-  base: { radius: 1.5, thickness: 0.2, coneRadius: 0.32, coneHeight: 0.22, dropOffset: -3.2 },
-  flask: { innerRadius: 1.3, wall: 0.03, bottomY: -1.4, height: 3.8, dropHeight: 5.4 },
+  /** The rubber base stays wider than the flask flange. */
+  base: { radius: 1.85, thickness: 0.2, coneRadius: 0.32, coneHeight: 0.22, dropOffset: -3.2 },
+  flask: FLASK,
   investment: { bottomY: -1.4, topY: 2.3 },
-  trunk: { radius: 0.08, bottomY: -1.18, topY: 2.1 },
+  /** The trunk is 40% of the flask height. */
+  trunk: { radius: 0.08, bottomY: -1.18, topY: FLASK.bottomY + 0.4 * FLASK.height },
+  /** The whole tree is turned about Y (45 deg: the four branches form an X seen from the camera). */
+  yaw: Math.PI / 4,
+  /** The investment stream: a vertical line at this radius and azimuth (far side, between two branches). */
+  pour: { radius: 1.05, azimuth: Math.PI / 2 },
   /** Strip of tape: `turns` full turns up the flask, `coverage` = band width in pitches (1.3 = 30% overlap). */
   tape: { turns: 4, coverage: 1.3, azimuth0: -Math.PI / 2 },
 } as const
@@ -21,22 +29,41 @@ export interface TreeSlot {
   azimuth: number
   /** Ring tilt outward-up around its own Z (radians). */
   tilt: number
+  /**
+   * Ring rotation about its own sprue axis (ring-local Y), applied before the tilt. +PI/2 puts the ring plane through
+   * the branch direction and the tangent, so the trunk axis never shows through the ring hole.
+   */
+  roll: number
 }
 
 const deg = (d: number) => (d * Math.PI) / 180
 
-/** Slot 0 is the hero ring. Initial values; the fit test in slots.test.ts is the contract. */
+const UPPER_Y = MOLD.trunk.topY - 0.04
+const LOWER_Y = MOLD.trunk.topY - 0.8
+const TILT = deg(26)
+
+/**
+ * Slot 0 is the hero ring (front-left, toward the camera). Upper pair (0, 1): opposite branches, sprue tips at the top end
+ * of the trunk. Lower pair (2, 3): turned 90 deg about the trunk and 0.76 below the upper tips: rings on neighbouring
+ * branches interlock like chain links in plan view, and 0.8 below the trunk top is the smallest drop where the ring
+ * shells clear each other by 0.06 (at 0.35..0.6 they touch).
+ * Initial values; the fit test in slots.test.ts is the contract.
+ */
 export const TREE_SLOTS: readonly TreeSlot[] = [
-  { y: -0.45, azimuth: 0, tilt: deg(32) },
-  { y: -1.15, azimuth: deg(200), tilt: deg(33) },
-  { y: 0.3, azimuth: deg(115), tilt: deg(33) },
-  { y: 0.85, azimuth: deg(280), tilt: deg(33) },
+  { y: UPPER_Y, azimuth: MOLD.yaw + deg(180), tilt: TILT, roll: Math.PI / 2 },
+  { y: UPPER_Y, azimuth: MOLD.yaw, tilt: TILT, roll: Math.PI / 2 },
+  { y: LOWER_Y, azimuth: MOLD.yaw + deg(270), tilt: TILT, roll: Math.PI / 2 },
+  { y: LOWER_Y, azimuth: MOLD.yaw + deg(90), tilt: TILT, roll: Math.PI / 2 },
 ]
 
-/** Camera dolly targets (y, z). The start value is CAM_INITIAL in store.ts. */
+/**
+ * Camera targets: position (y, z) and the Y of the point on the axis it looks at (look == y: level view).
+ * The start value is CAM_INITIAL in store.ts. `tree` frames base + flask with a margin; `pour` is raised and
+ * tilted down so the top opening of the flask (the pour and the boil) is visible. Tuned by eye.
+ */
 export const CAM = {
-  tree: { y: 0.45, z: 10.5 },
-  vacuum: { y: 1.5, z: 7.0 },
+  tree: { y: 0.3, z: 12.5, look: 0.3 },
+  pour: { y: 8.2, z: 11.5, look: 0.3 },
 } as const
 
 /**

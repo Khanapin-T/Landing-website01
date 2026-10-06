@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { MOLD, TAPE_LENGTH, tapeLayers } from '../../config/mold'
 import {
-  TAPE_ALPHA,
-  TAPE_ALPHA_DOUBLE,
   TAPE_EDGE_WIDTH,
+  TAPE_LAP_LINE_WIDTH,
   TAPE_RENDER_ORDER,
   createTapeMaterial,
   glslFloat,
@@ -42,14 +41,14 @@ function compile(side: 'back' | 'front', real = false) {
 }
 
 describe('tape material', () => {
-  it('sets up the two halves as sorted transparent layers', () => {
+  it('sets up the two halves as opaque tape that writes depth', () => {
     const back = createTapeMaterial('back').material
     const front = createTapeMaterial('front').material
     expect(back.side).toBe(THREE.BackSide)
     expect(front.side).toBe(THREE.FrontSide)
     for (const m of [back, front]) {
-      expect(m.transparent).toBe(true)
-      expect(m.depthWrite).toBe(false)
+      expect(m.transparent).toBe(false)
+      expect(m.depthWrite).toBe(true)
     }
     expect(TAPE_RENDER_ORDER).toEqual({ back: 10, front: 15 })
   })
@@ -66,7 +65,7 @@ describe('tape material', () => {
     expect(glslFloat(1.3)).toBe('1.3')
   })
 
-  it('injects the layer evaluation, the discard and the alpha', () => {
+  it('injects the layer evaluation, the discard and the lap shading, with no alpha', () => {
     const { shader, uniforms } = compile('front')
     expect(shader.uniforms.uProgress).toBe(uniforms.uProgress)
     expect(shader.uniforms.uEdgeColor).toBe(uniforms.uEdgeColor)
@@ -74,8 +73,9 @@ describe('tape material', () => {
     expect(shader.fragmentShader).toContain('uniform float uProgress;')
     expect(shader.fragmentShader).toContain('atan(-vTapeXZ.y, vTapeXZ.x)')
     expect(shader.fragmentShader).toMatch(/if \(tapeN < 0\.5\) discard;/)
-    expect(shader.fragmentShader).toContain(`#define TAPE_ALPHA ${glslFloat(TAPE_ALPHA)}`)
-    expect(shader.fragmentShader).toContain(`#define TAPE_ALPHA_DOUBLE ${glslFloat(TAPE_ALPHA_DOUBLE)}`)
+    expect(shader.fragmentShader).toContain(`#define TAPE_LAP_LINE_WIDTH ${glslFloat(TAPE_LAP_LINE_WIDTH)}`)
+    expect(shader.fragmentShader).not.toContain('TAPE_ALPHA')
+    expect(shader.fragmentShader).not.toMatch(/diffuseColor\.a\s*(\*|=)/)
   })
 
   it('finds every anchor in the real three standard shader, in order', () => {
@@ -85,11 +85,12 @@ describe('tape material', () => {
       expect(shader.vertexShader).toContain('vTapeH = position.y / TAPE_HEIGHT + 0.5;')
       const fs = shader.fragmentShader
       const discardAt = fs.indexOf('if (tapeN < 0.5) discard;')
-      const alphaAt = fs.indexOf('diffuseColor.a *= tapeN > 1.5 ? TAPE_ALPHA_DOUBLE : TAPE_ALPHA;')
+      const alphaAt = fs.indexOf('diffuseColor.rgb *= tapeN > 1.5 ? TAPE_OVERLAP_SHADE : 1.0;')
       const glowAt = fs.indexOf('outgoingLight += uEdgeColor * tapeGlow;')
       expect(fs.indexOf('float tapeEval(')).toBeGreaterThan(-1)
       expect(discardAt).toBeGreaterThan(fs.indexOf('vec4 diffuseColor'))
       expect(alphaAt).toBeGreaterThan(discardAt)
+      expect(alphaAt).toBeGreaterThan(-1)
       expect(glowAt).toBeGreaterThan(alphaAt)
       expect(glowAt).toBeLessThan(fs.indexOf('#include <opaque_fragment>'))
     }
@@ -144,6 +145,33 @@ describe('tape shader mirror', () => {
       const ahead = tapeLayersGlsl((front + 0.005) / turns, azimuth0 + TAU * (f + 0.005), p)
       expect(ahead.edge).toBeGreaterThan(TAPE_EDGE_WIDTH)
     }
+  })
+
+  it('puts a thin lap line on the later strip only where two layers overlap', () => {
+    const { turns, coverage } = MOLD.tape
+    let overlap = 0
+    let onLine = 0
+    let inside = 0
+    for (let h = 0; h <= 1.0001; h += 0.0137) {
+      for (let az = -Math.PI; az < Math.PI; az += 0.0731) {
+        const r = tapeLayersGlsl(h, az, 1)
+        if (r.layers < 2) {
+          expect(r.lap).toBe(1e9)
+          continue
+        }
+        overlap++
+        // The overlap band is (coverage - 1) pitches wide, the lap edge is its lower boundary.
+        expect(r.lap).toBeGreaterThanOrEqual(-1e-9)
+        expect(r.lap).toBeLessThanOrEqual(coverage - 1 + 1e-9)
+        if (r.lap < TAPE_LAP_LINE_WIDTH) onLine++
+        else inside++
+      }
+    }
+    expect(turns).toBeGreaterThan(1)
+    expect(TAPE_LAP_LINE_WIDTH).toBeLessThan((coverage - 1) / 2)
+    expect(overlap).toBeGreaterThan(100)
+    expect(onLine).toBeGreaterThan(0)
+    expect(inside).toBeGreaterThan(onLine)
   })
 
   it('shows no leading edge before the wrap and once it is done', () => {

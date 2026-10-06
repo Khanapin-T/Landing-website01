@@ -13,7 +13,7 @@ export function registerMold(tl: gsap.core.Timeline): () => void {
   const len = (from: number, to: number) => to - from
 
   // Camera pulls back to the tree view.
-  seg.fromTo(story.cam, { y: CAM_INITIAL.y, z: CAM_INITIAL.z }, { y: CAM.tree.y, z: CAM.tree.z, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
+  seg.fromTo(story.cam, { ...CAM_INITIAL }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
   seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
 
   // The hero ring lands on its slot, the trunk grows up from the cone, the clones pop in.
@@ -28,25 +28,16 @@ export function registerMold(tl: gsap.core.Timeline): () => void {
   seg.fromTo(mold, { tape: 0 }, { tape: 1, duration: len(B.tapeFrom, B.tapeTo) }, B.tapeFrom)
   seg.fromTo(mold, { fill: 0 }, { fill: 1, duration: len(B.fillFrom, B.fillTo) }, B.fillFrom)
 
-  // Vacuum: the surface boils (ramps up and down), the camera pushes in on the top and comes back.
+  // The camera rises and tilts down into the flask for the pour, and stays there for the boil and the rest of the act.
+  seg.fromTo(story.cam, { ...CAM.tree }, { ...CAM.pour, duration: len(B.camRaiseFrom, B.camRaiseTo), ease: 'power2.inOut' }, B.camRaiseFrom)
+
+  // Vacuum: the surface boils (ramps up, stays on until the tape is off, ramps down).
   const ramp = 0.05
   seg.fromTo(mold, { boil: 0 }, { boil: 1, duration: ramp }, B.boilFrom)
   seg.fromTo(mold, { boil: 1 }, { boil: 0, duration: ramp }, B.boilTo - ramp)
-  seg.fromTo(
-    story.cam,
-    { y: CAM.tree.y, z: CAM.tree.z },
-    { y: CAM.vacuum.y, z: CAM.vacuum.z, duration: len(B.vacuumCamFrom, B.vacuumCamTo), ease: 'power2.inOut' },
-    B.vacuumCamFrom,
-  )
 
-  // Tape off, camera back to the tree view, the base drops out of the frame.
+  // Tape off, the base drops out of the frame.
   seg.fromTo(mold, { tape: 1 }, { tape: 0, duration: len(B.unwrapFrom, B.unwrapTo) }, B.unwrapFrom)
-  seg.fromTo(
-    story.cam,
-    { y: CAM.vacuum.y, z: CAM.vacuum.z },
-    { y: CAM.tree.y, z: CAM.tree.z, duration: len(B.camBackFrom, B.camBackTo), ease: 'power2.inOut' },
-    B.camBackFrom,
-  )
   seg.fromTo(mold, { base: 1 }, { base: 0, duration: len(B.baseOutFrom, B.baseOutTo), ease: 'power2.in' }, B.baseOutFrom)
 
   tl.add(seg, 0)

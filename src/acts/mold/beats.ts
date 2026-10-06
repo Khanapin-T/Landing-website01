@@ -26,16 +26,15 @@ export const MOLD_BEATS = {
   tapeTo: 5.65,
   fillFrom: 5.65,
   fillTo: 6.0,
-  /** Vacuum: the surface boils; the camera pushes in on the top. */
+  /** The camera rises and tilts down into the flask before the pour and stays there (no return). */
+  camRaiseFrom: 5.5,
+  camRaiseTo: 5.8,
+  /** Vacuum: the surface boils. */
   boilFrom: 6.0,
   boilTo: 6.25,
-  vacuumCamFrom: 6.0,
-  vacuumCamTo: 6.1,
-  /** Tape unwinds; the camera returns to the tree view. */
+  /** Tape unwinds. */
   unwrapFrom: 6.25,
   unwrapTo: 6.45,
-  camBackFrom: 6.25,
-  camBackTo: 6.4,
   /** The rubber base drops out of the frame. */
   baseOutFrom: 6.35,
   baseOutTo: 6.5,

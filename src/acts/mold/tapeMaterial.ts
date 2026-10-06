@@ -1,21 +1,23 @@
 import * as THREE from 'three'
 import { MOLD, TAPE_LENGTH } from '../../config/mold'
 
-/** Translucent green construction tape (scene color, never a UI accent). Tuned in integration. */
+/** Opaque green PVC construction tape (scene color, never a UI accent). Tuned in integration. */
 export const TAPE_COLOR = '#5aa03a'
-/** Alpha of one layer of tape. */
-export const TAPE_ALPHA = 0.45
-/** Alpha where two turns overlap: two stacked layers, 1 - (1 - a)^2. */
-export const TAPE_ALPHA_DOUBLE = 0.7
-/** Color multiplier where two turns overlap (darker lap band). */
-export const TAPE_OVERLAP_SHADE = 0.72
-export const TAPE_ROUGHNESS = 0.45
+/** Color multiplier where two turns overlap (a slightly darker, raised lap band). */
+export const TAPE_OVERLAP_SHADE = 0.86
+/** Color multiplier on the thin shadow line along the lap edge of the later strip. */
+export const TAPE_LAP_LINE_SHADE = 0.55
+/** Width of that shadow line in pitches (the overlap band is `coverage - 1` = 0.3 pitches wide). */
+export const TAPE_LAP_LINE_WIDTH = 0.05
+export const TAPE_ROUGHNESS = 0.4
+/** Faint grazing-angle sheen so the tape reads as plastic, not paper (added to the lit color). */
+export const TAPE_SHEEN = 0.12
 /** Width of the bright leading edge at the strip end, in turns (falls off steeply inside it). */
-export const TAPE_EDGE_WIDTH = 0.04
-/** Leading edge glow (slightly crosses the bloom threshold). */
+export const TAPE_EDGE_WIDTH = 0.03
+/** Leading edge glow on the tape end being laid (reduced; the tape itself is opaque now). */
 export const TAPE_EDGE_COLOR = '#d6ffb8'
-export const TAPE_EDGE_INTENSITY = 1.6
-/** Explicit transparent sort order, see the plan's layer table. */
+export const TAPE_EDGE_INTENSITY = 1.0
+/** Sort order of the two halves (harmless: the tape is in the opaque pass, renderOrder only orders it there). */
 export const TAPE_RENDER_ORDER = { back: 10, front: 15 } as const
 
 /** A JS number as a GLSL float literal (always with a decimal point). */
@@ -29,9 +31,10 @@ const DEFINES = [
   `#define TAPE_AZIMUTH0 ${glslFloat(MOLD.tape.azimuth0)}`,
   `#define TAPE_LENGTH ${glslFloat(TAPE_LENGTH)}`,
   `#define TAPE_HEIGHT ${glslFloat(MOLD.flask.height)}`,
-  `#define TAPE_ALPHA ${glslFloat(TAPE_ALPHA)}`,
-  `#define TAPE_ALPHA_DOUBLE ${glslFloat(TAPE_ALPHA_DOUBLE)}`,
   `#define TAPE_OVERLAP_SHADE ${glslFloat(TAPE_OVERLAP_SHADE)}`,
+  `#define TAPE_LAP_LINE_SHADE ${glslFloat(TAPE_LAP_LINE_SHADE)}`,
+  `#define TAPE_LAP_LINE_WIDTH ${glslFloat(TAPE_LAP_LINE_WIDTH)}`,
+  `#define TAPE_SHEEN ${glslFloat(TAPE_SHEEN)}`,
   `#define TAPE_EDGE_WIDTH ${glslFloat(TAPE_EDGE_WIDTH)}`,
 ].join('\n')
 
@@ -40,6 +43,11 @@ export interface TapeEval {
   layers: number
   /** Distance in turns from the strip end back to the laid strip at this point (1e9 if none). */
   edge: number
+  /**
+   * Where two layers overlap: distance in pitches from the lower edge of the later (upper) strip, 0 at the lap edge
+   * up to `coverage - 1`. 1e9 where there is no overlap.
+   */
+  lap: number
 }
 
 /**
@@ -55,19 +63,22 @@ export function tapeLayersGlsl(h: number, az: number, p: number): TapeEval {
   const kEnd = Math.floor(c + MOLD.tape.coverage * 0.5)
   let layers = 0
   let edge = 1e9
+  let lap = 1e9
   for (let i = 0; i < 2; i++) {
     const k = kStart + i
     if (k > kEnd) break
     if (k + f <= front) {
       layers += 1
       edge = Math.min(edge, front - (k + f))
+      // The second counted layer is the later strip, lying on top of the first.
+      if (layers === 2) lap = c - k + MOLD.tape.coverage * 0.5
     }
   }
-  return { layers, edge }
+  return { layers, edge, lap }
 }
 
 const GLSL_EVAL = /* glsl */ `
-float tapeEval(float h, float az, float p, out float edge) {
+float tapeEval(float h, float az, float p, out float edge, out float lap) {
   float f = mod((az - TAPE_AZIMUTH0) / 6.283185307179586, 1.0);
   float c = h * TAPE_TURNS - f;
   float front = -1.0 + p * TAPE_LENGTH;
@@ -75,12 +86,14 @@ float tapeEval(float h, float az, float p, out float edge) {
   float kEnd = floor(c + TAPE_COVERAGE * 0.5);
   float layers = 0.0;
   edge = 1e9;
+  lap = 1e9;
   for (int i = 0; i < 2; i++) {
     float k = kStart + float(i);
     if (k > kEnd) break;
     if (k + f <= front) {
       layers += 1.0;
       edge = min(edge, front - (k + f));
+      if (layers > 1.5) lap = c - k + TAPE_COVERAGE * 0.5;
     }
   }
   return layers;
@@ -107,24 +120,27 @@ const FRAGMENT_PARS = [
 const FRAGMENT_LAYERS = [
   '#include <clipping_planes_fragment>',
   'float tapeEdge;',
-  'float tapeN = tapeEval(vTapeH, atan(-vTapeXZ.y, vTapeXZ.x), uProgress, tapeEdge);',
+  'float tapeLap;',
+  'float tapeN = tapeEval(vTapeH, atan(-vTapeXZ.y, vTapeXZ.x), uProgress, tapeEdge, tapeLap);',
   'if (tapeN < 0.5) discard;',
 ].join('\n')
 
-// Two layers: darker and denser, so the laps read as crisp diagonal bands.
+// Opaque tape. Two layers: slightly darker, plus a thin crisp shadow line along the later strip's lower edge, so the
+// laps read as raised diagonal steps. No fwidth: the line is a fixed-width smoothstep in strip coordinates.
 const FRAGMENT_COLOR = [
   '#include <color_fragment>',
   'diffuseColor.rgb *= tapeN > 1.5 ? TAPE_OVERLAP_SHADE : 1.0;',
-  'diffuseColor.a *= tapeN > 1.5 ? TAPE_ALPHA_DOUBLE : TAPE_ALPHA;',
+  'diffuseColor.rgb *= mix(TAPE_LAP_LINE_SHADE, 1.0, smoothstep(TAPE_LAP_LINE_WIDTH * 0.5, TAPE_LAP_LINE_WIDTH, tapeLap));',
 ].join('\n')
 
-// Bright edge right at the strip end so the lay point reads; steep falloff keeps it thin.
+// Faint plastic sheen at grazing angles, plus a bright edge right at the strip end so the lay point reads.
 const FRAGMENT_EDGE = [
   '{',
+  '  float tapeFres = 1.0 - abs(dot(normalize(normal), normalize(vViewPosition)));',
+  '  outgoingLight += mix(diffuseColor.rgb, vec3(1.0), 0.5) * (tapeFres * tapeFres * tapeFres * TAPE_SHEEN);',
   '  float tapeGlow = 1.0 - clamp(tapeEdge / TAPE_EDGE_WIDTH, 0.0, 1.0);',
   '  tapeGlow = tapeGlow * tapeGlow * tapeGlow;',
   '  outgoingLight += uEdgeColor * tapeGlow;',
-  '  diffuseColor.a = max(diffuseColor.a, tapeGlow);',
   '}',
   '#include <opaque_fragment>',
 ].join('\n')
@@ -151,8 +167,8 @@ export function createTapeMaterial(side: 'back' | 'front'): TapeMaterialHandle {
     color: new THREE.Color(TAPE_COLOR),
     metalness: 0,
     roughness: TAPE_ROUGHNESS,
-    transparent: true,
-    depthWrite: false,
+    transparent: false,
+    depthWrite: true,
     side: side === 'back' ? THREE.BackSide : THREE.FrontSide,
   })
   material.onBeforeCompile = (shader) => {
@@ -166,6 +182,6 @@ export function createTapeMaterial(side: 'back' | 'front'): TapeMaterialHandle {
       .replace('#include <color_fragment>', FRAGMENT_COLOR)
       .replace('#include <opaque_fragment>', FRAGMENT_EDGE)
   }
-  material.customProgramCacheKey = () => 'tape-wrap-v1'
+  material.customProgramCacheKey = () => 'tape-wrap-v2'
   return { material, uniforms }
 }

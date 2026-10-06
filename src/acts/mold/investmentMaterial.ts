@@ -1,29 +1,69 @@
 import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
 
-/** Cool off-white investment (scene color, tuned in integration). */
-export const INVESTMENT_COLOR = '#d6dbe0'
-/** Lighter foam toward the rim and on the bumps while the vacuum boils the surface. */
-export const FOAM_COLOR = '#f3f5f6'
-/** Back half: the inside of the far wall, nearly opaque. */
-export const BACK_ALPHA = 0.95
-/** Front half: ghosted so the rings stay visible, plus a fresnel term at the silhouette. */
-export const FRONT_ALPHA = 0.2
-export const FRONT_FRESNEL = 0.45
-/** Surface disc: milky but not fully opaque (the rings below stay readable from above during the pour). */
-export const SURFACE_ALPHA = 0.8
+/** Milk-white investment with a faint warm cast, fully opaque (the steel flask hides the inside). */
+export const INVESTMENT_COLOR = '#f1efe8'
+/** Slightly lighter foam on the boil crests and the splash mound under the stream. */
+export const FOAM_COLOR = '#fcfbf7'
+/** A thick slurry: matte-ish with a soft sheen at grazing angles, not glossy water. */
+export const INVESTMENT_ROUGHNESS = 0.55
+export const STREAM_ROUGHNESS = 0.45
+export const SHEEN = 0.18
 /** Radius of the investment body and surface (just inside the flask wall). */
 export const INVESTMENT_RADIUS = MOLD.flask.innerRadius - 0.01
 /** Default level, far below the flask bottom: nothing of the body shows before the first frame sets it. */
 export const LEVEL_OFF = -100
 
 /**
- * See the layer order table in the s03 plan. The surface sits between the halves: from above it covers the back
- * half and never overlaps the front half; from below it is seen through the front half.
+ * Where the stream falls, poured from the side so it misses the tree and the rings (radius in world units from the
+ * flask axis, azimuth by the convention a = atan2(-z, x)).
  */
-export const INVESTMENT_RENDER_ORDER = { back: 12, surface: 12.5, front: 13, stream: 0 } as const
+export const POUR = MOLD.pour
+/** World Y where the stream starts (above the top edge of the frame, also from the raised pour camera). */
+export const STREAM_TOP_Y = 5.5
+export const STREAM_RADIUS = 0.07
+/** Fraction of the fill over which the stream grows from the top (start) and retracts from the top (end). */
+export const STREAM_GROW = 0.03
 
-export type InvestmentPart = 'back' | 'front' | 'surface' | 'stream'
+/** Surface motion amplitudes (world units). */
+const CALM_AMP = 0.006
+const POUR_RING_AMP = 0.014
+const MOUND_AMP = 0.035
+const BOIL_AMP = 0.11
+
+/** All parts are opaque; the order only keeps the overdraw low (body, then the surface over it). */
+export const INVESTMENT_RENDER_ORDER = { body: 12, surface: 12.5, stream: 0 } as const
+
+export type InvestmentPart = 'body' | 'surface' | 'stream'
+
+/** Impact point of the stream on the surface (flask-local x, z). */
+export function pourPoint(): { x: number; z: number } {
+  return { x: POUR.radius * Math.cos(POUR.azimuth), z: -POUR.radius * Math.sin(POUR.azimuth) }
+}
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
+const smoothstep = (a: number, b: number, v: number) => {
+  const t = clamp01((v - a) / (b - a))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * The visible part of the stream as fractions of the fall from STREAM_TOP_Y (0) to the surface (1). Over the first
+ * STREAM_GROW of the fill the bottom end falls from the top to the surface; over the last STREAM_GROW the top end
+ * falls to the surface. Both ends accelerate like falling liquid. top === bottom means nothing to draw.
+ */
+export function streamSpan(fill: number): { top: number; bottom: number } {
+  if (fill <= 0) return { top: 0, bottom: 0 }
+  if (fill >= 1) return { top: 1, bottom: 1 }
+  const g = clamp01(fill / STREAM_GROW)
+  const r = clamp01((fill - (1 - STREAM_GROW)) / STREAM_GROW)
+  return { top: r * r, bottom: g * g }
+}
+
+/** Pour ripple / splash strength 0..1: on once the stream reaches the surface, fading while it retracts. */
+export function pourStrength(fill: number): number {
+  return smoothstep(STREAM_GROW, STREAM_GROW * 2, fill) * (1 - smoothstep(1 - STREAM_GROW, 1, fill))
+}
 
 /** Uniforms shared by every investment part (written once per frame by Investment). */
 export interface InvestmentSharedUniforms {
@@ -33,22 +73,22 @@ export interface InvestmentSharedUniforms {
   uTime: { value: number }
   /** Vacuum boil strength 0..1. */
   uBoil: { value: number }
-  /** Pour ripple strength 0..1 (rings around the stream impact while pouring). */
+  /** Pour ripple strength 0..1 (rings and a mound around the stream impact while pouring). */
   uPour: { value: number }
   uFoamColor: { value: THREE.Color }
 }
 
 export interface InvestmentUniforms extends InvestmentSharedUniforms {
-  /** 1 = discard above the level (body halves), 0 = never (surface, stream). */
+  /** 1 = discard above the level (body), 0 = never (surface, stream). */
   uClip: { value: number }
-  /** Fresnel alpha + brightening at the silhouette (front half only). */
-  uFresnel: { value: number }
   /** 1 = surface disc: vertex ripple / boil displacement and foam. */
   uSurface: { value: number }
   /** 1 = pour stream: narrowing and wobble along its length. */
   uStream: { value: number }
-  /** Current stream length in world units (the mesh is a unit cylinder scaled in Y). */
+  /** Current stream mesh length in world units (the mesh is a unit cylinder scaled in Y). */
   uStreamLen: { value: number }
+  /** World distance from STREAM_TOP_Y down to the mesh top (non-zero while the stream retracts). */
+  uStreamStart: { value: number }
 }
 
 export interface InvestmentMaterialHandle {
@@ -66,6 +106,9 @@ export function createInvestmentUniforms(): InvestmentSharedUniforms {
   }
 }
 
+const f = (v: number) => v.toFixed(4)
+const PP = pourPoint()
+
 const VERTEX_PARS = [
   '#include <common>',
   'uniform float uTime;',
@@ -74,10 +117,12 @@ const VERTEX_PARS = [
   'uniform float uSurface;',
   'uniform float uStream;',
   'uniform float uStreamLen;',
+  'uniform float uStreamStart;',
   'varying float vInvWorldY;',
-  'varying float vInvRim;',
-  'varying float vInvBump;',
-  `#define INV_RADIUS ${INVESTMENT_RADIUS.toFixed(4)}`,
+  'varying float vInvFoam;',
+  `#define INV_RADIUS ${f(INVESTMENT_RADIUS)}`,
+  `#define INV_POUR vec2(${f(PP.x)}, ${f(PP.z)})`,
+  `#define INV_FALL ${f(STREAM_TOP_Y - MOLD.investment.bottomY)}`,
   // Value noise (hash by Inigo Quilez), cheap enough for a few thousand surface vertices.
   'float invHash(vec3 p) {',
   '  p = fract(p * 0.3183099 + 0.1);',
@@ -93,15 +138,24 @@ const VERTEX_PARS = [
   '    mix(mix(invHash(i + vec3(0.0, 0.0, 1.0)), invHash(i + vec3(1.0, 0.0, 1.0)), f.x), mix(invHash(i + vec3(0.0, 1.0, 1.0)), invHash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),',
   '    f.z);',
   '}',
-  // Surface height at disc point p (object XZ): calm sines, pour rings around the center, boil bumps.
+  // Boil: big, slow blobs that rise and sag (low-frequency noise drifting in time), 0..1.
+  'float invBlob(vec2 p) {',
+  '  float n = 0.7 * invNoise(vec3(p * 2.2, uTime * 0.35)) + 0.3 * invNoise(vec3(p * 4.6 + 7.3, uTime * 0.55));',
+  '  return smoothstep(0.4, 0.75, n);',
+  '}',
+  'float invMound(vec2 p) {',
+  '  vec2 d = p - INV_POUR;',
+  '  return exp(-dot(d, d) * 40.0);',
+  '}',
+  // Surface height at disc point p (object XZ): calm swell, pour rings + mound at the impact, boil blobs.
   'float invSurfaceHeight(vec2 p) {',
   '  float t = uTime;',
-  '  float calm = 0.004 * (sin(p.x * 3.1 + t * 1.3) + sin(p.y * 2.7 - t * 1.1) + 0.6 * sin((p.x + p.y) * 4.3 + t * 1.7));',
-  '  float r = length(p);',
-  '  float pour = uPour * 0.008 * sin(r * 16.0 - t * 5.0) * exp(-r * 1.6);',
-  '  float n = invNoise(vec3(p * 5.0, t * 1.6));',
-  '  float boil = uBoil * 0.05 * (2.0 * n * n * n - 0.25);',
-  '  return calm + pour + boil;',
+  `  float calm = ${f(CALM_AMP)} * (sin(p.x * 1.7 + t * 0.55) + sin(p.y * 1.4 - t * 0.45) + 0.5 * sin((p.x - p.y) * 2.3 + t * 0.7));`,
+  '  float d = length(p - INV_POUR);',
+  `  float rings = ${f(POUR_RING_AMP)} * sin(d * 11.0 - t * 3.2) * exp(-d * 1.4);`,
+  `  float mound = ${f(MOUND_AMP)} * invMound(p) * (1.0 + 0.25 * sin(t * 2.5));`,
+  `  float boil = ${f(BOIL_AMP)} * (invBlob(p) - 0.15);`,
+  '  return calm + uPour * (rings + mound) + uBoil * boil;',
   '}',
 ].join('\n')
 
@@ -109,21 +163,19 @@ const VERTEX_PARS = [
 const VERTEX_SURFACE = [
   '#include <beginnormal_vertex>',
   'float invDisp = 0.0;',
-  'vInvRim = 0.0;',
-  'vInvBump = 0.0;',
+  'vInvFoam = 0.0;',
   'if (uSurface > 0.5) {',
   '  vec2 invP = position.xz;',
   '  float invR = length(invP) / INV_RADIUS;',
-  '  // Calm at the wall so the disc edge meets the body cut exactly.',
-  '  float invFade = 1.0 - smoothstep(0.75, 1.0, invR);',
+  '  // Calm at the wall so the disc edge meets the body cut and the steel cleanly.',
+  '  float invFade = 1.0 - smoothstep(0.8, 1.0, invR);',
   '  float invE = 0.01;',
   '  float invH0 = invSurfaceHeight(invP);',
   '  float invHx = invSurfaceHeight(invP + vec2(invE, 0.0));',
   '  float invHz = invSurfaceHeight(invP + vec2(0.0, invE));',
   '  invDisp = invH0 * invFade;',
   '  objectNormal = normalize(vec3(-(invHx - invH0) * invFade / invE, 1.0, -(invHz - invH0) * invFade / invE));',
-  '  vInvRim = invR;',
-  '  vInvBump = uBoil * smoothstep(0.45, 0.9, invNoise(vec3(invP * 5.0, uTime * 1.6)));',
+  '  vInvFoam = uBoil * smoothstep(0.5, 1.0, invBlob(invP)) + uPour * 0.8 * invMound(invP);',
   '}',
 ].join('\n')
 
@@ -131,11 +183,12 @@ const VERTEX_DISPLACE = [
   '#include <begin_vertex>',
   'transformed.y += invDisp;',
   'if (uStream > 0.5) {',
-  '  // Unit cylinder from y = 0 (top) to y = -1 (bottom): narrows as it falls, wobbles more toward the bottom.',
-  '  float invDown = clamp(-position.y, 0.0, 1.0);',
-  '  float invS = invDown * uStreamLen;',
-  '  transformed.xz *= mix(1.0, 0.65, invDown);',
-  '  transformed.xz += vec2(sin(invS * 6.0 - uTime * 9.0), cos(invS * 4.5 - uTime * 7.0)) * 0.012 * (0.2 + 0.8 * invDown);',
+  '  // Unit cylinder from y = 0 (top) to y = -1 (bottom). invFall: world distance below the pour origin.',
+  '  float invFall = uStreamStart + clamp(-position.y, 0.0, 1.0) * uStreamLen;',
+  '  float invK = clamp(invFall / INV_FALL, 0.0, 1.0);',
+  '  // Narrows a little as it speeds up; slow bulges travel down it (thick slurry, not a water jet).',
+  '  transformed.xz *= mix(1.0, 0.78, sqrt(invK)) * (1.0 + 0.07 * sin(invFall * 3.0 - uTime * 6.0));',
+  '  transformed.xz += vec2(sin(invFall * 1.6 - uTime * 2.4), cos(invFall * 1.3 - uTime * 2.0)) * 0.012 * invK;',
   '}',
 ].join('\n')
 
@@ -146,62 +199,51 @@ const FRAGMENT_PARS = [
   '#include <common>',
   'uniform float uLevelY;',
   'uniform float uClip;',
-  'uniform float uFresnel;',
   'uniform float uSurface;',
-  'uniform float uBoil;',
   'uniform vec3 uFoamColor;',
   'varying float vInvWorldY;',
-  'varying float vInvRim;',
-  'varying float vInvBump;',
+  'varying float vInvFoam;',
 ].join('\n')
 
 const FRAGMENT_CLIP = '#include <clipping_planes_fragment>\nif (uClip > 0.5 && vInvWorldY > uLevelY) discard;'
 
 const FRAGMENT_FOAM = [
   '#include <color_fragment>',
-  'diffuseColor.rgb = mix(diffuseColor.rgb, uFoamColor, uSurface * clamp(uBoil * smoothstep(0.55, 1.0, vInvRim) + vInvBump, 0.0, 1.0));',
+  'diffuseColor.rgb = mix(diffuseColor.rgb, uFoamColor, uSurface * clamp(vInvFoam, 0.0, 1.0));',
 ].join('\n')
 
 // Runs right before opaque_fragment: `normal`, `vViewPosition`, `reflectedLight` and `outgoingLight` are in scope.
 const FRAGMENT_FINISH = [
   '{',
-  '  // Slightly warmer where lit directly (the base color stays cool in the shade).',
-  '  float invLit = clamp(dot(reflectedLight.directDiffuse, vec3(0.3333)) * 2.0, 0.0, 1.0);',
-  '  outgoingLight *= mix(vec3(1.0), vec3(1.05, 1.0, 0.93), invLit);',
-  '  // Ghosted front half: alpha and brightness rise toward the silhouette.',
-  '  float invFres = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.0);',
-  '  diffuseColor.a = clamp(diffuseColor.a + uFresnel * invFres, 0.0, 1.0);',
-  '  outgoingLight += uFresnel * invFres * diffuseColor.rgb * 0.25;',
+  '  // Soft sheen: a little extra diffuse light toward the silhouette (wet slurry), no specular gloss.',
+  '  float invSheen = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 3.0);',
+  `  outgoingLight += ${f(SHEEN)} * invSheen * (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse);`,
   '}',
   '#include <opaque_fragment>',
 ].join('\n')
 
 interface PartConfig {
   side: THREE.Side
-  transparent: boolean
-  depthWrite: boolean
-  opacity: number
   roughness: number
   clip: number
-  fresnel: number
   surface: number
   stream: number
 }
 
 const PARTS: Record<InvestmentPart, PartConfig> = {
-  back: { side: THREE.BackSide, transparent: true, depthWrite: true, opacity: BACK_ALPHA, roughness: 0.85, clip: 1, fresnel: 0, surface: 0, stream: 0 },
-  front: { side: THREE.FrontSide, transparent: true, depthWrite: false, opacity: FRONT_ALPHA, roughness: 0.85, clip: 1, fresnel: FRONT_FRESNEL, surface: 0, stream: 0 },
-  // Double-sided: the camera looks at the top from below during the vacuum push-in.
-  surface: { side: THREE.DoubleSide, transparent: true, depthWrite: false, opacity: SURFACE_ALPHA, roughness: 0.35, clip: 0, fresnel: 0, surface: 1, stream: 0 },
-  stream: { side: THREE.FrontSide, transparent: false, depthWrite: true, opacity: 1, roughness: 0.3, clip: 0, fresnel: 0, surface: 0, stream: 1 },
+  // The opaque flask hides the inside: front faces cut at the level are all the body needs.
+  body: { side: THREE.FrontSide, roughness: INVESTMENT_ROUGHNESS, clip: 1, surface: 0, stream: 0 },
+  // Double-sided in case a camera ever glimpses it from below through a hole.
+  surface: { side: THREE.DoubleSide, roughness: INVESTMENT_ROUGHNESS, clip: 0, surface: 1, stream: 0 },
+  stream: { side: THREE.FrontSide, roughness: STREAM_ROUGHNESS, clip: 0, surface: 0, stream: 1 },
 }
 
 /**
- * Investment (cool off-white, MeshStandardMaterial, no transmission). Every part injects the same source and uses
+ * Investment (opaque milk-white, MeshStandardMaterial, no transmission). Every part injects the same source and uses
  * the same program key; parts differ only by uniforms and material flags:
- * - back / front: the liquid body halves, cut at the shared world level uLevelY.
- * - surface: the disc at the level, rippling (time-based) and boiling with uBoil, foam toward the rim.
- * - stream: the pour, a unit cylinder scaled to the current length.
+ * - body: the liquid column, cut at the shared world level uLevelY.
+ * - surface: the disc at the level, calm swell, pour rings and a mound at the stream impact, slow boil blobs.
+ * - stream: the pour from the side, a unit cylinder scaled to the current span.
  */
 export function createInvestmentMaterial(
   part: InvestmentPart,
@@ -211,24 +253,20 @@ export function createInvestmentMaterial(
   const uniforms: InvestmentUniforms = {
     ...shared,
     uClip: { value: cfg.clip },
-    uFresnel: { value: cfg.fresnel },
     uSurface: { value: cfg.surface },
     uStream: { value: cfg.stream },
     uStreamLen: { value: 1 },
+    uStreamStart: { value: 0 },
   }
   const color = new THREE.Color(INVESTMENT_COLOR)
   const material = new THREE.MeshStandardMaterial({
     color,
     emissive: color,
-    emissiveIntensity: 0.06,
+    emissiveIntensity: 0.38,
     metalness: 0,
     roughness: cfg.roughness,
     envMapIntensity: 0.7,
     side: cfg.side,
-    transparent: cfg.transparent,
-    depthWrite: cfg.depthWrite,
-    opacity: cfg.opacity,
-    forceSinglePass: true,
   })
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
@@ -243,6 +281,6 @@ export function createInvestmentMaterial(
       .replace('#include <color_fragment>', FRAGMENT_FOAM)
       .replace('#include <opaque_fragment>', FRAGMENT_FINISH)
   }
-  material.customProgramCacheKey = () => 'investment-v1'
+  material.customProgramCacheKey = () => 'investment-v2'
   return { material, uniforms }
 }

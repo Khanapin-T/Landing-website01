@@ -48,3 +48,15 @@ describe('investment level', () => {
     expect(investmentLevelY(0.5)).toBeCloseTo((MOLD.investment.bottomY + MOLD.investment.topY) / 2)
   })
 })
+
+describe('tree layout config', () => {
+  it('derives the trunk top from the flask (40% of its height) and keeps the base wider than the flask', () => {
+    expect(MOLD.trunk.topY).toBeCloseTo(MOLD.flask.bottomY + 0.4 * MOLD.flask.height)
+    expect(MOLD.base.radius).toBeGreaterThan(MOLD.flask.innerRadius)
+  })
+
+  it('turns the tree 45 deg and puts the pour on the far side', () => {
+    expect(MOLD.yaw).toBeCloseTo(Math.PI / 4)
+    expect(MOLD.pour).toEqual({ radius: 1.05, azimuth: Math.PI / 2 })
+  })
+})

@@ -7,26 +7,28 @@ import { mold } from './state'
 import {
   INVESTMENT_RADIUS,
   INVESTMENT_RENDER_ORDER,
+  STREAM_RADIUS,
+  STREAM_TOP_Y,
   createInvestmentMaterial,
   createInvestmentUniforms,
+  pourPoint,
+  pourStrength,
+  streamSpan,
 } from './investmentMaterial'
 
 const { bottomY, topY } = MOLD.investment
-const STREAM_RADIUS = 0.06
-/** The pour starts above the top edge of the frame. */
-const STREAM_TOP_Y = MOLD.flask.bottomY + MOLD.flask.height + 1.5
+const POUR_AT = pourPoint()
 
 /**
  * The investment in flask-local space (the flask is seated and at rest while it shows, so flask-local Y = world Y):
- * the liquid body (back and front halves cut at the level), the rippling surface disc and the pour stream.
+ * the opaque liquid column cut at the level, the surface disc and the pour stream falling at the side of the flask.
  * Reads mold.fill / mold.boil and the clock in useFrame; no React state.
  */
 export function Investment() {
   const shared = useMemo(createInvestmentUniforms, [])
   const mats = useMemo(
     () => ({
-      back: createInvestmentMaterial('back', shared),
-      front: createInvestmentMaterial('front', shared),
+      body: createInvestmentMaterial('body', shared),
       surface: createInvestmentMaterial('surface', shared),
       stream: createInvestmentMaterial('stream', shared),
     }),
@@ -37,9 +39,9 @@ export function Investment() {
     [],
   )
   // A disc with radial subdivisions (a CircleGeometry has no inner vertices to ripple), laid flat, normal +Y.
-  const disc = useMemo(() => new THREE.RingGeometry(0, INVESTMENT_RADIUS, 64, 32).rotateX(-Math.PI / 2), [])
-  // Unit stream from y = 0 down to y = -1, scaled to the current length.
-  const stream = useMemo(() => new THREE.CylinderGeometry(STREAM_RADIUS, STREAM_RADIUS, 1, 12, 24, true).translate(0, -0.5, 0), [])
+  const disc = useMemo(() => new THREE.RingGeometry(0, INVESTMENT_RADIUS, 128, 40).rotateX(-Math.PI / 2), [])
+  // Unit stream from y = 0 down to y = -1 (capped ends), scaled to the current span.
+  const stream = useMemo(() => new THREE.CylinderGeometry(STREAM_RADIUS, STREAM_RADIUS, 1, 16, 48, false).translate(0, -0.5, 0), [])
 
   useEffect(
     () => () => {
@@ -62,16 +64,20 @@ export function Investment() {
     shared.uLevelY.value = level
     shared.uTime.value = clock.elapsedTime
     shared.uBoil.value = mold.boil
-    shared.uPour.value = Math.min(1, Math.max(0, Math.min(fill, 1 - fill) * 20))
+    shared.uPour.value = pourStrength(fill)
 
     if (bodyRef.current) bodyRef.current.visible = loading || fill > 0.001
     if (surfaceRef.current) surfaceRef.current.position.y = level
     const s = streamRef.current
     if (s) {
-      const len = Math.max(STREAM_TOP_Y - level, 0.001)
-      s.scale.y = len
-      mats.stream.uniforms.uStreamLen.value = len
-      s.visible = loading || (fill > 0.001 && fill < 0.999)
+      const fall = Math.max(STREAM_TOP_Y - level, 0.001)
+      const span = streamSpan(fill)
+      const len = (span.bottom - span.top) * fall
+      s.position.y = STREAM_TOP_Y - span.top * fall
+      s.scale.y = Math.max(len, 0.001)
+      mats.stream.uniforms.uStreamLen.value = s.scale.y
+      mats.stream.uniforms.uStreamStart.value = span.top * fall
+      s.visible = loading || len > 0.001
     }
   })
 
@@ -79,8 +85,7 @@ export function Investment() {
   return (
     <group>
       <group ref={bodyRef}>
-        <mesh geometry={body} material={mats.back.material} renderOrder={INVESTMENT_RENDER_ORDER.back} />
-        <mesh geometry={body} material={mats.front.material} renderOrder={INVESTMENT_RENDER_ORDER.front} />
+        <mesh geometry={body} material={mats.body.material} renderOrder={INVESTMENT_RENDER_ORDER.body} />
         <mesh
           ref={surfaceRef}
           geometry={disc}
@@ -94,7 +99,7 @@ export function Investment() {
         geometry={stream}
         material={mats.stream.material}
         renderOrder={INVESTMENT_RENDER_ORDER.stream}
-        position-y={STREAM_TOP_Y}
+        position={[POUR_AT.x, STREAM_TOP_Y, POUR_AT.z]}
       />
     </group>
   )
