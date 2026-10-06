@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ACTS, DEFAULT_ENTRY, TOTAL_SCREENS, actAt, actLocalProgress, actWindows, temperatureAt } from './acts'
+import { ACTS, TOTAL_SCREENS, actAt, actLocalProgress, actWindows, temperatureAt } from './acts'
 
 describe('acts config', () => {
   it('sums screens to the total', () => {
@@ -23,8 +23,8 @@ describe('acts config', () => {
     expect(idea.entry).toBeCloseTo(1.1)
     // Print lands mid-print (plate up, ring half grown, copy in).
     expect(print.entry).toBeCloseTo(3.1)
-    // Acts without an explicit entry land just past their start.
-    expect(mold.entry).toBeCloseTo(mold.start + DEFAULT_ENTRY)
+    // Mold lands with the tree built and the clones popping in (copy and step list are in).
+    expect(mold.entry).toBeCloseTo(4.5)
     for (const x of w) {
       expect(x.entry).toBeGreaterThan(x.start)
       expect(x.entry).toBeLessThan(x.end)

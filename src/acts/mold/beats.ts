@@ -9,13 +9,14 @@ export const MOLD_BEATS = {
   camFrom: 4.0,
   camTo: 4.4,
   baseInFrom: 4.05,
-  baseInTo: 4.4,
+  baseInTo: 4.3,
   copyIn: 4.1,
   /** The hero ring leaves the center and lands on its slot. */
-  heroFrom: 4.2,
-  heroTo: 4.6,
-  trunkFrom: 4.25,
-  trunkTo: 4.55,
+  heroFrom: 4.1,
+  heroTo: 4.4,
+  /** The trunk starts after the base has landed and after the hero ring has left the axis (no piercing). */
+  trunkFrom: 4.35,
+  trunkTo: 4.6,
   /** Three clones pop in one after another. */
   cloneFrom: [4.6, 4.7, 4.8],
   cloneLen: 0.15,

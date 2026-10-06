@@ -7,7 +7,7 @@ const mod = (a: number, n: number) => ((a % n) + n) % n
 export const MOLD = {
   baseTopY: -1.4,
   base: { radius: 1.5, thickness: 0.2, coneRadius: 0.32, coneHeight: 0.22, dropOffset: -3.2 },
-  flask: { innerRadius: 1.3, wall: 0.03, bottomY: -1.4, height: 3.8, dropHeight: 3.9 },
+  flask: { innerRadius: 1.3, wall: 0.03, bottomY: -1.4, height: 3.8, dropHeight: 5.4 },
   investment: { bottomY: -1.4, topY: 2.3 },
   trunk: { radius: 0.08, bottomY: -1.18, topY: 2.1 },
   /** Strip of tape: `turns` full turns up the flask, `coverage` = band width in pitches (1.3 = 30% overlap). */

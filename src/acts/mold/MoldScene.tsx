@@ -40,8 +40,10 @@ export function MoldScene() {
       rig.current.visible = loading || mold.flask > 0.001
       rig.current.position.y = (1 - mold.flask) * MOLD.flask.dropHeight
     }
-    // The flask turns while the tape is laid, so the lay point stays facing the camera.
-    if (spinner.current) spinner.current.rotation.y = tapeSpin(mold.tape)
+    // The flask turns while the tape is laid, so the lay point stays facing the camera. The unwind runs on a
+    // still flask (6 turns in 0.2 screens would strobe against the hole pattern); tapeSpin(1) is a whole number
+    // of turns, so the hand-over at tapeTo is seamless.
+    if (spinner.current) spinner.current.rotation.y = story.screen <= MOLD_BEATS.tapeTo ? tapeSpin(mold.tape) : 0
   })
 
   return (
