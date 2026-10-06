@@ -35,8 +35,8 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
 
 /** Camera dolly targets (y, z). The start value is CAM_INITIAL in store.ts. */
 export const CAM = {
-  tree: { y: 0.35, z: 9.2 },
-  vacuum: { y: 0.8, z: 6.4 },
+  tree: { y: 0.45, z: 10.5 },
+  vacuum: { y: 1.5, z: 7.0 },
 } as const
 
 /**

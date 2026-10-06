@@ -3,6 +3,7 @@ import { IntroTitle } from '../acts/intro/IntroTitle'
 import { IdeaHud } from '../acts/idea/IdeaHud'
 import { DimLabels } from '../acts/idea/DimLabels'
 import { PrintHud } from '../acts/print/PrintHud'
+import { MoldHud } from '../acts/mold/MoldHud'
 
 /** DOM overlay above the canvas. Acts mount their copy here; the scrim keeps the left copy column readable. */
 export function Hud() {
@@ -13,6 +14,7 @@ export function Hud() {
       <IdeaHud />
       <DimLabels />
       <PrintHud />
+      <MoldHud />
       <ActScale />
     </div>
   )

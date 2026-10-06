@@ -72,7 +72,7 @@ export function MoldSteps() {
   )
 
   return (
-    <ul className="m-0 mt-10 list-none space-y-2 p-0 font-mono text-[12px] uppercase tracking-[0.12em]">
+    <ul ref={list} data-steps className="m-0 mt-10 list-none space-y-2 p-0 font-mono text-[12px] uppercase tracking-[0.12em]">
       {steps.map((name) => (
         <li key={name} data-step className="flex items-center gap-3 text-mute">
           <span data-tick aria-hidden="true" className="h-px w-5 origin-left bg-line" />
