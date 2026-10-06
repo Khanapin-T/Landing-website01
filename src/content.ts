@@ -43,9 +43,9 @@ export const content = {
     steps: ['Tree', 'Flask', 'Tape', 'Investment', 'Vacuum', 'Tape off'],
   },
   fire: {
-    heading: 'Then the resin burns out',
+    heading: 'The resin burns out',
     caption:
-      'The flask goes into a furnace. The resin burns out and leaves a hollow in the investment in the exact shape of the tree. The flask is then turned over for casting.',
+      'The flask goes into a furnace. The wax runs out and evaporates, the resin burns out, and both leave a hollow in the investment in the exact shape of the tree. The flask is then turned over for casting.',
     steps: ['Furnace', 'Burnout', 'Flip'],
   },
   scale: {
