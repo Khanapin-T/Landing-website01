@@ -5,7 +5,6 @@ import { getAppState } from '../../story/appState'
 import { master, syncMaster } from '../../story/master'
 import { story } from '../../story/store'
 import { shouldRender } from '../../story/visibility'
-import { registerPlaceholder } from '../placeholder'
 import { PRINT_BEATS } from './beats'
 import { BuildPlate } from './BuildPlate'
 import { registerPrint } from './timeline'
@@ -14,7 +13,7 @@ import { CureBed } from './CureBed'
 /** Act 2: cure light under the resin bed and the build plate (the bed itself is ResinStream's points). The ring itself (resin state, clip, sprue) is the persistent HeroRing. */
 export function PrintScene() {
   useLayoutEffect(() => {
-    const offs = [registerPrint(master), registerPlaceholder(master)]
+    const offs = [registerPrint(master)]
     syncMaster()
     return () => offs.forEach((off) => off())
   }, [])

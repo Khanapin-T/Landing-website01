@@ -4,6 +4,8 @@ import { setError } from '../story/appState'
 import { HeroRing } from './ring/HeroRing'
 import { IdeaScene } from '../acts/idea/IdeaScene'
 import { PrintScene } from '../acts/print/PrintScene'
+import { MoldScene } from '../acts/mold/MoldScene'
+import { CAM_INITIAL } from '../story/store'
 import { ResinStream } from './particles/ResinStream'
 import { StudioEnvironment } from './StudioEnvironment'
 import { PostFX } from './PostFX'
@@ -36,7 +38,7 @@ export function Stage() {
       dpr={dpr}
       flat
       gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
-      camera={{ fov: 30, position: [0, 0.15, 4.2], near: 0.1, far: 100 }}
+      camera={{ fov: 30, position: [0, CAM_INITIAL.y, CAM_INITIAL.z], near: 0.1, far: 100 }}
       onCreated={({ gl }) => {
         gl.domElement.addEventListener('webglcontextlost', (e) => {
           e.preventDefault()
@@ -53,6 +55,7 @@ export function Stage() {
           <HeroRing />
           <IdeaScene />
           <PrintScene />
+          <MoldScene />
           <ResinStream />
           <Precompile />
         </Suspense>

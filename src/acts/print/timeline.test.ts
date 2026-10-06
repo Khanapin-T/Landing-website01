@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
-import { registerPlaceholder } from '../placeholder'
 import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
 import { CURE_OFF, PRINT, RING_HALF, printPose } from '../../config/print'
@@ -18,7 +17,7 @@ beforeEach(() => {
   Object.assign(story.stream, STREAM_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
   tl.set({}, {}, 14.5)
-  offs = [registerIdea(tl), registerPrint(tl), registerPlaceholder(tl)]
+  offs = [registerIdea(tl), registerPrint(tl)]
 })
 
 afterEach(() => {
@@ -99,15 +98,6 @@ describe('act 2 timeline', () => {
     expect(story.ring.y).toBeCloseTo(0)
     expect(story.ring.resin).toBe(1)
     expect(story.ring.sprue).toBe(1)
-  })
-
-  it('keeps the resin ring turning after act 2 (TEMP placeholder until s03)', () => {
-    tl.time(4.0)
-    const yaw = story.ring.yaw
-    tl.time(6)
-    expect(story.ring.yaw).toBeGreaterThan(yaw)
-    expect(story.ring.cureY).toBe(CURE_OFF)
-    expect(story.ring.fill).toBe(1)
   })
 
   it('restores act 1 exactly when scrubbed back from later acts', () => {

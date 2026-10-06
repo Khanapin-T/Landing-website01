@@ -37,6 +37,11 @@ export const content = {
     caption: 'Castable resin, cured by light layer by layer on a resin 3D printer. A print usually takes about 4 hours.',
     chip: { sending: 'Sending to printer', printing: 'Printing', done: 'Printed' },
   },
+  mold: {
+    heading: 'Then it becomes a mold',
+    caption: 'The rings are mounted on a tree, sealed in a taped flask and covered with investment. A short vacuum pulls the air out of it.',
+    steps: ['Tree', 'Flask', 'Tape', 'Investment', 'Vacuum', 'Tape off'],
+  },
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,
