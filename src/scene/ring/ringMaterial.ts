@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { CURE_OFF, RESIN_COLOR } from '../../config/print'
+import { BURN_PARS, burnDiscard, burnGlow, burnUniforms } from '../furnace/burn'
 
 /** CAD surface color: pale blueprint grey-blue (tuned in integration). */
 export const CAD_COLOR = '#b9cadc'
@@ -42,6 +43,7 @@ const FRAGMENT_PARS = [
   'varying float vRingLocalY;',
   '#define CAD_ROUGHNESS 0.62',
   '#define RESIN_ROUGHNESS 0.12',
+  BURN_PARS,
 ].join('\n')
 
 // Runs right before opaque_fragment: `normal` (view space, normal_fragment_begin), `vViewPosition` and
@@ -60,6 +62,7 @@ const FRAGMENT_RESIN_AND_FRONT = [
   '  // Glowing cure front just above the cure plane (zero when the clip is off: CURE_OFF is far below).',
   '  float front = 1.0 - smoothstep(0.0, 0.03, vRingWorldY - uCureY);',
   '  outgoingLight += front * uFrontColor;',
+  `  ${burnGlow('vRingWorldY')}`,
   '}',
   '#include <opaque_fragment>',
 ].join('\n')
@@ -97,12 +100,16 @@ export function createRingMaterial(): RingMaterialHandle {
   })
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
+    Object.assign(shader.uniforms, burnUniforms)
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', VERTEX_VARYINGS)
       .replace('#include <worldpos_vertex>', VERTEX_WORLD_Y)
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', FRAGMENT_PARS)
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vRingWorldY < uCureY + 1e-4) discard;')
+      .replace(
+        '#include <clipping_planes_fragment>',
+        `#include <clipping_planes_fragment>\nif (vRingWorldY < uCureY + 1e-4) discard;\n${burnDiscard('vRingWorldY')}`,
+      )
       .replace(
         '#include <color_fragment>',
         '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, uCadColor, uCad);\ndiffuseColor.rgb = mix(diffuseColor.rgb, uResinColor, uResin);',
@@ -117,6 +124,6 @@ export function createRingMaterial(): RingMaterialHandle {
       )
       .replace('#include <opaque_fragment>', FRAGMENT_RESIN_AND_FRONT)
   }
-  material.customProgramCacheKey = () => 'ring-states-v2'
+  material.customProgramCacheKey = () => 'ring-states-v3'
   return { material, uniforms }
 }

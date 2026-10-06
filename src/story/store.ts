@@ -47,6 +47,20 @@ export interface StreamState {
 
 export const STREAM_INITIAL: Readonly<StreamState> = { fall: 0, feed: 0, opacity: 0 }
 
+/** The flask and what happens to it in the furnace (Acts 4-5), written by those acts' tweens and read by the flask owner. */
+export interface FlaskState {
+  /** 0..1 furnace heat: coils glow, steel reddens, haze. */
+  heat: number
+  /** 0..1 X-ray: the opaque flask dissolves into a cyan shell. */
+  xray: number
+  /** 0..1 burnout: the front sweeps the tree top to bottom (config/fire.ts), points then flow out through the funnel. */
+  burn: number
+  /** 0..1 flip: 0 funnel down, 1 turned 180 degrees about Z (funnel up). */
+  flip: number
+}
+
+export const FLASK_INITIAL: Readonly<FlaskState> = { heat: 0, xray: 0, burn: 0, flip: 0 }
+
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {
   /** Scroll position in screens, 0..TOTAL_SCREENS. */
@@ -62,6 +76,8 @@ export interface Story {
   stream: StreamState
   /** Camera dolly (Act 3). */
   cam: CamState
+  /** Furnace state (Acts 4-5). */
+  flask: FlaskState
 }
 
 export const story: Story = {
@@ -72,6 +88,7 @@ export const story: Story = {
   ring: { ...RING_INITIAL },
   stream: { ...STREAM_INITIAL },
   cam: { ...CAM_INITIAL },
+  flask: { ...FLASK_INITIAL },
 }
 
 const actListeners = new Set<() => void>()

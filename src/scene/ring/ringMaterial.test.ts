@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { createRingMaterial } from './ringMaterial'
 import { CURE_OFF } from '../../config/print'
+import { burnUniforms } from '../furnace/burn'
 
 function fakeShader() {
   return {
@@ -71,7 +72,22 @@ describe('ring material', () => {
       expect(shader.fragmentShader).toContain(line)
     }
     // The resin/front block must sit before the final color write.
-    expect(shader.fragmentShader.indexOf('uFrontColor;\n}')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
+    expect(shader.fragmentShader.indexOf('outgoingLight += front * uFrontColor;')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
+  })
+
+  it('discards above the burn front and glows under it (uniforms shared with the wax)', () => {
+    const { material } = createRingMaterial()
+    const shader = {
+      uniforms: {} as Record<string, THREE.IUniform>,
+      vertexShader: THREE.ShaderLib.standard.vertexShader,
+      fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+    }
+    material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer)
+    expect(shader.uniforms.uBurnY).toBe(burnUniforms.uBurnY)
+    expect(shader.uniforms.uBurnColor).toBe(burnUniforms.uBurnColor)
+    expect(shader.fragmentShader).toContain('if (vRingWorldY > uBurnY) discard;')
+    expect(shader.fragmentShader).toContain('uBurnY - vRingWorldY')
+    expect(shader.fragmentShader.indexOf('uBurnY - vRingWorldY')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
   })
 
   it('starts unclipped and not resin', () => {

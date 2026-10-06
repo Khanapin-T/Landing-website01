@@ -25,3 +25,26 @@ describe('LensEffect', () => {
     expect(e.uniforms.get('aberration')!.value).toBe(2)
   })
 })
+
+describe('LensEffect haze', () => {
+  it('has a haze strength that starts off and is clamped to 0..1', () => {
+    const lens = new LensEffect()
+    expect(lens.uniforms.get('haze')!.value).toBe(0)
+    lens.haze = 0.4
+    expect(lens.uniforms.get('haze')!.value).toBe(0.4)
+    lens.haze = 7
+    expect(lens.uniforms.get('haze')!.value).toBe(1)
+    lens.haze = -1
+    expect(lens.uniforms.get('haze')!.value).toBe(0)
+  })
+
+  it('advances its clock with the frame time, slower under reduced motion', () => {
+    const lens = new LensEffect()
+    lens.update({} as never, {} as never, 0.5)
+    const t = lens.uniforms.get('time')!.value as number
+    expect(t).toBeGreaterThan(0)
+    const calm = new LensEffect({ timeScale: 0.15 })
+    calm.update({} as never, {} as never, 0.5)
+    expect(calm.uniforms.get('time')!.value).toBeCloseTo(t * 0.15, 6)
+  })
+})

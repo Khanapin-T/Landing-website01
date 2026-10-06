@@ -13,11 +13,13 @@ import {
   createInvestmentMaterial,
   createInvestmentUniforms,
   createPlugGeometry,
+  investmentClipLevel,
   pourPoint,
   pourStrength,
   streamSpan,
   type InvestmentPart,
 } from './investmentMaterial'
+import { heatUniforms, xrayUniform } from '../../scene/furnace/uniforms'
 
 const PARTS: InvestmentPart[] = ['body', 'surface', 'stream']
 
@@ -117,8 +119,12 @@ describe('investment material', () => {
       expect(shader.fragmentShader).toContain(line)
     }
     // The displacement must come after `transformed` is declared, the normal after `objectNormal`.
-    expect(shader.vertexShader.indexOf('transformed.y += invDisp;')).toBeGreaterThan(shader.vertexShader.indexOf('vec3 transformed'))
-    expect(shader.vertexShader.indexOf('objectNormal = normalize(')).toBeGreaterThan(shader.vertexShader.indexOf('vec3 objectNormal'))
+    // (The raw three shader still holds `#include` chunks, so those are the anchors.)
+    for (const anchor of ['#include <begin_vertex>', '#include <beginnormal_vertex>', 'objectNormal = normalize(']) {
+      expect(shader.vertexShader).toContain(anchor)
+    }
+    expect(shader.vertexShader.indexOf('transformed.y += invDisp;')).toBeGreaterThan(shader.vertexShader.indexOf('#include <begin_vertex>'))
+    expect(shader.vertexShader.indexOf('objectNormal = normalize(')).toBeGreaterThan(shader.vertexShader.indexOf('#include <beginnormal_vertex>'))
     // The sheen must be added before the final color write.
     expect(shader.fragmentShader.indexOf('invSheen')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
   })
@@ -159,6 +165,38 @@ describe('investment material', () => {
     expect(stream.uniforms.uStream.value).toBe(1)
     expect(stream.uniforms.uSurface.value).toBe(0)
     expect(INVESTMENT_RENDER_ORDER.surface).toBeGreaterThan(INVESTMENT_RENDER_ORDER.body)
+  })
+})
+
+describe('investment X-ray, heat and the funnel part', () => {
+  const real = () => ({
+    uniforms: {} as Record<string, THREE.IUniform>,
+    vertexShader: THREE.ShaderLib.standard.vertexShader,
+    fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+  })
+
+  it.each(['body', 'surface', 'stream', 'funnel'] as const)('%s dissolves by uXray and takes the heat', (part) => {
+    const { material } = createInvestmentMaterial(part)
+    const shader = real()
+    material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer)
+    expect(shader.uniforms.uXray).toBe(xrayUniform)
+    expect(shader.uniforms.uHeatColor).toBe(heatUniforms.uHeatColor)
+    expect(shader.fragmentShader).toContain('if (uXray > 0.001 && xrayDither() < uXray) discard;')
+    expect(shader.fragmentShader).toContain('uHeatColor * uHeat')
+    expect(shader.fragmentShader.indexOf('uHeatColor * uHeat')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
+  })
+
+  it('the funnel part is double sided, never clipped by the level and keeps the opaque milk-white look', () => {
+    const { material, uniforms } = createInvestmentMaterial('funnel')
+    expect(material.side).toBe(THREE.DoubleSide)
+    expect(uniforms.uClip.value).toBe(0)
+    expect(material.transparent).toBe(false)
+  })
+
+  it('stops clipping the body by level once the flask turns over', () => {
+    expect(investmentClipLevel(2.3, 0)).toBe(2.3)
+    expect(investmentClipLevel(2.3, 0.001)).toBeGreaterThan(100)
+    expect(investmentClipLevel(LEVEL_OFF, 1)).toBeGreaterThan(100)
   })
 })
 

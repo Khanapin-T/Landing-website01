@@ -28,8 +28,10 @@ export function HeroRing() {
     // Visible while loading so Precompile compiles it; afterwards skip the draw call when fully dissolved.
     const loading = getAppState().phase === 'loading'
     const filled = story.ring.fill > 0.001
-    mesh.visible = loading || filled
-    if (sprueRef.current) sprueRef.current.visible = loading || (story.ring.sprue > 0.5 && filled)
+    // Fully burned out (the burn front itself is written by Tree.tsx): skip the draw calls.
+    const burned = story.flask.burn > 0.999
+    mesh.visible = loading || (filled && !burned)
+    if (sprueRef.current) sprueRef.current.visible = loading || (story.ring.sprue > 0.5 && filled && !burned)
   })
 
   // The sprue shares the ring's material instance: same states, same cure clip, one program.

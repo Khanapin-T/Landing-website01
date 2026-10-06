@@ -8,7 +8,7 @@ import { registerPrint } from '../print/timeline'
 import { PRINT_INITIAL, print } from '../print/state'
 import { registerMold } from './timeline'
 import { MOLD_INITIAL, mold } from './state'
-import { CAM_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
+import { CAM_INITIAL, FLASK_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
 /** Plain copy without GSAP's `_gsap` cache (it is also added to the `clones` array). */
 const snap = <T extends object>(o: T): T =>
@@ -22,6 +22,7 @@ beforeEach(() => {
   Object.assign(print, PRINT_INITIAL)
   Object.assign(mold, MOLD_INITIAL, { clones: [...MOLD_INITIAL.clones] })
   Object.assign(story.ring, RING_INITIAL)
+  Object.assign(story.flask, FLASK_INITIAL)
   Object.assign(story.stream, STREAM_INITIAL)
   Object.assign(story.cam, CAM_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })

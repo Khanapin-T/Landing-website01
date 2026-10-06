@@ -30,6 +30,7 @@ import {
   holeCenters,
   rimProfile,
 } from './flaskMaterial'
+import { heatUniforms, xrayUniform } from '../../scene/furnace/uniforms'
 
 const H = MOLD.flask.height
 const R = MOLD.flask.innerRadius + MOLD.flask.wall
@@ -117,7 +118,8 @@ describe('flask material', () => {
   it('has no ghost alpha, hole outline glow, fresnel rim or fake bore ring left', () => {
     for (const side of ['back', 'front'] as const) {
       const shader = compile(createFlaskMaterial(side).material)
-      expect(Object.keys(shader.uniforms)).toEqual([])
+      // Only the shared furnace uniforms (X-ray dissolve and heat), no per-material look uniforms.
+      expect(Object.keys(shader.uniforms).sort()).toEqual(['uHeat', 'uHeatColor', 'uXray'])
       for (const dead of [
         'uGhost',
         'uAlpha',
@@ -191,18 +193,47 @@ describe('flask material', () => {
     const back = createFlaskMaterial('back')
     const front = createFlaskMaterial('front')
     expect(front.material.customProgramCacheKey()).toBe(back.material.customProgramCacheKey())
-    expect(front.material.customProgramCacheKey()).toBe('flask-steel-v3')
+    expect(front.material.customProgramCacheKey()).toBe('flask-steel-v4')
     expect(createFlaskMaterial('front').material.customProgramCacheKey()).toBe(front.material.customProgramCacheKey())
 
     const steel = createSteelMaterial()
     expect(steel.side).toBe(THREE.FrontSide)
     expect(steel.transparent).toBe(false)
     expect(steel.color.getHexString()).toBe(STEEL.color.slice(1))
-    expect(steel.customProgramCacheKey()).toBe('flask-steel-plain-v3')
+    expect(steel.customProgramCacheKey()).toBe('flask-steel-plain-v4')
     expect(createSteelMaterial().customProgramCacheKey()).toBe(steel.customProgramCacheKey())
     const fs = compile(steel, true).fragmentShader
     expect(fs).toContain('#define FLASK_NO_HOLES')
     expect(fs).toContain('flaskBrush')
+  })
+})
+
+describe('flask X-ray dissolve and furnace heat', () => {
+  const real = () => ({
+    uniforms: {} as Record<string, THREE.IUniform>,
+    vertexShader: THREE.ShaderLib.standard.vertexShader,
+    fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+  })
+
+  it.each([
+    ['front', () => createFlaskMaterial('front').material],
+    ['back', () => createFlaskMaterial('back').material],
+    ['steel', () => createSteelMaterial()],
+  ])('%s: shares the furnace uniforms and dithers away by uXray', (_name, make) => {
+    const shader = real()
+    make().onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer)
+    expect(shader.uniforms.uXray).toBe(xrayUniform)
+    expect(shader.uniforms.uHeat).toBe(heatUniforms.uHeat)
+    expect(shader.uniforms.uHeatColor).toBe(heatUniforms.uHeatColor)
+    expect(shader.fragmentShader).toContain('if (uXray > 0.001 && xrayDither() < uXray) discard;')
+    expect(shader.fragmentShader).toContain('uHeatColor * uHeat')
+    // The heat tint runs on the lit color, before the final color write.
+    expect(shader.fragmentShader.indexOf('uHeatColor * uHeat')).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
+  })
+
+  it('has new program keys (shader source changed)', () => {
+    expect(createFlaskMaterial('front').material.customProgramCacheKey()).toBe('flask-steel-v4')
+    expect(createSteelMaterial().customProgramCacheKey()).toBe('flask-steel-plain-v4')
   })
 })
 

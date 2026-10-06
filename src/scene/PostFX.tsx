@@ -8,7 +8,10 @@ import { story } from '../story/store'
 
 /** The single post-processing chain used on every screen. */
 export function PostFX() {
-  const lens = useMemo(() => new LensEffect(), [])
+  const lens = useMemo(
+    () => new LensEffect({ timeScale: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.15 : 1 }),
+    [],
+  )
   const grade = useMemo(() => new GradeEffect(), [])
 
   useEffect(() => () => {
@@ -18,6 +21,9 @@ export function PostFX() {
 
   useFrame(() => {
     grade.temperature = story.temperature
+    // The furnace heat drives the shimmer and closes the frame in a little (uniform values only).
+    lens.haze = story.flask.heat
+    grade.vignette = 0.35 + 0.25 * story.flask.heat
   })
 
   return (

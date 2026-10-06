@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
+import { heatUniforms, xrayUniform } from '../../scene/furnace/uniforms'
 import { FLASK_RADIUS, HOLE_RADIUS, holeCenters } from './flaskMaterial'
 
 /** Milk-white investment with a faint warm cast, fully opaque (the steel flask hides the inside). */
@@ -53,7 +54,15 @@ const BOIL_AMP = 0.11
 /** All parts are opaque; the order only keeps the overdraw low (body, then the surface over it). */
 export const INVESTMENT_RENDER_ORDER = { body: 12, surface: 12.5, stream: 0 } as const
 
-export type InvestmentPart = 'body' | 'surface' | 'stream'
+export type InvestmentPart = 'body' | 'surface' | 'stream' | 'funnel'
+
+/**
+ * Value for uLevelY. The body clip compares WORLD Y, so once the flask turns over (flip > 0) its corner fragments rise
+ * above the old level; the clip is only needed while the level climbs, so it switches off for good after the flip starts.
+ */
+export function investmentClipLevel(level: number, flip: number): number {
+  return flip > 0 ? 1000 : level
+}
 
 /** Impact point of the stream on the surface (flask-local x, z). */
 export function pourPoint(): { x: number; z: number } {
@@ -304,11 +313,16 @@ const FRAGMENT_PARS = [
   'uniform float uClip;',
   'uniform float uSurface;',
   'uniform vec3 uFoamColor;',
+  'uniform float uXray;',
+  'uniform float uHeat;',
+  'uniform vec3 uHeatColor;',
   'varying float vInvWorldY;',
   'varying float vInvFoam;',
+  'float xrayDither() { return fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))); }',
 ].join('\n')
 
-const FRAGMENT_CLIP = '#include <clipping_planes_fragment>\nif (uClip > 0.5 && vInvWorldY > uLevelY) discard;'
+const FRAGMENT_CLIP =
+  '#include <clipping_planes_fragment>\nif (uClip > 0.5 && vInvWorldY > uLevelY) discard;\nif (uXray > 0.001 && xrayDither() < uXray) discard;'
 
 const FRAGMENT_FOAM = [
   '#include <color_fragment>',
@@ -321,6 +335,7 @@ const FRAGMENT_FINISH = [
   '  // Soft sheen: a little extra diffuse light toward the silhouette (wet slurry), no specular gloss.',
   '  float invSheen = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 3.0);',
   `  outgoingLight += ${f(SHEEN)} * invSheen * (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse);`,
+  '  outgoingLight = mix(outgoingLight, outgoingLight * vec3(1.0, 0.62, 0.45), uHeat * 0.5) + uHeatColor * uHeat * 0.12;',
   '}',
   '#include <opaque_fragment>',
 ].join('\n')
@@ -339,6 +354,8 @@ const PARTS: Record<InvestmentPart, PartConfig> = {
   // Double-sided in case a camera ever glimpses it from below through a hole.
   surface: { side: THREE.DoubleSide, roughness: INVESTMENT_ROUGHNESS, clip: 0, surface: 1, stream: 0 },
   stream: { side: THREE.FrontSide, roughness: STREAM_ROUGHNESS, clip: 0, surface: 0, stream: 1 },
+  // The funnel wall the crucible former leaves: seen from both sides (inside in X-ray, outside after the flip).
+  funnel: { side: THREE.DoubleSide, roughness: INVESTMENT_ROUGHNESS, clip: 0, surface: 0, stream: 0 },
 }
 
 /**
@@ -347,6 +364,8 @@ const PARTS: Record<InvestmentPart, PartConfig> = {
  * - body: the liquid column, cut at the shared world level uLevelY.
  * - surface: the disc at the level, calm swell, pour rings and a mound at the stream impact, slow boil blobs.
  * - stream: the pour from the side, a unit cylinder scaled to the current span.
+ * - funnel: the funnel wall the crucible former leaves in the bottom, double sided, never clipped.
+ * Every part dissolves (screen-door) by the shared furnace xrayUniform and takes the furnace heat tint.
  */
 export function createInvestmentMaterial(
   part: InvestmentPart,
@@ -373,6 +392,9 @@ export function createInvestmentMaterial(
   })
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
+    shader.uniforms.uXray = xrayUniform
+    shader.uniforms.uHeat = heatUniforms.uHeat
+    shader.uniforms.uHeatColor = heatUniforms.uHeatColor
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', VERTEX_PARS)
       .replace('#include <beginnormal_vertex>', VERTEX_SURFACE)
@@ -384,6 +406,6 @@ export function createInvestmentMaterial(
       .replace('#include <color_fragment>', FRAGMENT_FOAM)
       .replace('#include <opaque_fragment>', FRAGMENT_FINISH)
   }
-  material.customProgramCacheKey = () => 'investment-v2'
+  material.customProgramCacheKey = () => 'investment-v3'
   return { material, uniforms }
 }

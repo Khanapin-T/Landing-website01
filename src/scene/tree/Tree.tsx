@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { burnFrontY } from '../../config/fire'
 import { MOLD } from '../../config/mold'
 import { PRINT, RING_HALF } from '../../config/print'
 import { mold } from '../../acts/mold/state'
 import { getAppState } from '../../story/appState'
+import { story } from '../../story/store'
+import { burnUniforms } from '../furnace/burn'
 import { getRingMaterial } from '../ring/sharedMaterial'
 import { createSprueGeometry } from '../ring/sprue'
 import { useRingLightGeometry } from '../ring/useRingGeometry'
 import { slotPose } from './slots'
+import { createTrunkGeometry } from './trunk'
+import { createWaxMaterial } from './waxMaterial'
 
 const CLONE_SLOTS = [1, 2, 3] as const
 /** Ring origin relative to the sprue tip, in the slot's local space. */
 const TIP_TO_RING = new THREE.Vector3(0, RING_HALF + PRINT.sprue.length, 0)
-const TRUNK_TOP_SCALE = 0.85
 
 interface CloneLayout {
   /** World position of the sprue tip (the scale pivot). */
@@ -34,26 +38,10 @@ export function Tree() {
   const sprueGeometry = useMemo(() => createSprueGeometry(), [])
   useEffect(() => () => sprueGeometry.dispose(), [sprueGeometry])
 
-  const trunkGeometry = useMemo(() => {
-    const { radius, bottomY, topY } = MOLD.trunk
-    const g = new THREE.CylinderGeometry(radius * TRUNK_TOP_SCALE, radius, topY - bottomY, 20, 1, false)
-    g.translate(0, (topY - bottomY) / 2, 0)
-    return g
-  }, [])
+  const trunkGeometry = useMemo(() => createTrunkGeometry(), [])
   useEffect(() => () => trunkGeometry.dispose(), [trunkGeometry])
 
-  const wax = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#7a1620',
-        roughness: 0.42,
-        metalness: 0,
-        envMapIntensity: 0.6,
-        emissive: '#7a1620',
-        emissiveIntensity: 0.04,
-      }),
-    [],
-  )
+  const wax = useMemo(() => createWaxMaterial(), [])
   useEffect(() => () => wax.dispose(), [wax])
 
   const layouts = useMemo(() => CLONE_SLOTS.map((i) => cloneLayout(i)), [])
@@ -62,18 +50,21 @@ export function Tree() {
   const clones = useRef<(THREE.Group | null)[]>([])
 
   useFrame(() => {
+    // The one writer of the burn front (shared by the wax and the ring material).
+    burnUniforms.uBurnY.value = burnFrontY(story.flask.burn)
     const loading = getAppState().phase === 'loading'
+    const burned = story.flask.burn > 0.999
     const t = trunk.current
     if (t) {
       t.scale.y = Math.max(mold.trunk, 0.0001)
-      t.visible = loading || mold.trunk > 0.001
+      t.visible = loading || (mold.trunk > 0.001 && !burned)
     }
     for (let k = 0; k < CLONE_SLOTS.length; k++) {
       const g = clones.current[k]
       if (!g) continue
       const s = mold.clones[k]
       g.scale.setScalar(s)
-      g.visible = loading || s > 0.001
+      g.visible = loading || (s > 0.001 && !burned)
     }
   })
 
