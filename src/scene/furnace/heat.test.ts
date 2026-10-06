@@ -4,9 +4,9 @@ import { heatColor } from './heat'
 const luminance = ([r, g, b]: readonly number[]) => 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 describe('heatColor', () => {
-  it('is cold dark steel at 0 and white-yellow past the bloom threshold at 1', () => {
+  it('is cold dark steel at 0 and bright orange past the bloom threshold at 1', () => {
     expect(luminance(heatColor(0))).toBeLessThan(0.05)
-    expect(luminance(heatColor(1))).toBeGreaterThan(1.5)
+    expect(luminance(heatColor(1))).toBeGreaterThan(0.6)
   })
 
   it('never gets darker as the heat rises', () => {

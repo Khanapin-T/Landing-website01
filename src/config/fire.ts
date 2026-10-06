@@ -40,14 +40,18 @@ export const FUNNEL = { exitY: MOLD.flask.bottomY - MOLD.foot.height - 0.4 } as 
 export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foot.height) / 2 } as const
 
 /**
- * Heating coils. A tunnel with its axis along Z: left and right coils stand vertical on the side walls, top and bottom
- * coils lie horizontal; `rowZ` = the three depths (nearest first), so farther rows look smaller. `edge` = how far the
- * nearest row reaches toward the screen edge (fraction of the distance from the flask axis to that edge).
+ * Heating coils, all horizontal. A tunnel with its axis along Z: top and bottom coils span the width, left and right
+ * coils are three stacked tiers running from the screen edge toward the middle; `rowZ` = the three depths (nearest
+ * first), so farther rows look smaller. `edge` = how far the nearest row reaches toward the screen edge (fraction of
+ * the distance from the flask axis to that edge). `sideReach` = length of a side coil as a fraction of the tunnel
+ * width, `tierSpacing` = height step between the side tiers as a fraction of the half height.
  * `centerY` = world Y of the screen center (the camera looks level there).
  */
 export const COILS = {
   rowZ: [3, -1.5, -6] as const,
   edge: 0.9,
+  sideReach: 0.22,
+  tierSpacing: 0.42,
   coilRadius: 0.2,
   tubeRadius: 0.045,
   pitch: 0.2,

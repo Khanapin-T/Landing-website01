@@ -1,11 +1,11 @@
 type Rgb = readonly [number, number, number]
 
-/** Linear HDR stops: cold dark steel, dull red, orange (past the bloom threshold), white-yellow. */
+/** Linear HDR stops: cold dark steel, dull red, red-orange, bright orange. Kept saturated: AGX tone mapping washes brighter or yellower values out to cream. */
 const STOPS: readonly (readonly [number, Rgb])[] = [
   [0, [0.02, 0.022, 0.028]],
-  [0.35, [0.45, 0.05, 0.02]],
-  [0.7, [1.7, 0.42, 0.07]],
-  [1, [2.8, 1.5, 0.55]],
+  [0.35, [0.55, 0.04, 0.015]],
+  [0.7, [1.1, 0.16, 0.02]],
+  [1, [1.7, 0.42, 0.06]],
 ]
 
 /** Glow color of hot metal for a heat value 0..1 (used as emissive by the coils and the flask). */
