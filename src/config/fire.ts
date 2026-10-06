@@ -40,22 +40,23 @@ export const FUNNEL = { exitY: MOLD.flask.bottomY - MOLD.foot.height - 0.4 } as 
 export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foot.height) / 2 } as const
 
 /**
- * Heating coils, all horizontal. A tunnel with its axis along Z: top and bottom coils span the width, left and right
- * coils are three stacked tiers running from the screen edge toward the middle; `rowZ` = the three depths (nearest
- * first), so farther rows look smaller. `edge` = how far the nearest row reaches toward the screen edge (fraction of
- * the distance from the flask axis to that edge). `sideReach` = length of a side coil as a fraction of the tunnel
- * width, `tierSpacing` = height step between the side tiers as a fraction of the half height.
- * `centerY` = world Y of the screen center (the camera looks level there).
+ * Heating coils (after the muffle furnace photos): on each of the four walls of a box tunnel one long spring is laid
+ * in a serpentine, three long runs along the depth (from the front opening toward the back, so they converge toward the
+ * middle in perspective) joined by U-turns. `zNear` / `zFar` = depth range of the runs (the front opening plane is
+ * the flask middle plane so the ceiling and floor clear the flask), `edge` = how far the front opening reaches toward
+ * the screen edge (fraction of the distance from the flask axis to that edge), `spacing` = distance between
+ * neighbouring runs as a fraction of the wall half extent across the runs. `pitch` = distance along the path per turn
+ * of the spring. `centerY` = world Y of the screen center (the camera looks level there).
  */
 export const COILS = {
-  rowZ: [3, -1.5, -6] as const,
+  zNear: 0,
+  zFar: -9,
   edge: 0.9,
-  sideReach: 0.22,
-  tierSpacing: 0.42,
-  coilRadius: 0.2,
-  tubeRadius: 0.045,
+  spacing: 0.55,
+  coilRadius: 0.16,
+  tubeRadius: 0.04,
   pitch: 0.2,
-  stepsPerTurn: 14,
+  stepsPerTurn: 12,
   radialSegments: 8,
   centerY: CAM.tree.look,
 } as const

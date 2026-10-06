@@ -11,51 +11,57 @@ export interface CoilView {
 
 export type CoilSide = 'left' | 'right' | 'top' | 'bottom'
 
-export interface CoilSpec {
-  /** 0 = nearest row. */
-  row: number
+/**
+ * Placement of one wall's spring. The spring is modeled in a local frame (x along the runs, y across them, z out of the
+ * wall, see helix.ts). World matrix = translate(position) * Rz(rotationZ) * Ry(90 deg): Ry turns the local x axis to
+ * world -Z (the runs go away from the camera) and the local z axis to world +X; Rz then turns that onto the right
+ * wall (pi), the ceiling (-pi/2, the runs are spread across the width) or the floor (+pi/2). All right-handed.
+ */
+export interface CoilWall {
   side: CoilSide
-  /** Every coil lies horizontal (its axis along X). */
-  center: [number, number, number]
+  /** World position of the local origin: on the wall at the near plane, centered across the runs. */
+  position: [number, number, number]
+  rotationZ: number
+  /** Distance between neighbouring runs of this wall's spring. */
+  spacing: number
 }
 
 export interface CoilLayout {
-  /** Length of the left and right coils (they run from the screen edge toward the middle). */
-  sideLength: number
-  /** Length of the top and bottom coils (they span the width of the tunnel). */
-  horizontalLength: number
-  coils: CoilSpec[]
+  /** Depth of the runs (zNear - zFar). */
+  length: number
+  /** Run spacing on the side walls (across the height) and on the ceiling and floor (across the width). */
+  sideSpacing: number
+  spanSpacing: number
+  walls: CoilWall[]
 }
 
 /**
- * The 12 coils of the furnace tunnel in world space, all horizontal. The walls are fixed in world space, so the three
- * rows (COILS.rowZ) converge toward the flask axis on screen. The nearest row reaches `COILS.edge` of the way from the
- * axis to each screen edge (left and right measured separately because the focus offset puts the axis at 58% of the
- * width). Top and bottom: one coil per row on the ceiling and the floor. Left and right: three tiers stacked in height
- * (row 0 on top, row 2 at the bottom), each running from the edge a short way toward the middle.
+ * The four springs of the furnace tunnel in world space. The walls are fixed in world space, so the runs converge
+ * toward the flask axis on screen. At the near plane the box reaches `COILS.edge` of the way from the axis to each
+ * screen edge (left and right measured separately because the focus offset puts the axis at 58% of the width); the
+ * springs sit one coil radius inside their wall.
  */
 export function coilLayout({ aspect, fovDeg, camZ, focus = FOCUS_X }: CoilView): CoilLayout {
-  const halfH = (camZ - COILS.rowZ[0]) * Math.tan((fovDeg * Math.PI) / 360)
+  const halfH = (camZ - COILS.zNear) * Math.tan((fovDeg * Math.PI) / 360)
   const fullW = 2 * halfH * aspect
   const wallLeft = COILS.edge * focus * fullW
   const wallRight = COILS.edge * (1 - focus) * fullW
   const wallY = COILS.edge * halfH
   const cy = COILS.centerY
   const midX = (wallRight - wallLeft) / 2
-  const sideLength = COILS.sideReach * (wallLeft + wallRight)
-  const tier = COILS.tierSpacing * wallY
-  const coils: CoilSpec[] = []
-  COILS.rowZ.forEach((z, row) => {
-    const y = cy + (1 - row) * tier
-    coils.push({ row, side: 'left', center: [-wallLeft + sideLength / 2, y, z] })
-    coils.push({ row, side: 'right', center: [wallRight - sideLength / 2, y, z] })
-    coils.push({ row, side: 'top', center: [midX, cy + wallY, z] })
-    coils.push({ row, side: 'bottom', center: [midX, cy - wallY, z] })
-  })
+  const inset = COILS.coilRadius + COILS.tubeRadius + 0.05
+  const sideSpacing = COILS.spacing * wallY
+  const spanSpacing = COILS.spacing * ((wallLeft + wallRight) / 2)
+  const z = COILS.zNear
   return {
-    sideLength,
-    // Stops two coil radii short of each end so the ends clear the side coils.
-    horizontalLength: wallLeft + wallRight - 4 * COILS.coilRadius,
-    coils,
+    length: COILS.zNear - COILS.zFar,
+    sideSpacing,
+    spanSpacing,
+    walls: [
+      { side: 'left', position: [-wallLeft + inset, cy, z], rotationZ: 0, spacing: sideSpacing },
+      { side: 'right', position: [wallRight - inset, cy, z], rotationZ: Math.PI, spacing: sideSpacing },
+      { side: 'top', position: [midX, cy + wallY - inset, z], rotationZ: -Math.PI / 2, spacing: spanSpacing },
+      { side: 'bottom', position: [midX, cy - wallY + inset, z], rotationZ: Math.PI / 2, spacing: spanSpacing },
+    ],
   }
 }
