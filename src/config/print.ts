@@ -7,24 +7,54 @@ export const CURE_OFF = -1000
 /** Castable resin: translucent pale green (scene light, not a UI accent). Tuned in integration. */
 export const RESIN_COLOR = '#3fa772'
 
+/**
+ * Build plate (after the author's reference printer photos: a wide thin plate, about 60% of the frame width at its
+ * front edge); plate Y values are its bottom face. parkedY is out of frame above.
+ */
+const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 } as const
+
 /** Act 2 layout in world units (ring height = 1). Shared by the ring, the act props and the resin stream particles. */
 export const PRINT = {
   /** Cure plane (the vat floor): the printed part only exists above it. */
   cureY: -0.6,
-  /** The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it. */
-  pool: { y: -0.615, thickness: 0.03, halfWidth: 0.6, halfDepth: 0.34 },
-  /** One sprue on the shank bottom (the top while printing upside down). */
+  /**
+   * The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it.
+   * A rectangle with the build plate's footprint (the author: not a small round pool).
+   */
+  pool: { y: -0.615, thickness: 0.03, halfWidth: PLATE.width / 2, halfDepth: PLATE.depth / 2 },
+  /** One sprue on the shank bottom (the top while printing upside down). Printed with the ring; it stays after the supports fall. */
   sprue: { length: 0.25, radius: 0.045 },
+  plate: PLATE,
   /**
-   * Build plate (after the author's reference printer photos: a wide thin plate, about 60% of the frame width at its front edge); plate Y values
-   * are its bottom face. parkedY is out of frame above.
+   * The two black vertical slots behind the plate the carriage rides in (fixed in the world, x = +-x, at depth z),
+   * from the plate's top face (never below it: nothing behind the print) up out of the frame. They fade in while the
+   * plate comes down from parkedY to fullAtY (the frame top) and out the same way.
    */
-  plate: { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 },
+  rails: { x: 0.3, z: -1.15, width: 0.09, depth: 0.05, topY: 3.2, fullAtY: 1.3 },
   /**
-   * The two black vertical slots behind the plate the carriage rides in (fixed in the world, x = +-x, at depth z).
-   * They fade in while the plate comes down from parkedY to fullAtY (the frame top) and out the same way.
+   * Print supports: thin columns from the plate down onto the upside-down ring, on a jittered `gridX` x `gridZ` grid
+   * over +-spanX, +-spanZ (ring-local), none within `sprueClear` of the sprue, and only between minLength and
+   * maxLength long (the shank is narrow: rays beside it would reach the signet through the ring). A column of `radius`, a cone `tip` of
+   * `tipLength` down to `tipRadius` that bites `bite` into the surface, a `base` foot on the plate. At the flip they
+   * break off and fall `fall` units while they turn into points.
    */
-  rails: { x: 0.3, z: -1.15, width: 0.09, depth: 0.05, bottomY: -0.75, topY: 3.2, fullAtY: 1.3 },
+  supports: {
+    gridX: 17,
+    gridZ: 6,
+    spanX: 0.44,
+    spanZ: 0.18,
+    jitter: 0.02,
+    sprueClear: 0.08,
+    minLength: 0.03,
+    maxLength: 0.42,
+    radius: 0.007,
+    tipRadius: 0.003,
+    tipLength: 0.05,
+    bite: 0.006,
+    baseRadius: 0.026,
+    baseHeight: 0.015,
+    fall: 2.2,
+  },
 } as const
 
 /** Opacity of the rails for a plate height: 0 while parked, 1 once the plate is in the frame. */
@@ -33,6 +63,12 @@ export function railOpacity(plateY: number): number {
   const { fullAtY } = PRINT.rails
   const t = Math.min(Math.max((parkedY - plateY) / (parkedY - fullAtY), 0), 1)
   return t * t * (3 - 2 * t)
+}
+
+/** Visible span of the rails for a plate height: from the plate's top face up to the rails' top (height 0 = none). */
+export function railSpan(plateY: number): { bottom: number; height: number } {
+  const bottom = plateY + PRINT.plate.thickness
+  return { bottom, height: Math.max(PRINT.rails.topY - bottom, 0) }
 }
 
 /**

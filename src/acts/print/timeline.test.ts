@@ -4,6 +4,7 @@ import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
+import { PRINT_BEATS } from './beats'
 import { CURE_OFF, PRINT, RING_HALF, printPose } from '../../config/print'
 import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
@@ -23,6 +24,29 @@ beforeEach(() => {
 afterEach(() => {
   offs.forEach((off) => off())
   tl.kill()
+})
+
+describe('act 2 supports', () => {
+  it('carries the supports with the printed ring, then leaves them where the print ended', () => {
+    for (const t of [2.8, 3.2, 3.5]) {
+      tl.time(t)
+      expect(print.sup).toBeCloseTo(story.ring.y, 9)
+    }
+    tl.time(3.9)
+    expect(print.sup).toBeCloseTo(printPose(1).ringY, 9)
+  })
+
+  it('drops the supports while the ring flips, and puts them back when scrolled back', () => {
+    tl.time(PRINT_BEATS.flipFrom - 0.001)
+    expect(print.drop).toBe(0)
+    tl.time((PRINT_BEATS.flipFrom + PRINT_BEATS.flipTo) / 2)
+    expect(print.drop).toBeGreaterThan(0)
+    expect(print.drop).toBeLessThan(1)
+    tl.time(PRINT_BEATS.flipTo)
+    expect(print.drop).toBe(1)
+    tl.time(3.3)
+    expect(print.drop).toBe(0)
+  })
 })
 
 describe('act 2 timeline', () => {

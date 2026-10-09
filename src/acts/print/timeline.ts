@@ -40,6 +40,8 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.stream, { opacity: 1 }, { opacity: 0, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: start.plateY }, { plate: end.plateY, duration: printing }, B.printFrom)
   seg.fromTo(story.ring, { y: start.ringY }, { y: end.ringY, duration: printing }, B.printFrom)
+  // The supports are printed with the ring and rise with it.
+  seg.fromTo(print, { sup: start.ringY }, { sup: end.ringY, duration: printing }, B.printFrom)
   seg.fromTo(print, { glow: 0 }, { glow: 1, duration: 0.03 }, B.printFrom)
   seg.fromTo(print, { glow: 1 }, { glow: 0, duration: 0.03 }, B.printTo - 0.03)
 
@@ -50,6 +52,8 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.ring, { flip: Math.PI }, { flip: TURN, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { y: end.ringY }, { y: 0, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { yaw: TURN }, { yaw: TURN + SETTLE_YAW, duration: flip, ease: 'sine.inOut' }, B.flipFrom)
+  // As the ring turns over, the supports break off and fall, turning into points; the sprue stays on the ring.
+  seg.fromTo(print, { drop: 0 }, { drop: 1, duration: flip, ease: 'power1.in' }, B.flipFrom)
   seg.fromTo(print, { bed: 1 }, { bed: 0, duration: len(B.bedOutFrom, B.bedOutTo), ease: 'power2.in' }, B.bedOutFrom)
 
   tl.add(seg, 0)

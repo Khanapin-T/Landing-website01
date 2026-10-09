@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CAM_INITIAL } from '../story/store'
-import { CURE_OFF, PRINT, RING_HALF, printPose, railOpacity } from './print'
+import { CURE_OFF, PRINT, RING_HALF, printPose, railOpacity, railSpan } from './print'
 
 describe('print layout', () => {
   it('starts with the plate on the vat floor and the whole part below the cure plane', () => {
@@ -46,10 +46,19 @@ describe('printer', () => {
     expect(PRINT.plate.parkedY).toBeGreaterThan(frameTop)
   })
 
-  it('runs the rails from under the vat to above the frame, behind the plate', () => {
-    expect(PRINT.rails.bottomY).toBeLessThan(PRINT.cureY)
-    expect(PRINT.rails.topY).toBeGreaterThan(frameTop)
+  it('runs the rails from the plate top up out of the frame, behind the plate, never below it', () => {
+    for (const plateY of [printPose(0).plateY, printPose(0.5).plateY, printPose(1).plateY]) {
+      const s = railSpan(plateY)
+      expect(s.bottom).toBeCloseTo(plateY + PRINT.plate.thickness, 9)
+      expect(s.bottom + s.height).toBeGreaterThan(frameTop)
+    }
+    expect(railSpan(10).height).toBe(0)
     expect(PRINT.rails.z).toBeLessThan(-PRINT.plate.depth / 2)
+  })
+
+  it('pools the resin under the whole plate (the plate footprint, not a small round pool)', () => {
+    expect(PRINT.pool.halfWidth * 2).toBeCloseTo(PRINT.plate.width, 9)
+    expect(PRINT.pool.halfDepth * 2).toBeCloseTo(PRINT.plate.depth, 9)
   })
 
   it('fades the rails in as the plate comes into the frame and out as it leaves', () => {

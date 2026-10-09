@@ -6,9 +6,9 @@ import { getAppState } from '../../story/appState'
 import { print } from './state'
 
 const { pool, cureY } = PRINT
-/** The light pool is a little larger than the bed of points so its edge falls off softly around them. */
-const W = pool.halfWidth * 2 * 1.35
-const D = pool.halfDepth * 2 * 1.5
+/** The light is a little larger than the bed of points so its edge falls off softly around them. */
+const W = pool.halfWidth * 2 * 1.12
+const D = pool.halfDepth * 2 * 1.18
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
@@ -18,14 +18,15 @@ void main() {
 }
 `
 
-// Soft elliptical falloff: the cure light seen through the resin from below.
+// Soft rectangular falloff (the bed has the plate's footprint): the cure light seen through the resin from below.
 const fragmentShader = /* glsl */ `
 uniform vec3 uColor;
 uniform float uStrength;
 varying vec2 vUv;
 void main() {
-  float edge = length((vUv - 0.5) * 2.0);
-  float a = (1.0 - smoothstep(0.25, 1.0, edge)) * uStrength;
+  vec2 q = abs((vUv - 0.5) * 2.0);
+  float edge = max(q.x, q.y);
+  float a = (1.0 - smoothstep(0.7, 1.0, edge)) * uStrength;
   if (a < 0.002) discard;
   gl_FragColor = vec4(uColor * a, a);
 }

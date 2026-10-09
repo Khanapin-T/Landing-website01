@@ -63,12 +63,13 @@ export function resinStream(from: Float32Array, rand: () => number): ParticleBuf
     const x = from[i * 3]
     const y = from[i * 3 + 1]
     const z = from[i * 3 + 2]
-    // Elliptical bed, thinning toward its edge (no hard rectangle).
-    const angle = rand() * Math.PI * 2
-    const r = Math.pow(rand(), 0.62)
-    to[i * 3] = Math.cos(angle) * r * pool.halfWidth
+    // Rectangular bed under the whole build plate, thinning toward its edge.
+    const u = rand() * 2 - 1
+    const v = rand() * 2 - 1
+    const r = Math.max(Math.abs(u), Math.abs(v))
+    to[i * 3] = u * pool.halfWidth
     to[i * 3 + 1] = pool.y + (rand() - 0.5) * pool.thickness * (1 - 0.6 * r)
-    to[i * 3 + 2] = Math.sin(angle) * r * pool.halfDepth
+    to[i * 3 + 2] = v * pool.halfDepth
     front[i * 3] = -x
     front[i * 3 + 1] = cureY
     front[i * 3 + 2] = z
