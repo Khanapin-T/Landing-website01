@@ -76,31 +76,54 @@ export function goldFillVisible(f: { fill: number; xray: number; flip: number })
   return f.flip > 0.999 && f.fill > 0.001 && f.xray > 0.001
 }
 
+/** The rubber washer between the cup's rim and the flask's flange: 5 mm tall, and 1 world unit = 24.8 mm. */
+export const WASHER = { thickness: 0.2 } as const
+
+/** Flange thickness of the flask (FLANGE.height in acts/mold/flaskMaterial.ts, pinned by gold.test.ts). */
+const FLANGE_HEIGHT = 0.16
+
 /**
- * The vacuum chamber (Act 5), in world space around the flipped flask: a plain dark iron cup that slides up from
- * below. A little wider than the flask's flange (skirt, radius 1.98), which sits inside its mouth with the rim flush
- * with the flange's outer face (`topY`); the closed bottom sits below the flask's far end. `dropOffset` = start
- * position, fully below the frame. Shapes for the author to correct; no details yet.
+ * The vacuum chamber (Act 5), in world space around the flipped flask: a plain dark iron cup (like the real one: as wide
+ * as the flask's flange outside, as wide as the flask tube inside) that slides up from below. The flask tube goes into
+ * it; the flange does NOT touch the metal: a 5 mm rubber washer (WASHER) lies between the cup's rim (`topY`) and the
+ * flange's underside, so the vacuum seals on rubber. The closed bottom sits below the flask's far end. `dropOffset` =
+ * start position, fully below the frame. Shapes for the author to correct; no details yet.
  */
 export const CHAMBER = {
-  radius: 2.12,
-  wall: 0.08,
+  /** Outer radius = the flange (skirt) radius, FLANGE_RADIUS in acts/mold/flaskMaterial.ts (pinned by gold.test.ts). */
+  radius: 1.98,
+  /** Inner radius = the flask tube radius (1.38) plus a hair of clearance. */
+  innerRadius: 1.4,
   floor: 0.1,
-  topY: 2 * FLIP.pivotY - MOLD.flask.bottomY,
+  /** Rim height: one washer below the flange's underside once the flask is flipped. */
+  topY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE_HEIGHT) - WASHER.thickness,
   bottomY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + MOLD.flask.height) - 0.35,
   dropOffset: -7,
 } as const
 
 /** Lathe profile (x = radius, y = world height) of the chamber cup: outer wall, rim, inner wall, floor. */
 export function chamberProfile(): [number, number][] {
-  const { radius: r, wall, floor, topY, bottomY } = CHAMBER
+  const { radius: r, innerRadius: ri, floor, topY, bottomY } = CHAMBER
   return [
     [0, bottomY],
     [r, bottomY],
     [r, topY],
-    [r - wall, topY],
-    [r - wall, bottomY + floor],
+    [ri, topY],
+    [ri, bottomY + floor],
     [0, bottomY + floor],
+  ]
+}
+
+/** Closed lathe profile of the washer ring: the same footprint as the cup's rim, 5 mm tall, lying on it. */
+export function washerProfile(): [number, number][] {
+  const { radius: r, innerRadius: ri, topY } = CHAMBER
+  const y1 = topY + WASHER.thickness
+  return [
+    [ri, topY],
+    [r, topY],
+    [r, y1],
+    [ri, y1],
+    [ri, topY],
   ]
 }
 
@@ -112,7 +135,7 @@ export function hosePath(): [number, number, number][] {
   const r = CHAMBER.radius
   const y = HOSE.exitY
   return [
-    [r - CHAMBER.wall / 2, y, 0],
+    [(r + CHAMBER.innerRadius) / 2, y, 0],
     [r + 0.5, y, 0],
     [r + 1.0, y - 0.4, 0],
     [r + 1.2, y - 1.6, 0],

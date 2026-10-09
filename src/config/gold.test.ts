@@ -3,27 +3,40 @@ import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
 import { CAM, MOLD } from './mold'
 import { FLANGE, FLANGE_RADIUS, FLASK_RADIUS } from '../acts/mold/flaskMaterial'
-import { CHAMBER, FILL, HOSE, REST_SECONDS, STREAM_TOP_WORLD_Y, TRUNK_END_WORLD_Y, chamberProfile, hosePath, fillFrontY, fillProgress, goldFillVisible, goldGlow, restClock, streamSpan } from './gold'
+import { CHAMBER, FILL, HOSE, REST_SECONDS, STREAM_TOP_WORLD_Y, TRUNK_END_WORLD_Y, WASHER, chamberProfile, hosePath, washerProfile, fillFrontY, fillProgress, goldFillVisible, goldGlow, restClock, streamSpan } from './gold'
 
 describe('vacuum chamber', () => {
   const frameHalf = CAM.tree.z * Math.tan((30 * Math.PI) / 360)
   const frameBottom = CAM.tree.look - frameHalf
 
-  it('is a little wider than the flange (skirt), which sits inside its mouth', () => {
-    expect(FLANGE_RADIUS).toBeGreaterThan(FLASK_RADIUS)
-    expect(CHAMBER.radius - CHAMBER.wall).toBeGreaterThan(FLANGE_RADIUS)
-    expect(CHAMBER.radius).toBeLessThan(FLANGE_RADIUS + 0.25)
+  it('is as wide inside as the flask tube, so the flask slides in', () => {
+    expect(CHAMBER.innerRadius).toBeGreaterThanOrEqual(FLASK_RADIUS)
+    expect(CHAMBER.innerRadius).toBeLessThan(FLASK_RADIUS + 0.05)
   })
 
-  it('reaches up to the outer face of the flange of the flipped flask (flush rim)', () => {
-    expect(CHAMBER.topY).toBeCloseTo(2 * FLIP.pivotY - MOLD.flask.bottomY, 9)
-    expect(CHAMBER.topY - (2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE.height))).toBeCloseTo(FLANGE.height, 9)
+  it('is as wide outside as the flange (skirt), like the cup in the photo', () => {
+    expect(FLANGE_RADIUS).toBeGreaterThan(FLASK_RADIUS)
+    expect(CHAMBER.radius).toBeCloseTo(FLANGE_RADIUS, 9)
+  })
+
+  it('stops one rubber washer short of the underside of the flange of the flipped flask', () => {
+    const flangeUnderside = 2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE.height)
+    expect(CHAMBER.topY + WASHER.thickness).toBeCloseTo(flangeUnderside, 9)
+  })
+
+  it('has a 5 mm rubber washer (1 unit = 24.8 mm) with the same footprint as the rim, so it is never metal to metal', () => {
+    expect(WASHER.thickness).toBeCloseTo(5 / 24.8, 2)
+    const p = washerProfile()
+    expect(Math.min(...p.map(([r]) => r))).toBe(CHAMBER.innerRadius)
+    expect(Math.max(...p.map(([r]) => r))).toBe(CHAMBER.radius)
+    expect(Math.min(...p.map(([, y]) => y))).toBe(CHAMBER.topY)
+    expect(Math.max(...p.map(([, y]) => y))).toBeCloseTo(CHAMBER.topY + WASHER.thickness, 9)
   })
 
   it('has a side hose that leaves the wall and runs down out of the frame', () => {
     const p = hosePath()
     expect(p[0][0]).toBeLessThan(CHAMBER.radius)
-    expect(p[0][0]).toBeGreaterThan(CHAMBER.radius - CHAMBER.wall)
+    expect(p[0][0]).toBeGreaterThan(CHAMBER.innerRadius)
     expect(p[0][1]).toBeLessThan(CHAMBER.topY)
     expect(p[0][1]).toBeGreaterThan(CHAMBER.bottomY)
     expect(p.at(-1)![1]).toBeLessThan(frameBottom - HOSE.radius)
