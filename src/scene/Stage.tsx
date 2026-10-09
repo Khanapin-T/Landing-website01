@@ -6,6 +6,7 @@ import { IdeaScene } from '../acts/idea/IdeaScene'
 import { PrintScene } from '../acts/print/PrintScene'
 import { MoldScene } from '../acts/mold/MoldScene'
 import { FireScene } from '../acts/fire/FireScene'
+import { GoldScene } from '../acts/gold/GoldScene'
 import { CAM_INITIAL } from '../story/store'
 import { ResinStream } from './particles/ResinStream'
 import { StudioEnvironment } from './StudioEnvironment'
@@ -58,6 +59,7 @@ export function Stage() {
           <PrintScene />
           <MoldScene />
           <FireScene />
+          <GoldScene />
           <ResinStream />
           <Precompile />
         </Suspense>

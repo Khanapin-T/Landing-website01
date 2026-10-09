@@ -7,8 +7,8 @@ export const TAPE_COLOR = '#5aa03a'
 export const TAPE_OVERLAP_SHADE = 0.86
 /** Color multiplier on the thin shadow line along the lap edge of the later strip. */
 export const TAPE_LAP_LINE_SHADE = 0.55
-/** Width of that shadow line in pitches (the overlap band is `coverage - 1` = 0.3 pitches wide). */
-export const TAPE_LAP_LINE_WIDTH = 0.05
+/** Width of that shadow line in strip widths, measured up from the later strip's lower edge (about 1.2% of the flask height). */
+export const TAPE_LAP_LINE_WIDTH = 0.04
 export const TAPE_ROUGHNESS = 0.4
 /** Faint grazing-angle sheen so the tape reads as plastic, not paper (added to the lit color). */
 export const TAPE_SHEEN = 0.12
@@ -26,10 +26,10 @@ export function glslFloat(n: number): string {
 }
 
 const DEFINES = [
-  `#define TAPE_TURNS ${glslFloat(MOLD.tape.turns)}`,
-  `#define TAPE_COVERAGE ${glslFloat(MOLD.tape.coverage)}`,
+  `#define TAPE_WIDTH ${glslFloat(MOLD.tape.width)}`,
   `#define TAPE_AZIMUTH0 ${glslFloat(MOLD.tape.azimuth0)}`,
   `#define TAPE_LENGTH ${glslFloat(TAPE_LENGTH)}`,
+  `#define TAPE_PASSES ${TAPE_LENGTH}`,
   `#define TAPE_HEIGHT ${glslFloat(MOLD.flask.height)}`,
   `#define TAPE_OVERLAP_SHADE ${glslFloat(TAPE_OVERLAP_SHADE)}`,
   `#define TAPE_LAP_LINE_SHADE ${glslFloat(TAPE_LAP_LINE_SHADE)}`,
@@ -39,39 +39,40 @@ const DEFINES = [
 ].join('\n')
 
 export interface TapeEval {
-  /** Layers of tape over the point: 0, 1 or 2. */
+  /** Layers of tape over the point: 0 to 4 (the flat first and last turns stack with their neighbours). */
   layers: number
   /** Distance in turns from the strip end back to the laid strip at this point (1e9 if none). */
   edge: number
   /**
-   * Where two layers overlap: distance in pitches from the lower edge of the later (upper) strip, 0 at the lap edge
-   * up to `coverage - 1`. 1e9 where there is no overlap.
+   * Where two or more layers overlap: distance from the lower edge of the topmost (latest) strip, in strip widths,
+   * 0 at the lap edge up to 1. 1e9 where there is no overlap.
    */
   lap: number
 }
 
 /**
  * TS twin of the GLSL `tapeEval` below, step for step (GLSL `mod(x, 1.0)` is `x - floor(x)`). The mirror test checks
- * it against `tapeLayers` in config/mold.ts, the reference. Coverage < 2, so at most two candidate turns.
+ * it against `tapeLayers` in config/mold.ts, the reference.
  */
 export function tapeLayersGlsl(h: number, az: number, p: number): TapeEval {
   const x = (az - MOLD.tape.azimuth0) / (Math.PI * 2)
   const f = x - Math.floor(x)
-  const c = h * MOLD.tape.turns - f
-  const front = -1 + p * TAPE_LENGTH
-  const kStart = Math.max(-1, Math.ceil(c - MOLD.tape.coverage * 0.5))
-  const kEnd = Math.floor(c + MOLD.tape.coverage * 0.5)
+  const front = p * TAPE_LENGTH
+  const halfW = MOLD.tape.width * 0.5
   let layers = 0
   let edge = 1e9
   let lap = 1e9
-  for (let i = 0; i < 2; i++) {
-    const k = kStart + i
-    if (k > kEnd) break
-    if (k + f <= front) {
+  for (let k = 0; k < TAPE_LENGTH; k++) {
+    const u = k + f
+    if (u >= front) break
+    const t = Math.min(Math.max((u - 1) / (TAPE_LENGTH - 2), 0), 1)
+    const center = MOLD.tape.width * 0.5 + (1 - MOLD.tape.width) * (t * t * (3 - 2 * t))
+    if (Math.abs(h - center) <= halfW) {
       layers += 1
-      edge = Math.min(edge, front - (k + f))
-      // The second counted layer is the later strip, lying on top of the first.
-      if (layers === 2) lap = c - k + MOLD.tape.coverage * 0.5
+      // No leading edge once the wrap is done (the strip's final end is just an end).
+      if (p < 1) edge = Math.min(edge, front - u)
+      // The latest counted strip lies on top of the earlier ones: measure from its lower edge.
+      if (layers > 1) lap = (h - (center - halfW)) / MOLD.tape.width
     }
   }
   return { layers, edge, lap }
@@ -80,20 +81,19 @@ export function tapeLayersGlsl(h: number, az: number, p: number): TapeEval {
 const GLSL_EVAL = /* glsl */ `
 float tapeEval(float h, float az, float p, out float edge, out float lap) {
   float f = mod((az - TAPE_AZIMUTH0) / 6.283185307179586, 1.0);
-  float c = h * TAPE_TURNS - f;
-  float front = -1.0 + p * TAPE_LENGTH;
-  float kStart = max(-1.0, ceil(c - TAPE_COVERAGE * 0.5));
-  float kEnd = floor(c + TAPE_COVERAGE * 0.5);
+  float front = p * TAPE_LENGTH;
   float layers = 0.0;
   edge = 1e9;
   lap = 1e9;
-  for (int i = 0; i < 2; i++) {
-    float k = kStart + float(i);
-    if (k > kEnd) break;
-    if (k + f <= front) {
+  for (int i = 0; i < TAPE_PASSES; i++) {
+    float u = float(i) + f;
+    if (u >= front) break;
+    float t = clamp((u - 1.0) / (TAPE_LENGTH - 2.0), 0.0, 1.0);
+    float center = TAPE_WIDTH * 0.5 + (1.0 - TAPE_WIDTH) * (t * t * (3.0 - 2.0 * t));
+    if (abs(h - center) <= TAPE_WIDTH * 0.5) {
       layers += 1.0;
-      edge = min(edge, front - (k + f));
-      if (layers > 1.5) lap = c - k + TAPE_COVERAGE * 0.5;
+      if (p < 1.0) edge = min(edge, front - u);
+      if (layers > 1.5) lap = (h - (center - TAPE_WIDTH * 0.5)) / TAPE_WIDTH;
     }
   }
   return layers;
@@ -154,7 +154,7 @@ export interface TapeMaterialHandle {
 }
 
 /**
- * Tape wrapped around the flask in a helix (the pattern mirrors `tapeLayers` in config/mold.ts). `uProgress` = wrap
+ * Tape wrapped around the flask (flat first and last turn, helix between; the pattern mirrors `tapeLayers` in config/mold.ts). `uProgress` = wrap
  * progress 0..1 is the only state. Both halves share the shader source and cache key; they differ only in `side`
  * (which three turns into FLIP_SIDED, so the halves compile as two programs, both during Precompile).
  */
@@ -182,6 +182,6 @@ export function createTapeMaterial(side: 'back' | 'front'): TapeMaterialHandle {
       .replace('#include <color_fragment>', FRAGMENT_COLOR)
       .replace('#include <opaque_fragment>', FRAGMENT_EDGE)
   }
-  material.customProgramCacheKey = () => 'tape-wrap-v2'
+  material.customProgramCacheKey = () => 'tape-wrap-v3'
   return { material, uniforms }
 }

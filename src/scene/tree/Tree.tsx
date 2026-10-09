@@ -12,6 +12,7 @@ import { getRingMaterial } from '../ring/sharedMaterial'
 import { createSprueGeometry } from '../ring/sprue'
 import { useRingLightGeometry } from '../ring/useRingGeometry'
 import { slotPose } from './slots'
+import { createSprueWaxGeometry } from './sprueWax'
 import { createTrunkGeometry } from './trunk'
 import { createWaxMaterial } from './waxMaterial'
 
@@ -44,10 +45,16 @@ export function Tree() {
   const wax = useMemo(() => createWaxMaterial(), [])
   useEffect(() => () => wax.dispose(), [wax])
 
+  // Red wax continuation of every ring sprue (the same cylinder past the tip, into the trunk): only on the tree.
+  const waxStub = useMemo(() => createSprueWaxGeometry(), [])
+  useEffect(() => () => waxStub.dispose(), [waxStub])
+
   const layouts = useMemo(() => CLONE_SLOTS.map((i) => cloneLayout(i)), [])
+  const heroLayout = useMemo(() => cloneLayout(0), [])
 
   const trunk = useRef<THREE.Mesh>(null)
   const clones = useRef<(THREE.Group | null)[]>([])
+  const heroStub = useRef<THREE.Group>(null)
 
   useFrame(() => {
     // The one writer of the burn front (shared by the wax and the ring material).
@@ -66,6 +73,13 @@ export function Tree() {
       g.scale.setScalar(s)
       g.visible = loading || (s > 0.001 && !burned)
     }
+    // The hero ring's wax stub grows from the tip as the ring settles onto the tree (the last part of ring.tree).
+    const h = heroStub.current
+    if (h) {
+      const s = Math.min(Math.max((story.ring.tree - 0.85) / 0.15, 0), 1)
+      h.scale.setScalar(Math.max(s, 0.0001))
+      h.visible = loading || (s > 0.001 && !burned)
+    }
   })
 
   return (
@@ -83,8 +97,12 @@ export function Tree() {
         >
           <mesh geometry={ringGeometry} material={ringMaterial} position={TIP_TO_RING} />
           <mesh geometry={sprueGeometry} material={ringMaterial} position={TIP_TO_RING} />
+          <mesh geometry={waxStub} material={wax} />
         </group>
       ))}
+      <group ref={heroStub} position={heroLayout.tip} quaternion={heroLayout.quaternion}>
+        <mesh geometry={waxStub} material={wax} />
+      </group>
     </group>
   )
 }

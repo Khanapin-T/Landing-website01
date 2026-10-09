@@ -14,8 +14,10 @@ export interface MoldState {
   fill: number
   /** Vacuum boil strength 0..1. */
   boil: number
+  /** Rest timer 0..1 (00:00 to 15:00): the investment thickens, tape still on, before the tape comes off. */
+  rest: number
 }
 
-export const MOLD_INITIAL: Readonly<MoldState> = { base: 0, trunk: 0, clones: [0, 0, 0], flask: 0, tape: 0, fill: 0, boil: 0 }
+export const MOLD_INITIAL: Readonly<MoldState> = { base: 0, trunk: 0, clones: [0, 0, 0], flask: 0, tape: 0, fill: 0, boil: 0, rest: 0 }
 
 export const mold: MoldState = { ...MOLD_INITIAL, clones: [0, 0, 0] }

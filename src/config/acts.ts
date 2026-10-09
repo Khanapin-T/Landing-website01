@@ -20,7 +20,7 @@ export const ACTS: readonly ActDef[] = [
   { id: 'print', screens: 1.5, temperature: 0.1, entry: 0.6 },
   { id: 'mold', screens: 2.5, temperature: 0.15, entry: 0.5 },
   { id: 'fire', screens: 2.5, temperature: 0.8, entry: 0.5 },
-  { id: 'gold', screens: 2.5, temperature: 1 },
+  { id: 'gold', screens: 2.5, temperature: 1, entry: 0.15 },
   { id: 'birth', screens: 3, temperature: 0.6 },
 ]
 

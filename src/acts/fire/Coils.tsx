@@ -6,7 +6,7 @@ import { heatColor } from '../../scene/furnace/heat'
 import { getAppState } from '../../story/appState'
 import { story } from '../../story/store'
 import { coilLayout } from './coilLayout'
-import { createSerpentineGeometries } from './helix'
+import { createHairpinGeometry } from './helix'
 import { fire } from './state'
 
 /** Must equal the Stage camera fov. */
@@ -18,21 +18,20 @@ const TIERS = 3
 const glow: [number, number, number] = [0, 0, 0]
 
 /**
- * The furnace springs of Act 4 (after the muffle furnace photos): one long spring per wall (left, right, ceiling,
- * floor) laid in a serpentine of three long runs from the front toward the back, so they converge toward the middle.
- * Each spring is cut into three tiers (one per run); tier i of every wall shares one material, and alpha hash fades
- * it in through fire.coils[i] (opaque pipeline, no sorting). The emissive glow follows story.flask.heat. All tiers
- * share one program. Rebuilt on resize because the walls follow the viewport.
+ * The heating elements of Act 4 (after the muffle furnace photo): only the left and right walls carry them (no
+ * ceiling, no floor), three separate hairpin springs per wall stacked with gaps, each two long runs from the front
+ * U-turn toward the back wall, so they converge toward the middle. Tier i = the i-th hairpin of each wall (top first);
+ * tier i of every wall shares one material, and alpha hash fades it in through fire.coils[i] (opaque pipeline, no
+ * sorting). The emissive glow follows story.flask.heat. All hairpins share one geometry and one program. Rebuilt on
+ * resize because the walls follow the viewport.
  */
 export function Coils() {
   const size = useThree((s) => s.size)
   const layout = useMemo(
-    () => coilLayout({ aspect: size.width / size.height, fovDeg: FOV, camZ: CAM.tree.z }),
+    () => coilLayout({ aspect: size.width / size.height, fovDeg: FOV, camZ: CAM.furnace.z }),
     [size.width, size.height],
   )
-  // Two spring shapes: the side walls (runs spread across the height) and the ceiling and floor (spread across the width).
-  const side = useMemo(() => createSerpentineGeometries(layout.length, layout.sideSpacing), [layout.length, layout.sideSpacing])
-  const span = useMemo(() => createSerpentineGeometries(layout.length, layout.spanSpacing), [layout.length, layout.spanSpacing])
+  const geometry = useMemo(() => createHairpinGeometry(layout.length, layout.hairpinHeight), [layout.length, layout.hairpinHeight])
   const tiers = useMemo(
     () =>
       Array.from(
@@ -49,8 +48,7 @@ export function Coils() {
       ),
     [],
   )
-  useEffect(() => () => side.forEach((g) => g.dispose()), [side])
-  useEffect(() => () => span.forEach((g) => g.dispose()), [span])
+  useEffect(() => () => geometry.dispose(), [geometry])
   useEffect(() => () => tiers.forEach((m) => m.dispose()), [tiers])
 
   const meshes = useRef<(THREE.Mesh | null)[]>([])
@@ -74,21 +72,20 @@ export function Coils() {
   // Everything starts visible: Precompile (traverseVisible) runs before the first frame sets the real values.
   return (
     <group>
-      {layout.walls.flatMap((wall) => {
-        const geos = wall.side === 'left' || wall.side === 'right' ? side : span
-        return geos.map((geometry, tier) => (
+      {layout.walls.flatMap((wall, w) =>
+        layout.hairpinY.map((y, tier) => (
           <mesh
             key={`${wall.side}-${tier}`}
             ref={(m) => {
-              meshes.current[layout.walls.indexOf(wall) * TIERS + tier] = m
+              meshes.current[w * TIERS + tier] = m
             }}
             geometry={geometry}
             material={tiers[tier]}
-            position={wall.position}
+            position={[wall.position[0], wall.position[1] + y, wall.position[2]]}
             rotation={[0, Math.PI / 2, wall.rotationZ, 'ZYX']}
           />
-        ))
-      })}
+        )),
+      )}
     </group>
   )
 }

@@ -1,0 +1,39 @@
+import { useLayoutEffect, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import type { Group } from 'three'
+import { getAppState } from '../../story/appState'
+import { master, syncMaster } from '../../story/master'
+import { story } from '../../story/store'
+import { shouldRender } from '../../story/visibility'
+import { GOLD_BEATS } from './beats'
+import { GoldFill } from './GoldFill'
+import { GoldStream } from './GoldStream'
+import { registerGold } from './timeline'
+import { VacuumChamber } from './VacuumChamber'
+
+/**
+ * Act 5: the solid gold fill and the molten stream inside the act's window; the vacuum chamber too (it comes off when the rest starts). The flask itself, its X-ray shell and the
+ * cavity outline live in MoldScene (the flask owner) and follow story.flask; the gauge and the rest chip are DOM (GoldHud).
+ */
+export function GoldScene() {
+  useLayoutEffect(() => {
+    const off = registerGold(master)
+    syncMaster()
+    return off
+  }, [])
+
+  const root = useRef<Group>(null)
+  useFrame(() => {
+    if (root.current) {
+      root.current.visible = shouldRender(getAppState().phase, story.screen, GOLD_BEATS.windowFrom, GOLD_BEATS.windowTo)
+    }
+  })
+
+  return (
+    <group ref={root}>
+      <VacuumChamber />
+      <GoldFill />
+      <GoldStream />
+    </group>
+  )
+}

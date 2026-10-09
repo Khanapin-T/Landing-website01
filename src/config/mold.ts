@@ -21,6 +21,9 @@ const BASE_RADIUS = FLASK.innerRadius + FLASK.wall + 0.2
 /** The crucible-former cone rises from the cup floor to the trunk bottom (MOLD.trunk.bottomY). */
 const TRUNK_BOTTOM_Y = -1.18
 
+/** The investment rest timer counts 00:00 to 15:00 (the real thickening takes 10 to 15 minutes). */
+export const MOLD_REST_SECONDS = 900
+
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
   baseTopY: BASE_TOP_Y,
@@ -51,8 +54,11 @@ export const MOLD = {
   yaw: Math.PI / 4,
   /** The investment stream: a vertical line at this radius and azimuth (far side, between two branches). */
   pour: { radius: 1.05, azimuth: Math.PI / 2 },
-  /** Strip of tape: `turns` full turns up the flask, `coverage` = band width in pitches (1.3 = 30% overlap). */
-  tape: { turns: 4, coverage: 1.3, azimuth0: -Math.PI / 2 },
+  /**
+   * Strip of tape: `length` turns in all (an integer, so tapeSpin(1) is whole turns), `width` = strip width as a
+   * fraction of the flask height. The first and last turn are flat (zero pitch); in between the strip climbs.
+   */
+  tape: { length: 7, width: 0.325, azimuth0: -Math.PI / 2 },
 } as const
 
 export interface TreeSlot {
@@ -90,6 +96,13 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
 ]
 
 /**
+ * How far the flask recedes from the camera in the furnace (Act 4), in world units. Done by pulling the camera back
+ * (CAM.furnace) while the springs' front plane moves forward by the same amount (COILS.zNear), so the springs keep
+ * their size in the frame and the flask ends up half way along their runs.
+ */
+export const FURNACE_BACK = 4.5
+
+/**
  * Camera targets: position (y, z) and the Y of the point on the axis it looks at (look == y: level view).
  * The start value is CAM_INITIAL in store.ts. `tree` frames base + flask with a margin; `pour` is raised and
  * tilted down so the top opening of the flask (the pour and the boil) is visible. Tuned by eye.
@@ -97,27 +110,39 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
 export const CAM = {
   tree: { y: 0.25, z: 13.4, look: 0.25 },
   pour: { y: 8.6, z: 12.4, look: 0.4 },
+  /** Act 4 while the flask sits in the furnace: the level view pulled back by FURNACE_BACK (the flask recedes into the springs). */
+  furnace: { y: 0.25, z: 13.4 + FURNACE_BACK, look: 0.25 },
 } as const
 
-/**
- * The strip starts one turn below the flask bottom (u = -1, so the first turn covers the bottom edge) and runs one
- * turn past the top (u = turns + 1), so the whole surface is covered. Length in turns.
- */
-export const TAPE_LENGTH = MOLD.tape.turns + 2
+/** Length of the strip in turns (an integer). */
+export const TAPE_LENGTH = MOLD.tape.length
 
 /**
- * Number of tape layers (0, 1 or 2) covering a flask surface point, given the point's height fraction `h` (0 bottom,
- * 1 top), its object-space azimuth `az` and the wrap progress `p` (0..1). The strip's helix: height fraction
- * (u) / turns, azimuth azimuth0 + 2 PI u, for u from -1 to turns + 1. The shader mirrors this function.
+ * Height fraction (0 bottom, 1 top) of the strip's center line at `u` turns along it. The first turn (u <= 1) is flat
+ * with the strip's lower edge flush with the flask bottom; the last turn (u >= length - 1) is flat with its upper edge
+ * flush with the top; in between a smoothstep ramp (zero slope at both ends, so the angle grows and fades smoothly).
+ * The shader mirrors this expression.
+ */
+export function tapeCenter(u: number): number {
+  const { length, width } = MOLD.tape
+  const t = Math.min(Math.max((u - 1) / (length - 2), 0), 1)
+  return width * 0.5 + (1 - width) * (t * t * (3 - 2 * t))
+}
+
+/**
+ * Number of tape layers covering a flask surface point, given the point's height fraction `h` (0 bottom, 1 top), its
+ * object-space azimuth `az` and the wrap progress `p` (0..1). The strip passes azimuth fraction f (0 at azimuth0) at
+ * u = k + f for k = 0..length-1; pass k covers the point when |h - tapeCenter(k + f)| <= width / 2 and that part of the
+ * strip is laid (k + f < p * length). The shader mirrors this function.
  */
 export function tapeLayers(h: number, az: number, p: number): number {
-  const { turns, coverage, azimuth0 } = MOLD.tape
+  const { length, width, azimuth0 } = MOLD.tape
   const f = mod((az - azimuth0) / TAU, 1)
-  const c = h * turns - f
-  const front = -1 + p * TAPE_LENGTH
+  const front = p * length
   let layers = 0
-  for (let k = Math.max(-1, Math.ceil(c - coverage / 2)); k <= Math.floor(c + coverage / 2); k++) {
-    if (k + f <= front) layers++
+  for (let k = 0; k < length; k++) {
+    if (k + f >= front) break
+    if (Math.abs(h - tapeCenter(k + f)) <= width * 0.5) layers++
   }
   return layers
 }

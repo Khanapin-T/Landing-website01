@@ -67,7 +67,9 @@ export function MoldScene() {
       <RubberBase />
       <Tree />
       <group ref={rig}>
-        {/* Pivot at the flask middle (including the foot): rotate there, then undo the offset for the contents. */}
+        {/* Pivot at the flask middle (including the foot): rotate there, then undo the offset for the contents.
+            GoldFill and PourCloud (src/acts/gold) reproduce this flip as a fixed Rz(pi) about FLIP.pivotY at the scene
+            root, so a change here must be mirrored there. */}
         <group ref={flipper} position-y={FLIP.pivotY}>
           <group position-y={-FLIP.pivotY}>
             <group ref={spinner}>

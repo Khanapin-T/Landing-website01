@@ -48,8 +48,22 @@ describe('act 4 timeline', () => {
     expect(snap(story.cam)).toEqual(CAM.pour)
   })
 
-  it('brings the camera back to the level tree view', () => {
+  it('pulls the camera back to the level furnace view, so the flask recedes into the springs', () => {
     tl.time(B.camTo)
+    expect(snap(story.cam)).toEqual(CAM.furnace)
+    expect(CAM.furnace.z).toBeGreaterThan(CAM.tree.z)
+  })
+
+  it('keeps the flask far away through the heat and the X-ray, and brings it back only after the X-ray, before the flip', () => {
+    tl.time(B.xrayOutTo)
+    expect(snap(story.cam)).toEqual(CAM.furnace)
+    expect(B.camBackFrom).toBeGreaterThanOrEqual(B.xrayOutTo)
+    expect(B.flipFrom).toBeGreaterThanOrEqual(B.camBackTo)
+    tl.time((B.camBackFrom + B.camBackTo) / 2)
+    expect(story.cam.z).toBeLessThan(CAM.furnace.z)
+    expect(story.cam.z).toBeGreaterThan(CAM.tree.z)
+    expect(story.flask.flip).toBe(0)
+    tl.time(B.camBackTo)
     expect(snap(story.cam)).toEqual(CAM.tree)
   })
 
@@ -65,7 +79,7 @@ describe('act 4 timeline', () => {
     expect(story.flask.heat).toBe(1)
   })
 
-  it('has X-ray on only between 7.5 and 8.55', () => {
+  it('has X-ray on only between xrayInFrom and xrayOutTo', () => {
     tl.time(B.xrayInFrom - 0.01)
     expect(story.flask.xray).toBe(0)
     tl.time(B.xrayInTo)

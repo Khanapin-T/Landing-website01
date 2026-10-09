@@ -6,6 +6,8 @@ import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
 import { PRINT_INITIAL, print } from '../print/state'
+import { content } from '../../content'
+import { MOLD_BEATS as B } from './beats'
 import { registerMold } from './timeline'
 import { MOLD_INITIAL, mold } from './state'
 import { CAM_INITIAL, FLASK_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
@@ -80,19 +82,53 @@ describe('act 3 timeline', () => {
     expect(snap(story.cam)).toEqual(CAM.pour)
   })
 
-  it('boils under vacuum only between 6.0 and 6.25', () => {
-    tl.time(6.0)
+  it('shows the vacuum gauge for the boil and takes it away when the needle is back at zero', () => {
+    expect(B.gaugeIn).toBe(B.boilFrom)
+    expect(B.gaugeOut).toBeGreaterThanOrEqual(B.boilTo)
+    expect(B.gaugeOut).toBeLessThanOrEqual(B.restFrom)
+  })
+
+  it('says the flask goes into a vacuum chamber that pulls the air out of the investment, then the investment thickens for 10 to 15 minutes before the tape comes off', () => {
+    const c = content.mold.caption
+    expect(c).toContain('vacuum chamber')
+    expect(c).toContain('air out of the investment')
+    expect(c).toContain('before the furnace')
+    expect(c).toContain('10 to 15 minutes')
+    expect(c).toContain('tape')
+    expect(c).not.toContain('—')
+  })
+
+  it('boils under vacuum only between its start and end, and the needle (boil) is back at zero after', () => {
+    tl.time(B.boilFrom)
     expect(mold.boil).toBe(0)
-    tl.time(6.125)
+    tl.time((B.boilFrom + B.boilTo) / 2)
     expect(mold.boil).toBe(1)
-    tl.time(6.25)
+    tl.time(B.boilTo)
     expect(mold.boil).toBe(0)
   })
 
+  it('then the investment rests: the timer runs while the tape stays on, and the tape comes off only after it', () => {
+    expect(B.restFrom).toBeGreaterThanOrEqual(B.gaugeOut)
+    expect(B.restFrom).toBe(B.steps.rest)
+    expect(B.unwrapFrom).toBeGreaterThanOrEqual(B.restTo)
+    expect(B.unwrapFrom).toBe(B.steps.tapeOff)
+    expect(B.restTo - B.restFrom).toBeGreaterThan(0.1)
+    expect(B.restTo).toBeLessThanOrEqual(B.copyOut)
+    tl.time(B.restFrom)
+    expect(mold.rest).toBe(0)
+    tl.time((B.restFrom + B.restTo) / 2)
+    expect(mold.rest).toBeGreaterThan(0)
+    expect(mold.rest).toBeLessThan(1)
+    expect(mold.tape).toBe(1)
+    tl.time(B.restTo)
+    expect(mold.rest).toBe(1)
+    expect(mold.tape).toBe(1)
+  })
+
   it('unwinds the tape, drops the base (the camera stays raised), then holds', () => {
-    tl.time(6.45)
+    tl.time(B.unwrapTo)
     expect(mold.tape).toBe(0)
-    tl.time(6.5)
+    tl.time(B.baseOutTo)
     expect(mold.base).toBe(0)
     expect(snap(story.cam)).toEqual(CAM.pour)
     const held = { mold: snap(mold), ring: snap(story.ring), cam: snap(story.cam) }

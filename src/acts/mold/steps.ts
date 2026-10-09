@@ -7,6 +7,7 @@ const STARTS = [
   MOLD_BEATS.steps.tape,
   MOLD_BEATS.steps.investment,
   MOLD_BEATS.steps.vacuum,
+  MOLD_BEATS.steps.rest,
   MOLD_BEATS.steps.tapeOff,
 ] as const
 
