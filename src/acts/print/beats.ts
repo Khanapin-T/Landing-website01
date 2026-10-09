@@ -18,7 +18,5 @@ export const PRINT_BEATS = {
   liftTo: 3.85,
   flipFrom: 3.6,
   flipTo: 3.95,
-  bedOutFrom: 3.6,
-  bedOutTo: 3.8,
   copyOut: 3.85,
 } as const

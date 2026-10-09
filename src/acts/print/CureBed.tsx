@@ -53,7 +53,8 @@ export function CureBed() {
 
   const ref = useRef<THREE.Mesh>(null)
   useFrame(() => {
-    material.uniforms.uStrength.value = 0.18 * print.bed + 0.22 * print.glow
+    // `bed` scales everything: the light is gone by the end of the print.
+    material.uniforms.uStrength.value = (0.18 + 0.22 * print.glow) * print.bed
     if (ref.current) ref.current.visible = getAppState().phase === 'loading' || print.bed > 0.001
   })
 

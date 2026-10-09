@@ -128,6 +128,17 @@ describe('act 2 timeline', () => {
     }
   })
 
+  it('dims the bed light as the print goes, gone by 100% (author: no green glow under the finished print)', () => {
+    tl.time(PRINT_BEATS.printFrom)
+    expect(print.bed).toBe(1)
+    tl.time((PRINT_BEATS.printFrom + PRINT_BEATS.printTo) / 2)
+    expect(print.bed).toBeGreaterThan(0)
+    expect(print.bed).toBeLessThan(1)
+    tl.time(PRINT_BEATS.printTo)
+    expect(print.bed).toBe(0)
+    expect(print.glow).toBe(0)
+  })
+
   it('lifts the plate away, flips the ring upright to the center and clears the clip', () => {
     tl.time(3.7)
     expect(story.ring.cureY).toBe(CURE_OFF)
