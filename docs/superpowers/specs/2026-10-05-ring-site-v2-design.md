@@ -139,3 +139,26 @@ Mobile/tablet layouts, sound, custom cursor, drag-to-rotate finale, photo cards 
 - Camera: two targets (bucket view, foreground tree).
 - Performance: everything compiles in the loader; the raw tree costs the same as the Act 5 gold fill, which is hidden by then; steam and drips are cheap.
 - Verification: Vitest for act windows, flask and tree poses, and the act timeline restoring state on scrub-back; Playwright look pass at 1920x1080 and 1536x730; fps with `?debug`.
+
+## 11. Act 7 Birth: design (s07, approved by the author 2026-10-10)
+
+Replaces the Act 7 row of section 3 where they differ: **all four rings** are cut off, not one.
+
+**Beats** (3 screens, act id `birth`, screens 14.0-17.0, frame temperature 0.6, chapter name "Birth"). Screens are a first draft, tuned by eye:
+1. 14.0-14.15: Act 6 copy leaves (`WATER_BEATS.copyOut` moves to the birth start), Act 7 copy comes in. A low jar of transparent pale-green acid rises in from below, under the standing raw tree (like the bucket in Act 6). The jar is about as wide as the flask and no taller than its diameter.
+2. 14.15-14.95: the four rings come off the tree **one by one** (about 0.2 screens each). Each ring leaves at the tip of its sprue on the trunk and **keeps its sprue stub**; a short fall with a little spin; it settles on the jar floor, the later rings on top of the earlier ones. No tools on screen.
+3. 14.95-15.15: the empty tree (trunk and funnel) goes up out of the frame.
+4. 15.15-15.65: the rings lie in the acid; rest chip "00:00 -> 10:00".
+5. 15.65-15.95: the ring lying on top rises out to the frame center; the jar with the other three goes down out of the frame.
+6. 15.95-16.5: **polish line.** A neon gold line, long enough that the whole ring fits along it, tilted 60-70 deg, moves horizontally across the ring from right to left while the ring slowly turns the other way (to the right, about Y). Right of the line (already passed) the ring is mirror-polished and its sprue stub is gone; left of it the ring is still raw matte with the stub. A small label "processing and polishing" rides with the line.
+7. 16.5-17.0: **final.** The polished ring tilted 5-15 deg, endless slow Y rotation (no drag), a soft reflection below; name, promo block ("this is just one example of our work, get in touch") and contact links, all placeholders until the author writes them last.
+
+**Copy (draft for the author):** heading "Then the ring is born"; caption "Each ring is cut from the tree and goes into a jar of acid for ten minutes. Then one of them is processed and polished until it shines."; steps Cut off / Acid / Polish. Facts only from the author: the cut, ten minutes in acid, processing and polishing.
+
+**Architecture:**
+- `src/acts/birth/`: `BirthScene` (timeline registration, act window), `Jar` (low glass jar + pale-green acid: fresnel/alpha, no transmission, the rings show through), `BirthTree` (trunk and funnel at the Act 6 end pose `finalTreeMatrix(RAW.yawTo)`, raw-gold material), `CutRings` (the four rings with their sprue stubs: on the tree, falling, in the jar; poses from pure, tested functions), `PolishRing` (the ring that comes out, polish split and final pose), `PolishLine` (neon quad; bloom does the glow), `BirthHud` (copy, steps, `RestChip`, the line label positioned per frame through a ref).
+- Act 6 hands over at 14.0: `RawTree` stops rendering there (`WATER_BEATS.windowTo` = 14.0) and Act 7 draws the same tree in the same pose, so the switch is invisible.
+- **Polish split:** one material for the ring and its stub: raw (Act 6 raw gold) on one side of a moving plane (the line's plane in world space), polished on the other; the stub is discarded on the polished side, so it vanishes exactly where the line has passed. Uniforms only, one program.
+- Final reflection: a mirrored copy of the polished ring under it with a fade (cheap, no reflector pass). Polished gold needs reflections: drei `Environment` with Lightformers rendered once, compiled in the loader.
+- Camera targets: tree + jar view, close center view for the polish, final view.
+- Performance: everything compiles in the loader; the hero ring (100k) only for the ring that comes out, the cut rings use `ring_light`.
