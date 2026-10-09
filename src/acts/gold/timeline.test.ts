@@ -71,10 +71,19 @@ describe('act 5 timeline', () => {
     expect(story.flask.heat).toBeCloseTo(FIRE_END_HEAT, 6)
   })
 
+  it('shows the gauge the moment the chamber is on, before the needle drops', () => {
+    expect(B.gaugeIn).toBe(B.chamberTo)
+    expect(B.chamberTo).toBeLessThanOrEqual(B.vacuumFrom)
+    tl.time(B.gaugeIn)
+    expect(gold.chamber).toBe(1)
+    expect(gold.vacuum).toBe(0)
+  })
+
   it('drops the gauge needle to full vacuum before the X-ray', () => {
     tl.time(B.vacuumTo)
     expect(gold.vacuum).toBe(1)
     expect(B.vacuumTo).toBeLessThanOrEqual(B.xrayInFrom)
+    expect(B.vacuumTo).toBeLessThanOrEqual(B.fillFrom)
   })
 
   it('has X-ray on only around the pour, and off only after the flash', () => {
@@ -87,6 +96,10 @@ describe('act 5 timeline', () => {
     tl.time(B.xrayOutTo)
     expect(story.flask.xray).toBe(0)
     expect(B.xrayOutFrom).toBeGreaterThanOrEqual(B.coolTo)
+  })
+
+  it('pours for 0.45 screens, twice as fast as before', () => {
+    expect(B.fillTo - B.fillFrom).toBeCloseTo(0.45, 9)
   })
 
   it('fills while X-ray is on, then cools', () => {
@@ -103,6 +116,8 @@ describe('act 5 timeline', () => {
   })
 
   it('runs the rest timer after the pour and settles the heat', () => {
+    expect(B.restFrom).toBeGreaterThanOrEqual(B.fillTo)
+    expect(B.restFrom).toBe(B.steps.rest)
     tl.time(B.restFrom)
     expect(gold.rest).toBe(0)
     tl.time(B.restTo)
@@ -129,20 +144,20 @@ describe('act 5 timeline', () => {
   })
 
   it('is a pure function of the scroll position (a jump equals a scrub)', () => {
-    tl.time(10.5)
+    tl.time(10.3)
     const jumped = state()
     tl.time(8.0)
     tl.time(9.5)
-    tl.time(10.5)
+    tl.time(10.3)
     expect(state()).toEqual(jumped)
   })
 
   it('lands on the same state after a backward jump as after a forward scrub', () => {
     tl.time(9.0)
-    tl.time(9.92)
+    tl.time(10.2)
     const forward9 = state()
     tl.time(11.4)
-    tl.time(9.92)
+    tl.time(10.2)
     expect(state()).toEqual(forward9)
 
     tl.time(0)

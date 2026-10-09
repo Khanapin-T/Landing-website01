@@ -8,36 +8,57 @@ const smooth = (a: number, b: number, v: number) => {
 }
 
 /**
- * The metal fill (Act 5). `story.flask.fill` 0..1. Heights are flask-local world Y of the UNFLIPPED flask (the frame
- * the tree was built in); the flask is flipped in Act 5, so the metal descends in the world while this Y rises. The
- * first `trail` of the fill is the stream arriving (nothing solid yet), then the front rises from the funnel mouth
- * (`startY`) to above every ring corner (`topY`). `band` = thickness of the glowing band under the front. `off` =
- * front value when nothing is filled (below everything: every fragment is discarded). `streamY` = flask-local Y where
- * the stream starts: above the frame in the flipped world (pinned by gold.test.ts).
+ * The metal fill (Act 5). `story.flask.fill` 0..1. Heights are flask-local Y of the UNFLIPPED flask (the frame the
+ * tree was built in); the flask is flipped in Act 5, so this Y rises where the world Y falls. The gold runs down the
+ * trunk and fills the mold from the BOTTOM UP in the world, i.e. local y >= front: the first `trail` of the fill is
+ * the stream falling (nothing solid yet), then the front moves from `topY` (world bottom, above every ring corner)
+ * down to `startY` (just past the funnel mouth, world top). `band` = thickness of the glowing band on the filled side of the
+ * front. `off` = front value when nothing is filled (above everything: every fragment is discarded). `streamY` =
+ * flask-local Y where the stream starts: above the frame in the flipped world (pinned by gold.test.ts).
  */
 export const FILL = {
-  startY: MOLD.flask.bottomY,
+  startY: MOLD.flask.bottomY - 0.02,
   topY: BURN.topY,
   trail: 0.3,
   band: 0.08,
-  off: -1000,
+  off: 1000,
   streamY: -4.2,
 } as const
 
-/** 0..1 how far the solid front has travelled for a fill value. */
+/** 0..1 how far the solid front has travelled for a fill value (0 while the stream is still falling). */
 export function fillProgress(fill: number): number {
   return clamp01((fill - FILL.trail) / (1 - FILL.trail))
 }
 
-/** Flask-local Y of the solid front: fragments above it are not drawn yet. */
+/**
+ * Flask-local Y of the solid front: fragments BELOW it (local y < front) are not drawn yet. Nothing is filled until
+ * the stream has landed; then the front falls from `topY` to `startY` (= rises from the bottom in the world).
+ */
 export function fillFrontY(fill: number): number {
-  if (fill <= 0) return FILL.off
-  return FILL.startY + (FILL.topY - FILL.startY) * fillProgress(fill)
+  if (fill <= FILL.trail) return FILL.off
+  return FILL.topY + (FILL.startY - FILL.topY) * fillProgress(fill)
 }
 
-/** Fill value at which the front reaches flask-local height `y` (the moment a point there is part of the solid). */
-export function arriveAt(y: number): number {
-  return FILL.trail + (1 - FILL.trail) * clamp01((y - FILL.startY) / (FILL.topY - FILL.startY))
+/** World Y of the stream's top: above the frame, on the flask axis. */
+export const STREAM_TOP_WORLD_Y = 2 * FLIP.pivotY - FILL.streamY
+/** World Y of the far end of the trunk (the stream pours into it, then through the sprues into the rings). */
+export const TRUNK_END_WORLD_Y = 2 * FLIP.pivotY - MOLD.trunk.topY
+
+/**
+ * The visible molten stream as world Y values (`top` >= `bottom`; top === bottom = nothing to draw). The top stays
+ * above the frame. During the trail phase the tip falls from the top down the axis to the trunk's far end; after
+ * that the stream ends at the rising front, but never above the trunk end (the gold runs down inside the trunk and
+ * the sprues, which are not filled yet).
+ */
+export function streamSpan(fill: number): { top: number; bottom: number } {
+  const top = STREAM_TOP_WORLD_Y
+  if (fill <= 0) return { top, bottom: top }
+  if (fill < FILL.trail) {
+    const k = clamp01(fill / FILL.trail)
+    return { top, bottom: top + (TRUNK_END_WORLD_Y - top) * k }
+  }
+  const frontWorld = 2 * FLIP.pivotY - fillFrontY(fill)
+  return { top, bottom: Math.max(frontWorld, TRUNK_END_WORLD_Y) }
 }
 
 /**
@@ -50,12 +71,9 @@ export function goldGlow(fill: number, cool: number): number {
   return molten + flash
 }
 
-/** The fill and the pour are drawn under a fixed flip transform: only valid while the flask is fully flipped. */
+/** The fill and the stream are drawn under a fixed flip transform: only valid while the flask is fully flipped. */
 export function goldFillVisible(f: { fill: number; xray: number; flip: number }): boolean {
   return f.flip > 0.999 && f.fill > 0.001 && f.xray > 0.001
-}
-export function pourVisible(f: { fill: number; xray: number; flip: number }): boolean {
-  return goldFillVisible(f) && f.fill < 0.999
 }
 
 /**

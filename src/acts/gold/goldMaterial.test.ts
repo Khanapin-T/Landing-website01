@@ -23,24 +23,25 @@ describe('gold fill material', () => {
     expect(m.side).toBe(THREE.DoubleSide)
   })
 
-  it('starts with the front below everything', () => {
+  it('starts with nothing filled', () => {
     expect(goldFillUniforms.uFillY.value).toBe(FILL.off)
+    expect(FILL.off).toBeGreaterThan(FILL.topY)
   })
 
-  it('maps world Y back to the flask frame, discards above the front, glows under it', () => {
+  it('maps world Y back to the flask frame, discards below the front, glows just above it', () => {
     const shader = compile(createGoldMaterial())
     expect(shader.uniforms.uFillY).toBe(goldFillUniforms.uFillY)
     expect(shader.uniforms.uFillColor).toBe(goldFillUniforms.uFillColor)
     expect(shader.vertexShader).toContain('varying float vFillY;')
     expect(shader.vertexShader).toContain(`vFillY = 2.0 * ${FLIP.pivotY.toFixed(5)} - (modelMatrix * vec4(transformed, 1.0)).y;`)
-    expect(shader.fragmentShader).toContain('if (vFillY > uFillY) discard;')
-    const glow = shader.fragmentShader.indexOf('uFillY - vFillY')
+    expect(shader.fragmentShader).toContain('if (vFillY < uFillY) discard;')
+    const glow = shader.fragmentShader.indexOf('vFillY - uFillY')
     expect(glow).toBeGreaterThan(-1)
     expect(glow).toBeLessThan(shader.fragmentShader.indexOf('#include <opaque_fragment>'))
   })
 
   it('has its own program key', () => {
-    expect(createGoldMaterial().customProgramCacheKey()).toBe('gold-fill-v1')
+    expect(createGoldMaterial().customProgramCacheKey()).toBe('gold-fill-v2')
   })
 })
 

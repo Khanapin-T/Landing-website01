@@ -51,7 +51,7 @@ export const content = {
   gold: {
     heading: 'Then the gold goes in',
     caption:
-      'The flask goes under vacuum and molten yellow gold is poured into the funnel. It fills the hollow, the trunk first and then the rings, and rests for 5 to 15 minutes before the flask is quenched in water.',
+      'The flask goes under vacuum and molten yellow gold is poured into the funnel. It runs down the trunk and fills the rings from the bottom up, then rests for 5 to 15 minutes before the flask is quenched in water.',
     steps: ['Vacuum', 'Pour', 'Rest'],
     gauge: 'Vacuum',
     rest: 'Rest',

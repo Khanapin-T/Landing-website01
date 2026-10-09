@@ -3,7 +3,7 @@ import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
 import { CAM, MOLD } from './mold'
 import { FLANGE, FLANGE_RADIUS, FLASK_RADIUS } from '../acts/mold/flaskMaterial'
-import { CHAMBER, FILL, HOSE, REST_SECONDS, arriveAt, chamberProfile, hosePath, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
+import { CHAMBER, FILL, HOSE, REST_SECONDS, STREAM_TOP_WORLD_Y, TRUNK_END_WORLD_Y, chamberProfile, hosePath, fillFrontY, fillProgress, goldFillVisible, goldGlow, restClock, streamSpan } from './gold'
 
 describe('vacuum chamber', () => {
   const frameHalf = CAM.tree.z * Math.tan((30 * Math.PI) / 360)
@@ -49,29 +49,38 @@ describe('vacuum chamber', () => {
   })
 })
 
-describe('fill front', () => {
-  it('shows nothing until the fill starts', () => {
+describe('fill front (bottom up in the world)', () => {
+  it('shows nothing until the fill starts, and during the stream phase', () => {
     expect(fillFrontY(0)).toBe(FILL.off)
     expect(fillFrontY(-1)).toBe(FILL.off)
+    expect(fillFrontY(FILL.trail / 2)).toBe(FILL.off)
+    expect(fillFrontY(FILL.trail)).toBe(FILL.off)
+    expect(FILL.off).toBeGreaterThan(FILL.topY)
   })
 
-  it('holds at the funnel mouth while the stream is still arriving, then rises to the top and holds', () => {
-    expect(fillFrontY(0.001)).toBeCloseTo(FILL.startY, 2)
-    expect(fillFrontY(FILL.trail)).toBeCloseTo(FILL.startY, 9)
-    expect(fillFrontY(1)).toBeCloseTo(FILL.topY, 9)
+  it('then moves monotonically from the world bottom up (local Y falls) from topY to startY and holds', () => {
+    expect(fillFrontY(FILL.trail + 1e-6)).toBeCloseTo(FILL.topY, 3)
+    expect(fillFrontY(1)).toBeCloseTo(FILL.startY, 9)
     expect(fillProgress(2)).toBe(1)
-  })
-
-  it('a point arrives exactly when the front reaches its height', () => {
-    for (const y of [FILL.startY, -0.5, 0, 0.7, FILL.topY]) {
-      expect(fillFrontY(arriveAt(y) + 1e-9)).toBeCloseTo(y, 4)
+    let prev = Infinity
+    for (let fill = FILL.trail + 0.01; fill <= 1.0001; fill += 0.01) {
+      const y = fillFrontY(fill)
+      expect(y).toBeLessThan(prev)
+      prev = y
     }
+    // In the world the front rises.
+    const world = (fill: number) => 2 * FLIP.pivotY - fillFrontY(fill)
+    expect(world(0.9)).toBeGreaterThan(world(0.5))
   })
 
-  it('gives every point time to fly in before the front reaches it', () => {
-    expect(arriveAt(FILL.startY)).toBeCloseTo(FILL.trail, 9)
-    expect(arriveAt(-99)).toBeCloseTo(FILL.trail, 9)
-    expect(arriveAt(FILL.topY)).toBeCloseTo(1, 9)
+  it('fills the lower rings (high local Y) before the trunk and the funnel', () => {
+    const arrivesWhenFrontReaches = (y: number) => {
+      let fill = FILL.trail + 1e-6
+      while (fillFrontY(fill) > y && fill < 1) fill += 0.001
+      return fill
+    }
+    expect(arrivesWhenFrontReaches(1.5)).toBeLessThan(arrivesWhenFrontReaches(MOLD.trunk.topY))
+    expect(arrivesWhenFrontReaches(MOLD.trunk.topY)).toBeLessThan(arrivesWhenFrontReaches(FILL.startY + 0.1))
   })
 
   it('covers every ring corner', () => {
@@ -79,14 +88,52 @@ describe('fill front', () => {
     expect(FILL.topY).toBeGreaterThanOrEqual(top)
   })
 
+  it('reaches past the funnel mouth at the end', () => {
+    expect(FILL.startY).toBeLessThan(MOLD.flask.bottomY)
+  })
+
   it('starts the stream above the frame once the flask is flipped', () => {
     const worldY = 2 * FLIP.pivotY - FILL.streamY
     const frameTop = CAM.tree.look + CAM.tree.z * Math.tan((30 * Math.PI) / 360)
     expect(worldY).toBeGreaterThan(frameTop)
     expect(FILL.streamY).toBeLessThan(FUNNEL.exitY)
+    expect(STREAM_TOP_WORLD_Y).toBeCloseTo(worldY, 9)
   })
 })
 
+describe('stream span (world Y)', () => {
+  it('draws nothing at fill 0', () => {
+    const s = streamSpan(0)
+    expect(s.top).toBe(s.bottom)
+  })
+
+  it('keeps its top above the frame and its tip falls to the trunk end during the trail phase', () => {
+    let prev = streamSpan(0).bottom
+    for (const fill of [0.05, 0.1, 0.2, 0.29]) {
+      const s = streamSpan(fill)
+      expect(s.top).toBe(STREAM_TOP_WORLD_Y)
+      expect(s.bottom).toBeLessThan(prev)
+      expect(s.bottom).toBeGreaterThan(TRUNK_END_WORLD_Y)
+      prev = s.bottom
+    }
+    expect(streamSpan(FILL.trail).bottom).toBeCloseTo(TRUNK_END_WORLD_Y, 9)
+    expect(TRUNK_END_WORLD_Y).toBeCloseTo(2 * FLIP.pivotY - MOLD.trunk.topY, 9)
+  })
+
+  it('then ends at the trunk end until the front climbs above it, and at the front after', () => {
+    expect(streamSpan(0.4).bottom).toBeCloseTo(TRUNK_END_WORLD_Y, 9)
+    const high = streamSpan(0.99)
+    expect(high.bottom).toBeCloseTo(2 * FLIP.pivotY - fillFrontY(0.99), 9)
+    expect(high.bottom).toBeGreaterThan(TRUNK_END_WORLD_Y)
+    expect(high.bottom).toBeLessThan(high.top)
+    let prev = TRUNK_END_WORLD_Y - 1
+    for (let fill = FILL.trail; fill <= 1; fill += 0.01) {
+      const b = streamSpan(fill).bottom
+      expect(b).toBeGreaterThanOrEqual(prev)
+      prev = b
+    }
+  })
+})
 describe('goldGlow', () => {
   it('is fully molten at the start and cold gold once cooled', () => {
     expect(goldGlow(0, 0)).toBeCloseTo(1, 9)
@@ -103,29 +150,20 @@ describe('goldGlow', () => {
   })
 })
 
-describe('flip-aware visibility gates', () => {
+describe('flip-aware visibility gate', () => {
   const on = { fill: 0.5, xray: 1, flip: 1 }
 
-  it('shows the fill and the pour only while the flask is fully flipped', () => {
+  it('shows the fill only while the flask is fully flipped', () => {
     expect(goldFillVisible(on)).toBe(true)
-    expect(pourVisible(on)).toBe(true)
     expect(goldFillVisible({ ...on, flip: 0.5 })).toBe(false)
-    expect(pourVisible({ ...on, flip: 0.5 })).toBe(false)
   })
 
-  it('hides both without X-ray or before the fill starts', () => {
+  it('hides it without X-ray or before the fill starts, and keeps it when full', () => {
     expect(goldFillVisible({ ...on, xray: 0 })).toBe(false)
-    expect(pourVisible({ ...on, xray: 0 })).toBe(false)
     expect(goldFillVisible({ ...on, fill: 0 })).toBe(false)
-    expect(pourVisible({ ...on, fill: 0 })).toBe(false)
-  })
-
-  it('ends the pour at a full cavity while the fill stays visible', () => {
-    expect(pourVisible({ ...on, fill: 1 })).toBe(false)
     expect(goldFillVisible({ ...on, fill: 1 })).toBe(true)
   })
 })
-
 describe('restClock', () => {
   it('runs from 00:00 to 10:00 and clamps', () => {
     expect(REST_SECONDS).toBe(600)

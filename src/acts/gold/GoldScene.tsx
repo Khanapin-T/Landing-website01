@@ -7,12 +7,12 @@ import { story } from '../../story/store'
 import { shouldRender } from '../../story/visibility'
 import { GOLD_BEATS } from './beats'
 import { GoldFill } from './GoldFill'
-import { PourCloud } from './PourCloud'
+import { GoldStream } from './GoldStream'
 import { registerGold } from './timeline'
 import { VacuumChamber } from './VacuumChamber'
 
 /**
- * Act 5: the solid gold fill and the pour particles inside the act's window. The flask itself, its X-ray shell and the
+ * Act 5: the solid gold fill and the molten stream inside the act's window. The flask itself, its X-ray shell and the
  * cavity outline live in MoldScene (the flask owner) and follow story.flask; the gauge and the rest chip are DOM (GoldHud).
  */
 export function GoldScene() {
@@ -33,7 +33,7 @@ export function GoldScene() {
     <group ref={root}>
       <VacuumChamber />
       <GoldFill />
-      <PourCloud />
+      <GoldStream />
     </group>
   )
 }
