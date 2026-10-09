@@ -43,10 +43,11 @@ export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foo
 export const FIRE_END_HEAT = 0.6
 
 /**
- * Heating coils (after the muffle furnace photos): on each of the four walls of a box tunnel one long spring is laid
- * in a serpentine, three long runs along the depth (from the front opening toward the back, so they converge toward the
- * middle in perspective) joined by U-turns. `zNear` / `zFar` = depth range of the runs (the front opening plane is
- * the flask middle plane so the ceiling and floor clear the flask), `edge` = how far the front opening reaches toward
+ * Heating coils (after the muffle furnace photos): on each of three walls of a box tunnel (left, right, ceiling; no
+ * floor spring) one long spring is laid in a serpentine, three long runs along the depth (from the front opening toward
+ * the back, so they converge toward the middle in perspective) joined by U-turns. `zNear` / `zFar` = depth range of the
+ * runs, offset by `FURNACE_BACK` so the flask (z = 0) stands half way along the runs while the camera is pulled back to
+ * `CAM.furnace` (the near plane stays at the old level-view distance, so the springs keep their frame size), `edge` = how far the front opening reaches toward
  * the screen edge (fraction of the distance from the flask axis to that edge), `spacing` = distance between
  * neighbouring runs as a fraction of the wall half extent across the runs. `pitch` = distance along the path per turn
  * of the spring. `centerY` = world Y of the screen center (the camera looks level there).

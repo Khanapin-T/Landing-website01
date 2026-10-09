@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FLIP } from '../../config/fire'
-import { fillFrontY, goldGlow } from '../../config/gold'
+import { fillFrontY, goldFillVisible, goldGlow } from '../../config/gold'
 import { TreeShapes } from '../../scene/furnace/TreeShapes'
 import { heatColor } from '../../scene/furnace/heat'
 import { getAppState } from '../../story/appState'
@@ -23,12 +23,12 @@ export function GoldFill() {
 
   const group = useRef<THREE.Group>(null)
   useFrame(() => {
-    const { fill, cool, xray } = story.flask
+    const { fill, cool } = story.flask
     goldFillUniforms.uFillY.value = fillFrontY(fill)
     heatColor(1, white)
     const k = goldGlow(fill, cool)
     material.emissive.setRGB(white[0] * k, white[1] * k, white[2] * k)
-    if (group.current) group.current.visible = getAppState().phase === 'loading' || (fill > 0.001 && xray > 0.001)
+    if (group.current) group.current.visible = getAppState().phase === 'loading' || goldFillVisible(story.flask)
   })
 
   return (

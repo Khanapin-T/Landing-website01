@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FLIP } from '../../config/fire'
-import { FILL } from '../../config/gold'
+import { FILL, pourVisible } from '../../config/gold'
 import { mulberry32 } from '../../lib/random'
 import { particleDrawCount } from '../../scene/particles/particleData'
 import { useQuality } from '../../scene/quality/qualityStore'
@@ -124,10 +124,9 @@ export function PourCloud() {
   const ref = useRef<THREE.Points>(null)
   useFrame(() => {
     const u = material.uniforms
-    const { fill, xray } = story.flask
-    u.uFill.value = fill
+    u.uFill.value = story.flask.fill
     u.uScale.value = (gl.domElement.height || 1080) / 2
-    if (ref.current) ref.current.visible = getAppState().phase === 'loading' || (fill > 0.001 && fill < 0.999 && xray > 0.001)
+    if (ref.current) ref.current.visible = getAppState().phase === 'loading' || pourVisible(story.flask)
   })
 
   // frustumCulled off: the bounding sphere covers only the tree, not the stream above it.

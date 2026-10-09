@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
 import { CAM } from './mold'
-import { FILL, REST_SECONDS, arriveAt, fillFrontY, fillProgress, goldGlow, restClock } from './gold'
+import { FILL, REST_SECONDS, arriveAt, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
 
 describe('fill front', () => {
   it('shows nothing until the fill starts', () => {
@@ -55,6 +55,29 @@ describe('goldGlow', () => {
 
   it('never flashes while still filling', () => {
     expect(goldGlow(0.5, 0)).toBeCloseTo(1, 9)
+  })
+})
+
+describe('flip-aware visibility gates', () => {
+  const on = { fill: 0.5, xray: 1, flip: 1 }
+
+  it('shows the fill and the pour only while the flask is fully flipped', () => {
+    expect(goldFillVisible(on)).toBe(true)
+    expect(pourVisible(on)).toBe(true)
+    expect(goldFillVisible({ ...on, flip: 0.5 })).toBe(false)
+    expect(pourVisible({ ...on, flip: 0.5 })).toBe(false)
+  })
+
+  it('hides both without X-ray or before the fill starts', () => {
+    expect(goldFillVisible({ ...on, xray: 0 })).toBe(false)
+    expect(pourVisible({ ...on, xray: 0 })).toBe(false)
+    expect(goldFillVisible({ ...on, fill: 0 })).toBe(false)
+    expect(pourVisible({ ...on, fill: 0 })).toBe(false)
+  })
+
+  it('ends the pour at a full cavity while the fill stays visible', () => {
+    expect(pourVisible({ ...on, fill: 1 })).toBe(false)
+    expect(goldFillVisible({ ...on, fill: 1 })).toBe(true)
   })
 })
 

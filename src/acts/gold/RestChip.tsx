@@ -35,7 +35,7 @@ export function RestChip() {
 
       let on = false
       const sync = contextSafe!(() => {
-        const next = story.screen >= GOLD_BEATS.steps.rest
+        const next = story.screen >= GOLD_BEATS.steps.rest && story.screen < GOLD_BEATS.copyOut
         if (next === on) return
         on = next
         if (next) {
@@ -49,9 +49,9 @@ export function RestChip() {
       })
 
       sync()
-      const off = addCue({ at: GOLD_BEATS.steps.rest, enter: sync, leaveBack: sync })
+      const offs = [GOLD_BEATS.steps.rest, GOLD_BEATS.copyOut].map((at) => addCue({ at, enter: sync, leaveBack: sync }))
       return () => {
-        off()
+        offs.forEach((off) => off())
         gsap.ticker.remove(tick)
         gsap.killTweensOf(el)
         timeEl.textContent = ''

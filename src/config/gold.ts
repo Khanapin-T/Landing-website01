@@ -42,12 +42,20 @@ export function arriveAt(y: number): number {
 
 /**
  * Brightness multiplier of the molten glow (applied to the white-yellow heat color): 1 while pouring, a flash
- * right after the cavity is full (fill ~ 1, cool 0..0.15), then fading to 0 as the gold cools (`story.flask.cool`).
+ * right after the cavity is full (fill ~ 1, cool 0..0.4), then fading to 0 as the gold cools (`story.flask.cool`).
  */
 export function goldGlow(fill: number, cool: number): number {
   const molten = 1 - smooth(0, 1, cool)
-  const flash = 1.6 * smooth(0.85, 1, fill) * (1 - smooth(0, 0.15, cool))
+  const flash = 1.6 * smooth(0.85, 1, fill) * (1 - smooth(0, 0.4, cool))
   return molten + flash
+}
+
+/** The fill and the pour are drawn under a fixed flip transform: only valid while the flask is fully flipped. */
+export function goldFillVisible(f: { fill: number; xray: number; flip: number }): boolean {
+  return f.flip > 0.999 && f.fill > 0.001 && f.xray > 0.001
+}
+export function pourVisible(f: { fill: number; xray: number; flip: number }): boolean {
+  return goldFillVisible(f) && f.fill < 0.999
 }
 
 /** The rest timer runs 00:00 to 10:00 (a stylization inside the real 5 to 15 minute rest). */

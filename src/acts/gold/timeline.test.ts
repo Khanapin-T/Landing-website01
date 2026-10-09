@@ -126,4 +126,20 @@ describe('act 5 timeline', () => {
     tl.time(10.5)
     expect(state()).toEqual(jumped)
   })
+
+  it('lands on the same state after a backward jump as after a forward scrub', () => {
+    tl.time(9.0)
+    tl.time(9.92)
+    const forward9 = state()
+    tl.time(11.4)
+    tl.time(9.92)
+    expect(state()).toEqual(forward9)
+
+    tl.time(0)
+    tl.time(7.5)
+    const forward7 = state()
+    tl.time(11.4)
+    tl.time(7.5)
+    expect(state()).toEqual(forward7)
+  })
 })
