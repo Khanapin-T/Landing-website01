@@ -10,8 +10,11 @@ export interface WaterUniforms {
   uTime: { value: number }
 }
 
-/** Dark water (opaque: nothing under the surface shows) and the milky white the dissolved investment gives it. */
-export const WATER_COLORS = { clear: '#15303c', milk: '#e9e5da' } as const
+/** Clean water (a light blue tint over the bucket seen through it) and the milky white the dissolved investment gives it. */
+export const WATER_COLORS = { clear: '#8fc3d8', milk: '#e9e5da' } as const
+
+/** Opacity of the clean water: the blue bucket inside and the flask going in show through it. Milky water is opaque. */
+export const CLEAR_OPACITY = 0.22
 
 /** Height of the boil in world units at uBoil = 1. */
 export const BOIL_HEIGHT = 0.07
@@ -46,13 +49,14 @@ float boilAmount(vec2 xz) {
 /**
  * The water surface (Act 6): MeshStandardMaterial on a flat disc in the XZ plane (normal +Y). `uBoil` raises bumps
  * (vertex displacement, normals from finite differences of the same field) and adds foam inside a disc that spreads
- * from the middle with `uSpread`, `uMilk` blends the color
- * and the roughness from dark clear water to milky white. Opaque: the flask under the water does not show (no
- * transmission). The caller writes the uniforms every frame.
+ * from the middle with `uSpread`, `uMilk` blends the color and the roughness from clean water to milky white. Clean
+ * water is see-through (alpha, no transmission): the blue bucket inside and the flask going in show through it; milky
+ * water is opaque, so the flask lying in it does not show. The caller writes the uniforms every frame.
  */
 export function createWaterMaterial(): { material: THREE.MeshStandardMaterial; uniforms: WaterUniforms } {
   const uniforms: WaterUniforms = { uBoil: { value: 0 }, uSpread: { value: 0 }, uRadius: { value: 1 }, uMilk: { value: 0 }, uTime: { value: 0 } }
-  const material = new THREE.MeshStandardMaterial({ color: WATER_COLORS.clear, roughness: 0.12, metalness: 0, envMapIntensity: 1 })
+  // Always transparent (a constant setting: no recompile); the alpha goes from CLEAR_OPACITY to 1 with the milk and the foam.
+  const material = new THREE.MeshStandardMaterial({ color: WATER_COLORS.clear, roughness: 0.08, metalness: 0, envMapIntensity: 0.6, transparent: true })
   const clear = new THREE.Color(WATER_COLORS.clear)
   const milk = new THREE.Color(WATER_COLORS.milk)
   material.onBeforeCompile = (shader) => {
@@ -75,17 +79,18 @@ export function createWaterMaterial(): { material: THREE.MeshStandardMaterial; u
         '#include <begin_vertex>\nvXZ = position.xz;\ntransformed.y += BOIL_HEIGHT * boilAmount(position.xz) * boilField(position.xz);',
       )
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\n${BOIL_GLSL}\nuniform vec3 uClear;\nuniform vec3 uMilkColor;\nvarying vec2 vXZ;`)
+      .replace('#include <common>', `#include <common>\n${BOIL_GLSL}\nuniform vec3 uClear;\nuniform vec3 uMilkColor;\nvarying vec2 vXZ;\n#define CLEAR_OPACITY ${CLEAR_OPACITY.toFixed(3)}`)
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
         {
           float foam = smoothstep(0.62, 0.8, boilField(vXZ * 1.6)) * boilAmount(vXZ);
           diffuseColor.rgb = mix(mix(uClear, uMilkColor, uMilk), uMilkColor, foam * 0.8);
+          diffuseColor.a = mix(CLEAR_OPACITY, 1.0, max(uMilk, foam));
         }`,
       )
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.12, 0.6, uMilk);')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.08, 0.6, uMilk);')
   }
-  material.customProgramCacheKey = () => 'water-surface-v2'
+  material.customProgramCacheKey = () => 'water-surface-v3'
   return { material, uniforms }
 }
