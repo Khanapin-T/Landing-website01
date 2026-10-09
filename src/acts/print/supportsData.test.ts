@@ -13,9 +13,19 @@ const castSphere: CastUp = (x, z) => {
 describe('print supports', () => {
   const supports = computeSupports(castSphere, mulberry32(3))
 
-  it('skips rays that would reach far into the part (beside the narrow shank)', () => {
+  it('keeps long supports (past the narrow shank) only in front of and behind it, 5-10 per side, spread across', () => {
+    // Every ray reaches deep: only the front and back rows may keep them.
     const deep = computeSupports(() => 0, mulberry32(3))
-    expect(deep).toHaveLength(0)
+    const { sideMinZ, sideCount } = PRINT.supports
+    for (const sign of [-1, 1]) {
+      const side = deep.filter((s) => Math.sign(s.z) === sign)
+      expect(side.length).toBeGreaterThanOrEqual(5)
+      expect(side.length).toBeLessThanOrEqual(Math.min(sideCount, 10))
+      for (const s of side) expect(Math.abs(s.z)).toBeGreaterThanOrEqual(sideMinZ)
+      const xs = side.map((s) => s.x)
+      expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(PRINT.supports.spanX)
+    }
+    expect(deep.length).toBe(deep.filter((s) => Math.abs(s.z) >= sideMinZ).length)
   })
 
   it('makes many supports, none on the sprue', () => {
@@ -32,8 +42,10 @@ describe('print supports', () => {
       const hit = castSphere(-s.x, s.z)!
       expect(s.contactY).toBeCloseTo(-hit - PRINT.supports.bite, 9)
       expect(s.plateY - s.contactY).toBeGreaterThanOrEqual(PRINT.supports.minLength)
-      // Never through the ring: only short supports onto the near surface (+ the bite).
-      expect(s.plateY - s.contactY).toBeLessThanOrEqual(PRINT.supports.maxLength + PRINT.supports.bite + 1e-9)
+      // Long ones only in front of and behind the ring.
+      if (s.plateY - s.contactY > PRINT.supports.maxLength + PRINT.supports.bite + 1e-9) {
+        expect(Math.abs(s.z)).toBeGreaterThanOrEqual(PRINT.supports.sideMinZ)
+      }
       expect(s.seed).toBeGreaterThanOrEqual(0)
       expect(s.seed).toBeLessThan(1)
     }

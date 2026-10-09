@@ -33,20 +33,24 @@ export const PRINT = {
   rails: { x: 0.3, z: -1.15, width: 0.09, depth: 0.05, topY: 3.2, fullAtY: 1.3 },
   /**
    * Print supports: thin columns from the plate down onto the upside-down ring, on a jittered `gridX` x `gridZ` grid
-   * over +-spanX, +-spanZ (ring-local), none within `sprueClear` of the sprue, and only between minLength and
-   * maxLength long (the shank is narrow: rays beside it would reach the signet through the ring). A column of `radius`, a cone `tip` of
+   * over +-spanX, +-spanZ (ring-local), none within `sprueClear` of the sprue: every one up to maxLength (onto the shank
+   * and shoulders under the plate), plus the longer ones in front of and behind the narrow shank (onto the wider part's
+   * surfaces that face the plate), sideCount per side (author: 5-10 front and back). A column of `radius`, a cone `tip` of
    * `tipLength` down to `tipRadius` that bites `bite` into the surface, a `base` foot on the plate. At the flip they
    * break off and fall `fall` units while they turn into points.
    */
   supports: {
     gridX: 17,
-    gridZ: 6,
+    gridZ: 8,
     spanX: 0.44,
-    spanZ: 0.18,
+    spanZ: 0.2,
     jitter: 0.02,
     sprueClear: 0.08,
     minLength: 0.03,
     maxLength: 0.42,
+    /** Longer supports (past the narrow shank onto the wider part) only in front of and behind it: |z| >= sideMinZ, at most sideCount per side, spread across x. */
+    sideMinZ: 0.1,
+    sideCount: 8,
     radius: 0.007,
     tipRadius: 0.003,
     tipLength: 0.05,

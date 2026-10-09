@@ -24,10 +24,22 @@ export const PLATE_FRAME_Y = RING_HALF + PRINT.sprue.length
  */
 export type CastUp = (x: number, z: number) => number | null
 
-/** Supports on a jittered grid under the shank (ring-local x, z), none on the sprue, mirrored into the print frame. */
+/** `count` items spread evenly over `items` (sorted by the caller), all of them if there are fewer. */
+function spread<T>(items: readonly T[], count: number): T[] {
+  if (items.length <= count) return [...items]
+  return Array.from({ length: count }, (_, i) => items[Math.round((i * (items.length - 1)) / (count - 1))])
+}
+
+/**
+ * Supports wherever the layers need something to hang from: rays from the plate onto the first surface facing it, on a
+ * jittered grid (ring-local x, z), none on the sprue, mirrored into the print frame. Short ones (onto the shank and
+ * shoulders) are all kept; the long ones past the narrow shank onto the wider part are kept only in front of and behind
+ * it, sideCount per side spread across x.
+ */
 export function computeSupports(castUp: CastUp, rand: () => number): Support[] {
-  const { gridX, gridZ, spanX, spanZ, jitter, sprueClear, minLength, maxLength, bite } = PRINT.supports
+  const { gridX, gridZ, spanX, spanZ, jitter, sprueClear, minLength, maxLength, sideMinZ, sideCount, bite } = PRINT.supports
   const out: Support[] = []
+  const sides: [Support[], Support[]] = [[], []]
   for (let i = 0; i < gridX; i++) {
     for (let j = 0; j < gridZ; j++) {
       const x = -spanX + (2 * spanX * i) / (gridX - 1) + (rand() - 0.5) * jitter
@@ -35,11 +47,16 @@ export function computeSupports(castUp: CastUp, rand: () => number): Support[] {
       const seed = rand()
       if (Math.abs(x) < sprueClear && Math.abs(z) < sprueClear) continue
       const hit = castUp(x, z)
-      if (hit === null || hit + PLATE_FRAME_Y < minLength || hit + PLATE_FRAME_Y > maxLength) continue
+      if (hit === null) continue
+      const length = hit + PLATE_FRAME_Y
+      if (length < minLength) continue
       // Upside down (Rz(PI)): x and y mirror, z stays. The tip bites into the part (lower in the print frame).
-      out.push({ x: -x, z, contactY: -hit - bite, plateY: PLATE_FRAME_Y, seed })
+      const s: Support = { x: -x, z, contactY: -hit - bite, plateY: PLATE_FRAME_Y, seed }
+      if (length <= maxLength) out.push(s)
+      else if (Math.abs(z) >= sideMinZ) sides[z < 0 ? 0 : 1].push(s)
     }
   }
+  for (const side of sides) out.push(...spread(side.sort((a, b) => a.x - b.x || a.z - b.z), sideCount))
   return out
 }
 
