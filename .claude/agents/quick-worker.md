@@ -1,6 +1,6 @@
 ---
 name: quick-worker
-description: "Simple mechanical tasks: renames, formatting, boilerplate, file search, small edits. Use proactively for easy work."
+description: "Only truly simple work: renames, formatting, file search, one-line edits, small bug fixes. Never for writing a plan task's new code (that is implementer on Sonnet or Opus)."
 model: haiku
 ---
 

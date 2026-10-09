@@ -53,5 +53,5 @@ Printed resin (not wax) burns out in the furnace. Tape is wrapped around the per
 
 ## Delegation
 - Plan and make hard design/architecture decisions in the main session.
-- Simple mechanical edits -> `quick-worker`. Approved plan steps -> `implementer`. Final whole-branch review and hard debugging -> `reviewer` (read-only).
+- New code (plan tasks: config, timelines, components, shaders) -> `implementer` on Sonnet, or with the Opus model override for shaders and hard scene work (author 2026-10-10). Haiku (`quick-worker`) only for truly simple edits and small bug fixes. Final whole-branch review and hard debugging -> `reviewer` (Opus, read-only).
 - Run subagents in parallel when tasks are independent. If a subagent fails twice, take the task back.
