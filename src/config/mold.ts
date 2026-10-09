@@ -90,6 +90,13 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
 ]
 
 /**
+ * How far the flask recedes from the camera in the furnace (Act 4), in world units. Done by pulling the camera back
+ * (CAM.furnace) while the springs' front plane moves forward by the same amount (COILS.zNear), so the springs keep
+ * their size in the frame and the flask ends up half way along their runs.
+ */
+export const FURNACE_BACK = 4.5
+
+/**
  * Camera targets: position (y, z) and the Y of the point on the axis it looks at (look == y: level view).
  * The start value is CAM_INITIAL in store.ts. `tree` frames base + flask with a margin; `pour` is raised and
  * tilted down so the top opening of the flask (the pour and the boil) is visible. Tuned by eye.
@@ -97,6 +104,8 @@ export const TREE_SLOTS: readonly TreeSlot[] = [
 export const CAM = {
   tree: { y: 0.25, z: 13.4, look: 0.25 },
   pour: { y: 8.6, z: 12.4, look: 0.4 },
+  /** Act 4 while the flask sits in the furnace: the level view pulled back by FURNACE_BACK (the flask recedes into the springs). */
+  furnace: { y: 0.25, z: 13.4 + FURNACE_BACK, look: 0.25 },
 } as const
 
 /**

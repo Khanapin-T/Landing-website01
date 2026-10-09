@@ -1,4 +1,4 @@
-import { CAM, MOLD } from './mold'
+import { CAM, FURNACE_BACK, MOLD } from './mold'
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 
@@ -49,8 +49,8 @@ export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foo
  * of the spring. `centerY` = world Y of the screen center (the camera looks level there).
  */
 export const COILS = {
-  zNear: 0,
-  zFar: -9,
+  zNear: FURNACE_BACK,
+  zFar: FURNACE_BACK - 9,
   edge: 0.9,
   spacing: 0.55,
   coilRadius: 0.16,

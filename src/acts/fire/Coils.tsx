@@ -18,8 +18,8 @@ const TIERS = 3
 const glow: [number, number, number] = [0, 0, 0]
 
 /**
- * The furnace springs of Act 4 (after the muffle furnace photos): one long spring per wall (left, right, ceiling,
- * floor) laid in a serpentine of three long runs from the front toward the back, so they converge toward the middle.
+ * The furnace springs of Act 4 (after the muffle furnace photos): one long spring per wall (left, right, ceiling;
+ * no floor spring) laid in a serpentine of three long runs from the front toward the back, so they converge toward the middle.
  * Each spring is cut into three tiers (one per run); tier i of every wall shares one material, and alpha hash fades
  * it in through fire.coils[i] (opaque pipeline, no sorting). The emissive glow follows story.flask.heat. All tiers
  * share one program. Rebuilt on resize because the walls follow the viewport.
@@ -27,10 +27,10 @@ const glow: [number, number, number] = [0, 0, 0]
 export function Coils() {
   const size = useThree((s) => s.size)
   const layout = useMemo(
-    () => coilLayout({ aspect: size.width / size.height, fovDeg: FOV, camZ: CAM.tree.z }),
+    () => coilLayout({ aspect: size.width / size.height, fovDeg: FOV, camZ: CAM.furnace.z }),
     [size.width, size.height],
   )
-  // Two spring shapes: the side walls (runs spread across the height) and the ceiling and floor (spread across the width).
+  // Two spring shapes: the side walls (runs spread across the height) and the ceiling (spread across the width).
   const side = useMemo(() => createSerpentineGeometries(layout.length, layout.sideSpacing), [layout.length, layout.sideSpacing])
   const span = useMemo(() => createSerpentineGeometries(layout.length, layout.spanSpacing), [layout.length, layout.spanSpacing])
   const tiers = useMemo(
