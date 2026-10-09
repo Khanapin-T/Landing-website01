@@ -31,12 +31,13 @@ export function registerMold(tl: gsap.core.Timeline): () => void {
   // The camera rises and tilts down into the flask for the pour, and stays there for the boil and the rest of the act.
   seg.fromTo(story.cam, { ...CAM.tree }, { ...CAM.pour, duration: len(B.camRaiseFrom, B.camRaiseTo), ease: 'power2.inOut' }, B.camRaiseFrom)
 
-  // Vacuum: the surface boils (ramps up, stays on until the tape is off, ramps down).
+  // Vacuum: the surface boils (ramps up, holds, ramps down to zero before the rest).
   const ramp = 0.05
   seg.fromTo(mold, { boil: 0 }, { boil: 1, duration: ramp }, B.boilFrom)
   seg.fromTo(mold, { boil: 1 }, { boil: 0, duration: ramp }, B.boilTo - ramp)
 
-  // Tape off, the base drops out of the frame.
+  // The investment rests with the tape on (timer), then the tape comes off and the base drops out of the frame.
+  seg.fromTo(mold, { rest: 0 }, { rest: 1, duration: len(B.restFrom, B.restTo) }, B.restFrom)
   seg.fromTo(mold, { tape: 1 }, { tape: 0, duration: len(B.unwrapFrom, B.unwrapTo) }, B.unwrapFrom)
   seg.fromTo(mold, { base: 1 }, { base: 0, duration: len(B.baseOutFrom, B.baseOutTo), ease: 'power2.in' }, B.baseOutFrom)
 

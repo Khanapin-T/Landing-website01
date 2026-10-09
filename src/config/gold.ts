@@ -143,10 +143,5 @@ export function hosePath(): [number, number, number][] {
   ]
 }
 
-/** The rest timer runs 00:00 to 10:00 (a stylization inside the real 5 to 15 minute rest). */
+/** The gold rest timer runs 00:00 to 10:00 (a stylization inside the real 5 to 15 minute rest). */
 export const REST_SECONDS = 600
-
-export function restClock(rest: number): string {
-  const s = Math.round(clamp01(rest) * REST_SECONDS)
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-}

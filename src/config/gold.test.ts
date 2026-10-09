@@ -3,7 +3,7 @@ import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
 import { CAM, MOLD } from './mold'
 import { FLANGE, FLANGE_RADIUS, FLASK_RADIUS } from '../acts/mold/flaskMaterial'
-import { CHAMBER, FILL, HOSE, REST_SECONDS, STREAM_TOP_WORLD_Y, TRUNK_END_WORLD_Y, WASHER, chamberProfile, hosePath, washerProfile, fillFrontY, fillProgress, goldFillVisible, goldGlow, restClock, streamSpan } from './gold'
+import { CHAMBER, FILL, HOSE, REST_SECONDS, STREAM_TOP_WORLD_Y, TRUNK_END_WORLD_Y, WASHER, chamberProfile, hosePath, washerProfile, fillFrontY, fillProgress, goldFillVisible, goldGlow, streamSpan } from './gold'
 
 describe('vacuum chamber', () => {
   const frameHalf = CAM.tree.z * Math.tan((30 * Math.PI) / 360)
@@ -177,13 +177,8 @@ describe('flip-aware visibility gate', () => {
     expect(goldFillVisible({ ...on, fill: 1 })).toBe(true)
   })
 })
-describe('restClock', () => {
-  it('runs from 00:00 to 10:00 and clamps', () => {
+describe('rest timer length', () => {
+  it('is 10 minutes for the gold rest', () => {
     expect(REST_SECONDS).toBe(600)
-    expect(restClock(0)).toBe('00:00')
-    expect(restClock(0.5)).toBe('05:00')
-    expect(restClock(1)).toBe('10:00')
-    expect(restClock(-3)).toBe('00:00')
-    expect(restClock(9)).toBe('10:00')
   })
 })

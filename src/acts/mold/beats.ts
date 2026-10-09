@@ -29,19 +29,21 @@ export const MOLD_BEATS = {
   /** The camera rises and tilts down into the flask before the pour and stays there (no return). */
   camRaiseFrom: 5.5,
   camRaiseTo: 5.8,
-  /** Vacuum: the surface boils. */
+  /** Vacuum: the surface boils, the needle falls (mold.boil) and comes back to zero; the gauge goes right after. */
   boilFrom: 6.0,
-  boilTo: 6.25,
-  /** The vacuum gauge is on for the boil (the needle follows mold.boil) and goes with the copy column. */
+  boilTo: 6.18,
   gaugeIn: 6.0,
-  gaugeOut: 6.4,
+  gaugeOut: 6.2,
+  /** Rest: the investment thickens (timer up to 15 minutes) with the tape still on, then the tape comes off. */
+  restFrom: 6.2,
+  restTo: 6.36,
   /** Tape unwinds. */
-  unwrapFrom: 6.25,
-  unwrapTo: 6.45,
+  unwrapFrom: 6.36,
+  unwrapTo: 6.5,
   /** The rubber base drops out of the frame. */
-  baseOutFrom: 6.35,
+  baseOutFrom: 6.4,
   baseOutTo: 6.5,
-  copyOut: 6.4,
+  copyOut: 6.44,
   /** Step list cues (start screens). */
-  steps: { tree: 4.1, flask: 4.95, tape: 5.25, investment: 5.65, vacuum: 6.0, tapeOff: 6.25 },
+  steps: { tree: 4.1, flask: 4.95, tape: 5.25, investment: 5.65, vacuum: 6.0, rest: 6.2, tapeOff: 6.36 },
 } as const

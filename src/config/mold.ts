@@ -21,6 +21,9 @@ const BASE_RADIUS = FLASK.innerRadius + FLASK.wall + 0.2
 /** The crucible-former cone rises from the cup floor to the trunk bottom (MOLD.trunk.bottomY). */
 const TRUNK_BOTTOM_Y = -1.18
 
+/** The investment rest timer counts 00:00 to 15:00 (the real thickening takes 10 to 15 minutes). */
+export const MOLD_REST_SECONDS = 900
+
 /** Act 3 layout in world units (ring height = 1). The flask axis is world Y at x = z = 0. Tuned by test + eye. */
 export const MOLD = {
   baseTopY: BASE_TOP_Y,
