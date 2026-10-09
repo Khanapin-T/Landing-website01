@@ -96,10 +96,36 @@ export function toLineGeometry(seg: DrawSegments): THREE.BufferGeometry {
   return g
 }
 
+/**
+ * The sprue mark is a long straight segment lying wholly under this height (ring height 1, y from -0.5 to 0.5).
+ * Short segments there are pieces of the curved outline of the bands and must stay.
+ */
+export const BOTTOM_MARK = { y: -0.465, minLength: 0.05 } as const
+
+/**
+ * Drops the long straight segments (pairs of vertices) that lie wholly on the very bottom of the ring: the mark under
+ * the shank that the CAD model has where the sprue attaches. It is a model artifact, not an edge of the design.
+ */
+export function dropBottomMark(positions: Float32Array): Float32Array {
+  const kept: number[] = []
+  for (let v = 0; v + 1 < positions.length / 3; v += 2) {
+    const ya = positions[v * 3 + 1]
+    const yb = positions[v * 3 + 4]
+    const length = Math.hypot(
+      positions[v * 3] - positions[v * 3 + 3],
+      ya - yb,
+      positions[v * 3 + 2] - positions[v * 3 + 5],
+    )
+    if (ya < BOTTOM_MARK.y && yb < BOTTOM_MARK.y && length > BOTTOM_MARK.minLength) continue
+    for (let k = 0; k < 6; k++) kept.push(positions[v * 3 + k])
+  }
+  return new Float32Array(kept)
+}
+
 /** Feature edges of the ring (creases sharper than thresholdDeg) with draw-order attributes. */
 export function buildEdgeGeometry(ring: THREE.BufferGeometry, thresholdDeg = 30, seed = 7): THREE.BufferGeometry {
   const edges = new THREE.EdgesGeometry(ring, thresholdDeg)
-  const positions = edges.getAttribute('position').array as Float32Array
+  const positions = dropBottomMark(edges.getAttribute('position').array as Float32Array)
   const { reveal, t } = edgeRevealAttributes(positions, mulberry32(seed))
   edges.dispose()
   return toLineGeometry({ positions: new Float32Array(positions), reveal, t })

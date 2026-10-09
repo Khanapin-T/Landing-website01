@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { buildEdgeGeometry, dimensionAnchors, dimensionSegments, edgeRevealAttributes, toLineGeometry } from './segments'
+import { buildEdgeGeometry, dimensionAnchors, dimensionSegments, dropBottomMark, edgeRevealAttributes, toLineGeometry } from './segments'
 import { createLineDrawMaterial } from './lineDraw'
 import { mulberry32 } from '../../lib/random'
 import type { Box } from '../../scene/ring/normalize'
@@ -79,7 +79,8 @@ describe('line geometry and material', () => {
   })
 
   it('builds edge lines from a mesh', () => {
-    const g = buildEdgeGeometry(new THREE.BoxGeometry(1, 1, 1), 30, 3)
+    // A box with its bottom above the sprue-mark cut line (-0.465), so all 12 edges are blueprint edges.
+    const g = buildEdgeGeometry(new THREE.BoxGeometry(1, 0.9, 1), 30, 3)
     expect(g.getAttribute('position').count).toBe(24) // 12 box edges
     expect(g.getAttribute('aReveal').count).toBe(24)
   })
@@ -93,5 +94,34 @@ describe('line geometry and material', () => {
     expect(material.uniforms.uSpan.value).toBe(0.04)
     // The handle must stay live: writing uniforms.uDraw.value has to reach the shader.
     expect(material.uniforms.uDraw).toBe(uniforms.uDraw)
+  })
+})
+
+describe('dropBottomMark', () => {
+  it('removes the long straight mark lying on the very bottom of the ring and keeps every other segment', () => {
+    // The ring's height is 1 (y from -0.5 to 0.5): a segment under -0.465 on both ends AND longer than 0.05 goes.
+    const pos = new Float32Array([
+      -0.03, -0.48, 0.115, 0.13, -0.481, 0.115, // the mark (length about 0.16)
+      0.1, -0.2, 0.1, 0.1, 0.2, 0.1, // a shank edge
+      -0.2, -0.46, 0.1, 0.2, -0.46, 0.1, // long, but just above the cut line
+      -0.01, -0.499, 0, 0.01, -0.499, 0, // a short piece of the curved outline at the very bottom (length 0.02)
+    ])
+    const kept = dropBottomMark(pos)
+    expect(kept.length).toBe(18)
+    expect(Array.from(kept.slice(0, 6))).toEqual(Array.from(pos.slice(6, 12)))
+    expect(Array.from(kept.slice(6, 12))).toEqual(Array.from(pos.slice(12, 18)))
+    expect(Array.from(kept.slice(12))).toEqual(Array.from(pos.slice(18, 24)))
+  })
+
+  it('keeps a segment that only touches the bottom zone with one end', () => {
+    const pos = new Float32Array([0, -0.48, 0, 0, -0.2, 0])
+    expect(dropBottomMark(pos).length).toBe(6)
+  })
+
+  it('is applied to the ring edges: a box with a flat bottom line loses it, the rest stays', () => {
+    // BoxGeometry(0.9, 1, 0.4): the 4 bottom edges lie on y = -0.5 and are longer than 0.05, the other 8 stay.
+    const pos = buildEdgeGeometry(new THREE.BoxGeometry(0.9, 1, 0.4), 30).getAttribute('position')
+    expect(pos.count).toBe(16)
+    for (let i = 0; i < pos.count; i += 2) expect(Math.max(pos.getY(i), pos.getY(i + 1))).toBeGreaterThan(-0.465)
   })
 })
