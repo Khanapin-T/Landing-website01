@@ -90,7 +90,8 @@ export function Investment() {
     shared.uBoil.value = mold.boil
     shared.uPour.value = pourStrength(fill)
 
-    if (bodyRef.current) bodyRef.current.visible = loading || fill > 0.001
+    // Act 6: the investment dissolves in the water (story.flask.wash); after that the flask is empty but for the tree.
+    if (bodyRef.current) bodyRef.current.visible = loading || (fill > 0.001 && story.flask.wash < 0.5)
     // The cap and the funnel show only once the rubber base (and its cone) is gone: before that they would z-fight with it.
     const open = loading || mold.base <= 0.001
     if (capRef.current) capRef.current.visible = open
