@@ -58,20 +58,17 @@ export function pourVisible(f: { fill: number; xray: number; flip: number }): bo
   return goldFillVisible(f) && f.fill < 0.999
 }
 
-/** Flange thickness of the flask (FLANGE.height in acts/mold/flaskMaterial.ts, pinned by gold.test.ts). */
-const FLANGE_HEIGHT = 0.16
-
 /**
  * The vacuum chamber (Act 5), in world space around the flipped flask: a plain dark iron cup that slides up from
- * below. Wider than the flask tube, narrower than the flange, so the flange rests on its rim (`topY` = the flange's
- * lower face once flipped); the closed bottom sits below the flask's far end. `dropOffset` = start position, fully below
- * the frame. A first shape for the author to correct; no details yet.
+ * below. A little wider than the flask's flange (skirt, radius 1.98), which sits inside its mouth with the rim flush
+ * with the flange's outer face (`topY`); the closed bottom sits below the flask's far end. `dropOffset` = start
+ * position, fully below the frame. Shapes for the author to correct; no details yet.
  */
 export const CHAMBER = {
-  radius: 1.75,
+  radius: 2.12,
   wall: 0.08,
   floor: 0.1,
-  topY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE_HEIGHT),
+  topY: 2 * FLIP.pivotY - MOLD.flask.bottomY,
   bottomY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + MOLD.flask.height) - 0.35,
   dropOffset: -7,
 } as const
@@ -86,6 +83,22 @@ export function chamberProfile(): [number, number][] {
     [r - wall, topY],
     [r - wall, bottomY + floor],
     [0, bottomY + floor],
+  ]
+}
+
+/** The vacuum hose: leaves the chamber's side wall (right, away from the copy) at `exitY`, bends down out of the frame. */
+export const HOSE = { radius: 0.11, exitY: CHAMBER.bottomY + 0.9, endY: -5 } as const
+
+/** Hose center line in world space (chamber slid fully on); the first point sits inside the wall so the joint is hidden. */
+export function hosePath(): [number, number, number][] {
+  const r = CHAMBER.radius
+  const y = HOSE.exitY
+  return [
+    [r - CHAMBER.wall / 2, y, 0],
+    [r + 0.5, y, 0],
+    [r + 1.0, y - 0.4, 0],
+    [r + 1.2, y - 1.6, 0],
+    [r + 1.3, HOSE.endY, 0],
   ]
 }
 

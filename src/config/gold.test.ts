@@ -3,19 +3,31 @@ import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
 import { CAM, MOLD } from './mold'
 import { FLANGE, FLANGE_RADIUS, FLASK_RADIUS } from '../acts/mold/flaskMaterial'
-import { CHAMBER, FILL, REST_SECONDS, arriveAt, chamberProfile, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
+import { CHAMBER, FILL, HOSE, REST_SECONDS, arriveAt, chamberProfile, hosePath, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
 
 describe('vacuum chamber', () => {
   const frameHalf = CAM.tree.z * Math.tan((30 * Math.PI) / 360)
   const frameBottom = CAM.tree.look - frameHalf
 
-  it('is wider than the flask tube and narrower than the flange, so the flange rests on its rim', () => {
-    expect(CHAMBER.radius - CHAMBER.wall).toBeGreaterThan(FLASK_RADIUS)
-    expect(CHAMBER.radius).toBeLessThan(FLANGE_RADIUS)
+  it('is a little wider than the flange (skirt), which sits inside its mouth', () => {
+    expect(FLANGE_RADIUS).toBeGreaterThan(FLASK_RADIUS)
+    expect(CHAMBER.radius - CHAMBER.wall).toBeGreaterThan(FLANGE_RADIUS)
+    expect(CHAMBER.radius).toBeLessThan(FLANGE_RADIUS + 0.25)
   })
 
-  it('reaches up to the underside of the flange of the flipped flask', () => {
-    expect(CHAMBER.topY).toBeCloseTo(2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE.height), 9)
+  it('reaches up to the outer face of the flange of the flipped flask (flush rim)', () => {
+    expect(CHAMBER.topY).toBeCloseTo(2 * FLIP.pivotY - MOLD.flask.bottomY, 9)
+    expect(CHAMBER.topY - (2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE.height))).toBeCloseTo(FLANGE.height, 9)
+  })
+
+  it('has a side hose that leaves the wall and runs down out of the frame', () => {
+    const p = hosePath()
+    expect(p[0][0]).toBeLessThan(CHAMBER.radius)
+    expect(p[0][0]).toBeGreaterThan(CHAMBER.radius - CHAMBER.wall)
+    expect(p[0][1]).toBeLessThan(CHAMBER.topY)
+    expect(p[0][1]).toBeGreaterThan(CHAMBER.bottomY)
+    expect(p.at(-1)![1]).toBeLessThan(frameBottom - HOSE.radius)
+    for (const [x] of p.slice(1)) expect(x).toBeGreaterThan(CHAMBER.radius)
   })
 
   it('closes below the flipped flask and stays inside the frame', () => {
