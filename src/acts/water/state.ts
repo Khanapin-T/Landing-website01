@@ -2,11 +2,11 @@
 export interface WaterState {
   /** 0 = bucket below the frame, 1 = in place (config/water.ts bucketOffset). */
   bucket: number
-  /** 0..1 boil of the surface (the hot flask goes in). */
+  /** 0..1 boil strength of the surface (the hot flask goes in); it covers the part spread by immersion(dip). */
   boil: number
   /** 0 = clear water, 1 = milky white (the investment dissolves). */
   milk: number
-  /** 0..1 amount of steam. */
+  /** 0..1 rate at which new steam puffs are born on the water (puffs already up keep rising after it drops). */
   steam: number
   /** 0..1 of the water timer (00:00 to 10:00). */
   rest: number

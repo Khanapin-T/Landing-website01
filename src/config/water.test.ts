@@ -22,6 +22,7 @@ import {
   finalTreeMatrix,
   flaskMatrix,
   flaskOffset,
+  immersion,
   rawTreeMatrix,
 } from './water'
 
@@ -84,6 +85,17 @@ describe('bucket and water', () => {
     expect(bucketOffset(0, 0).y).toBe(BUCKET.dropOffset)
     expect(bucketOffset(1, 1)).toEqual(flaskOffset({ dip: 0, away: 1 }))
     expect(AWAY.back).toBeGreaterThan(0)
+  })
+})
+
+describe('immersion', () => {
+  it('is 0 before the flange touches the water and 1 once the dipped flask is fully under', () => {
+    expect(immersion(0)).toBe(0)
+    expect(immersion(1)).toBe(1)
+    const touch = (FLIP.pivotY - FLASK_FLANGE_RADIUS - WATER_Y) / DIP_DEPTH
+    expect(immersion(touch - 0.01)).toBe(0)
+    expect(immersion(touch + 0.05)).toBeGreaterThan(0)
+    expect(immersion(touch + 0.05)).toBeLessThan(immersion(touch + 0.1))
   })
 })
 

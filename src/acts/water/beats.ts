@@ -18,18 +18,21 @@ export const WATER_BEATS = {
   turnTo: 11.95,
   dipFrom: 11.95,
   dipTo: 12.2,
-  /** Boil only for the first moments (from when the flask touches the water), steam with it, the water turns white. */
+  /**
+   * The boil starts as the flask touches the water and builds with the dip (it spreads from the middle by
+   * config/water.ts immersion), hardest when the flask is fully under (dipTo), then calms before the rest timer. Steam
+   * is born on the water with it and stops being made shortly after dipTo; the puffs already up keep rising and fade.
+   */
   boilFrom: 12.08,
-  boilTo: 12.15,
-  boilOutFrom: 12.3,
-  boilOutTo: 12.48,
+  boilTo: 12.2,
+  boilOutFrom: 12.26,
+  boilOutTo: 12.45,
   steamFrom: 12.08,
-  steamTo: 12.15,
-  /** The steam goes with the boil: none left once the rest timer runs (restFrom). */
-  steamOutFrom: 12.2,
-  steamOutTo: 12.42,
-  milkFrom: 12.12,
-  milkTo: 12.45,
+  steamTo: 12.2,
+  steamOutFrom: 12.23,
+  steamOutTo: 12.27,
+  milkFrom: 12.18,
+  milkTo: 12.48,
   /** Calm white water, the timer runs; the investment is gone while the flask is under. */
   restFrom: 12.5,
   restTo: 13.0,

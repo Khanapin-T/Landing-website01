@@ -26,6 +26,17 @@ const DIPPED_AXIS_Y = WATER_Y - FLASK_FLANGE_RADIUS - 0.25
 /** How far the flask goes down into the bucket (story.flask.dip = 1). */
 export const DIP_DEPTH = FLIP.pivotY - DIPPED_AXIS_Y
 
+/**
+ * 0..1 how much of the lying flask (flange to flange) is under the water at story.flask.dip: 0 until the flange
+ * touches the surface, 1 once it is fully under. The boil spreads from the bucket middle by this and the steam is
+ * born inside that spread (Act 6).
+ */
+export function immersion(dip: number): number {
+  const axis = FLIP.pivotY - dip * DIP_DEPTH
+  const t = (WATER_Y - (axis - FLASK_FLANGE_RADIUS)) / (2 * FLASK_FLANGE_RADIUS)
+  return Math.min(Math.max(t, 0), 1)
+}
+
 /** The flask and the bucket recede `back` and sink `sink` (out of the frame) at story.flask.away = 1. */
 export const AWAY = { back: 7, sink: 9 } as const
 

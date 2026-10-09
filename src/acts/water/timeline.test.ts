@@ -15,6 +15,7 @@ import {
   WATER_Y,
   flaskMatrix,
   flaskOffset,
+  immersion,
   rawTreeMatrix,
 } from '../../config/water'
 import { FIRE_INITIAL, fire } from '../fire/state'
@@ -162,6 +163,19 @@ describe('act 6 timeline', () => {
     tl.time(13.7)
     expect(state()).toEqual(far)
   })
+  it('boils and steams hardest exactly when the flask is fully under, then stops making steam shortly after', () => {
+    tl.time(B.dipTo)
+    expect(immersion(story.flask.dip)).toBe(1)
+    expect(water.boil).toBe(1)
+    expect(water.steam).toBe(1)
+    tl.time((B.boilFrom + B.dipTo) / 2)
+    expect(water.boil).toBeGreaterThan(0)
+    expect(water.boil).toBeLessThan(1)
+    expect(B.steamOutTo - B.dipTo).toBeLessThanOrEqual(0.1)
+    tl.time(B.steamOutTo)
+    expect(water.steam).toBe(0)
+  })
+
   it('lets the steam go with the boil: none left once the rest timer runs', () => {
     expect(B.steamOutTo).toBeLessThanOrEqual(B.restFrom)
     tl.time(B.restFrom)

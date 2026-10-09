@@ -20,11 +20,11 @@ export function registerWater(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.flask, { flip: 1 }, { flip: SIDE_FLIP, duration: len(B.turnFrom, B.turnTo), ease: 'power2.inOut' }, B.turnFrom)
   seg.fromTo(story.flask, { dip: 0 }, { dip: 1, duration: len(B.dipFrom, B.dipTo), ease: 'power2.in' }, B.dipFrom)
 
-  // A short boil with steam the moment it is in, the water turns milky white.
-  seg.fromTo(water, { boil: 0 }, { boil: 1, duration: len(B.boilFrom, B.boilTo), ease: 'power2.out' }, B.boilFrom)
+  // The boil and the steam build with the dip, hardest when the flask is fully under; the water turns milky.
+  seg.fromTo(water, { boil: 0 }, { boil: 1, duration: len(B.boilFrom, B.boilTo), ease: 'power1.in' }, B.boilFrom)
   seg.fromTo(water, { boil: 1 }, { boil: 0, duration: len(B.boilOutFrom, B.boilOutTo), ease: 'power1.inOut' }, B.boilOutFrom)
-  seg.fromTo(water, { steam: 0 }, { steam: 1, duration: len(B.steamFrom, B.steamTo), ease: 'power2.out' }, B.steamFrom)
-  seg.fromTo(water, { steam: 1 }, { steam: 0, duration: len(B.steamOutFrom, B.steamOutTo), ease: 'power1.in' }, B.steamOutFrom)
+  seg.fromTo(water, { steam: 0 }, { steam: 1, duration: len(B.steamFrom, B.steamTo), ease: 'power1.in' }, B.steamFrom)
+  seg.fromTo(water, { steam: 1 }, { steam: 0, duration: len(B.steamOutFrom, B.steamOutTo) }, B.steamOutFrom)
   seg.fromTo(water, { milk: 0 }, { milk: 1, duration: len(B.milkFrom, B.milkTo), ease: 'power1.out' }, B.milkFrom)
 
   // Ten minutes in the calm white water; the investment is gone by the time it comes up.
