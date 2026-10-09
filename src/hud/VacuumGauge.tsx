@@ -1,23 +1,31 @@
 import { useRef } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { content } from '../../content'
-import { addCue } from '../../story/cues'
-import { story } from '../../story/store'
-import { GOLD_BEATS } from './beats'
+import { content } from '../content'
+import { addCue } from '../story/cues'
+import { story } from '../story/store'
 import { GAUGE, needleAngle, tickLines } from './gauge'
-import { gold } from './state'
 
 gsap.registerPlugin(useGSAP)
 
 const TICKS = tickLines()
 
+export interface VacuumGaugeProps {
+  /** Current vacuum 0..1 (0 = atmosphere, 1 = full vacuum), read from the GSAP ticker only while the gauge is shown. */
+  read: () => number
+  /** The gauge is shown for story.screen in [showFrom, showTo). Static: read once at mount. */
+  showFrom: number
+  showTo: number
+}
+
 /**
  * The vacuum gauge in the top right corner (SVG, white and blue-grey with a gold needle: gold is the accent from
- * Act 5 on). It fades in and out on cues (state-based, so a chapter jump lands in the right state); the needle
- * follows gold.vacuum from the GSAP ticker, written only while the gauge is shown and only when the angle changes.
+ * Act 5 on, and the gauge is the one place it already shows in Act 3). Shared by the acts that pull a vacuum (the
+ * investment boil in Act 3, the flask in the vacuum chamber in Act 5), each passing its own source of the value.
+ * It fades in and out on cues (state-based, so a chapter jump lands in the right state); the needle is written only
+ * while the gauge is shown and only when the angle changes.
  */
-export function VacuumGauge() {
+export function VacuumGauge({ read, showFrom, showTo }: VacuumGaugeProps) {
   const root = useRef<HTMLDivElement>(null)
   const needle = useRef<SVGGElement>(null)
 
@@ -30,7 +38,7 @@ export function VacuumGauge() {
 
       let shown = Number.NaN
       const tick = () => {
-        const deg = needleAngle(gold.vacuum)
+        const deg = needleAngle(read())
         if (Math.abs(deg - shown) < 0.05) return
         shown = deg
         needleEl.setAttribute('transform', `rotate(${deg.toFixed(2)} ${GAUGE.center} ${GAUGE.center})`)
@@ -38,7 +46,7 @@ export function VacuumGauge() {
 
       let on = false
       const sync = contextSafe!(() => {
-        const next = story.screen >= GOLD_BEATS.gaugeIn && story.screen < GOLD_BEATS.gaugeOut
+        const next = story.screen >= showFrom && story.screen < showTo
         if (next === on) return
         on = next
         if (next) {
@@ -52,7 +60,7 @@ export function VacuumGauge() {
       })
 
       sync()
-      const offs = [GOLD_BEATS.gaugeIn, GOLD_BEATS.gaugeOut].map((at) => addCue({ at, enter: sync, leaveBack: sync }))
+      const offs = [showFrom, showTo].map((at) => addCue({ at, enter: sync, leaveBack: sync }))
       return () => {
         offs.forEach((off) => off())
         gsap.ticker.remove(tick)
@@ -63,7 +71,7 @@ export function VacuumGauge() {
   )
 
   return (
-    <div ref={root} className="pointer-events-none absolute right-[8vw] top-[9vh] w-[min(11vw,170px)] text-line" role="img" aria-label={content.gold.gauge}>
+    <div ref={root} className="pointer-events-none absolute right-[8vw] top-[9vh] w-[min(11vw,170px)] text-line" role="img" aria-label={content.gauge}>
       <svg viewBox="0 0 160 160" className="block w-full" aria-hidden="true">
         <circle cx={GAUGE.center} cy={GAUGE.center} r="74" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" />
         {TICKS.map((t, i) => (
@@ -74,7 +82,7 @@ export function VacuumGauge() {
         </g>
         <circle cx={GAUGE.center} cy={GAUGE.center} r="4" className="fill-gold" />
       </svg>
-      <p className="mt-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{content.gold.gauge}</p>
+      <p className="mt-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{content.gauge}</p>
     </div>
   )
 }

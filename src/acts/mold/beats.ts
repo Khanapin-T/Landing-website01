@@ -32,6 +32,9 @@ export const MOLD_BEATS = {
   /** Vacuum: the surface boils. */
   boilFrom: 6.0,
   boilTo: 6.25,
+  /** The vacuum gauge is on for the boil (the needle follows mold.boil) and goes with the copy column. */
+  gaugeIn: 6.0,
+  gaugeOut: 6.4,
   /** Tape unwinds. */
   unwrapFrom: 6.25,
   unwrapTo: 6.45,

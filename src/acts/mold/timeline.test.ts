@@ -6,6 +6,8 @@ import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
 import { PRINT_INITIAL, print } from '../print/state'
+import { content } from '../../content'
+import { MOLD_BEATS as B } from './beats'
 import { registerMold } from './timeline'
 import { MOLD_INITIAL, mold } from './state'
 import { CAM_INITIAL, FLASK_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
@@ -78,6 +80,19 @@ describe('act 3 timeline', () => {
     expect(snap(story.cam)).toEqual(CAM.pour)
     tl.time(6.2)
     expect(snap(story.cam)).toEqual(CAM.pour)
+  })
+
+  it('shows the vacuum gauge for the whole boil, from its start to the end of the copy column', () => {
+    expect(B.gaugeIn).toBe(B.boilFrom)
+    expect(B.gaugeOut).toBe(B.copyOut)
+    expect(B.gaugeOut).toBeGreaterThan(B.boilTo)
+  })
+
+  it('says the flask goes into a vacuum chamber that pulls the air out of the investment before the furnace', () => {
+    expect(content.mold.caption).toContain('vacuum chamber')
+    expect(content.mold.caption).toContain('air out of the investment')
+    expect(content.mold.caption).toContain('before the furnace')
+    expect(content.mold.caption).not.toContain('—')
   })
 
   it('boils under vacuum only between 6.0 and 6.25', () => {

@@ -39,7 +39,8 @@ export const content = {
   },
   mold: {
     heading: 'Then it becomes a mold',
-    caption: 'The rings are mounted on a tree, sealed in a taped flask and covered with investment. A short vacuum pulls the air out of it.',
+    caption:
+      'The rings are mounted on a tree, sealed in a taped flask and covered with investment. The flask then goes into a vacuum chamber, and a short vacuum pulls the air out of the investment before the furnace.',
     steps: ['Tree', 'Flask', 'Tape', 'Investment', 'Vacuum', 'Tape off'],
   },
   fire: {
@@ -53,9 +54,10 @@ export const content = {
     caption:
       'The flask goes under vacuum and molten yellow gold is poured into the funnel. It runs down the trunk and fills the rings from the bottom up, then rests for 5 to 15 minutes before the flask is quenched in water.',
     steps: ['Vacuum', 'Pour', 'Rest'],
-    gauge: 'Vacuum',
     rest: 'Rest',
   },
+  /** Label of the vacuum gauge (Acts 3 and 5). */
+  gauge: 'Vacuum',
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,
