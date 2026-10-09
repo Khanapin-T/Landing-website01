@@ -48,6 +48,8 @@ export function PolishRing() {
     mirrorMatrix(g.matrix, r.matrix)
     r.matrixWorldNeedsUpdate = true
     polishLinePoint(birth.line, mats.uniforms.uLinePoint.value)
+    // Before the line starts the whole ring is raw: the split plane is infinite and would cut the low, rising ring.
+    if (birth.line <= 0) mats.uniforms.uLinePoint.value.x += 20
     mats.uniforms.uAll.value = birth.all
     mats.uniforms.uReflect.value = birth.finale
     r.visible = getAppState().phase === 'loading' || birth.finale > 0.001
