@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { CURE_OFF, PRINT, RING_HALF, printPose } from './print'
+import { CAM_INITIAL } from '../story/store'
+import { CURE_OFF, PRINT, RING_HALF, printPose, railOpacity } from './print'
 
 describe('print layout', () => {
   it('starts with the plate on the vat floor and the whole part below the cure plane', () => {
@@ -26,5 +27,38 @@ describe('print layout', () => {
 
   it('uses an off value far below anything on screen', () => {
     expect(CURE_OFF).toBeLessThan(-100)
+  })
+})
+
+describe('printer', () => {
+  // Act 2 camera: CAM_INITIAL, level, fov 30, 16:9.
+  const frameHalfH = CAM_INITIAL.z * Math.tan((30 * Math.PI) / 360)
+  const frameTop = CAM_INITIAL.look + frameHalfH
+
+  it('has a build plate about 60% of the frame width (author, after the reference printer photos)', () => {
+    // Measured at its front edge, the part nearest the camera.
+    const frameW = 2 * (CAM_INITIAL.z - PRINT.plate.depth / 2) * Math.tan((30 * Math.PI) / 360) * (16 / 9)
+    expect(PRINT.plate.width / frameW).toBeGreaterThan(0.57)
+    expect(PRINT.plate.width / frameW).toBeLessThan(0.63)
+  })
+
+  it('parks the plate fully out of the frame', () => {
+    expect(PRINT.plate.parkedY).toBeGreaterThan(frameTop)
+  })
+
+  it('runs the rails from under the vat to above the frame, behind the plate', () => {
+    expect(PRINT.rails.bottomY).toBeLessThan(PRINT.cureY)
+    expect(PRINT.rails.topY).toBeGreaterThan(frameTop)
+    expect(PRINT.rails.z).toBeLessThan(-PRINT.plate.depth / 2)
+  })
+
+  it('fades the rails in as the plate comes into the frame and out as it leaves', () => {
+    expect(railOpacity(PRINT.plate.parkedY)).toBe(0)
+    expect(railOpacity(PRINT.rails.fullAtY)).toBe(1)
+    expect(railOpacity(printPose(0).plateY)).toBe(1)
+    const mid = railOpacity((PRINT.plate.parkedY + PRINT.rails.fullAtY) / 2)
+    expect(mid).toBeGreaterThan(0)
+    expect(mid).toBeLessThan(1)
+    expect(PRINT.rails.fullAtY).toBeGreaterThanOrEqual(frameTop)
   })
 })
