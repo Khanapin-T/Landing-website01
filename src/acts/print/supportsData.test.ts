@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PRINT, RING_HALF, printPose } from '../../config/print'
 import { mulberry32 } from '../../lib/random'
-import { PLATE_FRAME_Y, buildSupportGeometry, computeSupports, sampleSupportPoints, type CastUp } from './supportsData'
+import { PLATE_FRAME_Y, buildSupportGeometry, computeSupports, sampleSupportPoints, supportRadii, type CastUp } from './supportsData'
 
 // A stand-in ring: the lower half of a sphere of radius RING_HALF around the ring centre (ring-local, upright), so the
 // shank bottom is at -RING_HALF like the real one.
@@ -52,16 +52,23 @@ describe('print supports', () => {
   })
 
   it('touches the plate exactly while printing (frame origin = the ring centre)', () => {
+    // The supports' group is scaled by PRINT.scale like the ring.
     const p = printPose(0.4)
-    expect(p.ringY + PLATE_FRAME_Y).toBeCloseTo(p.plateY, 9)
+    expect(p.ringY + PLATE_FRAME_Y * PRINT.scale).toBeCloseTo(p.plateY, 9)
   })
 
-  it('builds one geometry with a centre and a seed per vertex, inside the supports', () => {
+  it('makes the front and back (long) supports twice as thick, tapering to the old thickness at the ring', () => {
+    const deep = computeSupports(() => 0, mulberry32(3))
+    expect(deep.every((s) => s.side)).toBe(true)
+    expect(supportRadii(deep[0])).toEqual({ column: 2 * PRINT.supports.radius, contact: PRINT.supports.radius })
+    const short = supports.find((s) => !s.side)!
+    expect(supportRadii(short)).toEqual({ column: PRINT.supports.radius, contact: PRINT.supports.tipRadius })
+  })
+
+  it('builds one geometry with a seed per vertex, inside the supports', () => {
     const g = buildSupportGeometry(supports)
     const pos = g.getAttribute('position')
-    const center = g.getAttribute('aCenter')
     const seed = g.getAttribute('aSeed')
-    expect(center.count).toBe(pos.count)
     expect(seed.count).toBe(pos.count)
     const minY = Math.min(...supports.map((s) => s.contactY))
     for (let i = 0; i < pos.count; i++) {
@@ -74,11 +81,11 @@ describe('print supports', () => {
   it('samples points along the supports for the break-up', () => {
     const pts = sampleSupportPoints(supports, 20, mulberry32(4))
     expect(pts.count).toBe(supports.length * 20)
+    const minY = Math.min(...supports.map((s) => s.contactY))
     for (let i = 0; i < pts.count; i++) {
       const y = pts.position[i * 3 + 1]
-      const cy = pts.center[i * 3 + 1]
       expect(y).toBeLessThanOrEqual(PLATE_FRAME_Y + 1e-6)
-      expect(Math.abs(y - cy)).toBeLessThan(PLATE_FRAME_Y)
+      expect(y).toBeGreaterThanOrEqual(minY - 1e-6)
     }
   })
 })

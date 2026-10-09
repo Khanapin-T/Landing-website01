@@ -26,6 +26,24 @@ afterEach(() => {
   tl.kill()
 })
 
+describe('act 2 ring size', () => {
+  it('prints the ring smaller, then grows it back to full size while it turns over', () => {
+    tl.time(2.4)
+    expect(story.ring.scale).toBe(1)
+    tl.time(2.6)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    tl.time(3.5)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    tl.time((PRINT_BEATS.flipFrom + PRINT_BEATS.flipTo) / 2)
+    expect(story.ring.scale).toBeGreaterThan(PRINT.scale)
+    expect(story.ring.scale).toBeLessThan(1)
+    tl.time(PRINT_BEATS.flipTo)
+    expect(story.ring.scale).toBe(1)
+    tl.time(2.4)
+    expect(story.ring.scale).toBe(1)
+  })
+})
+
 describe('act 2 supports', () => {
   it('carries the supports with the printed ring, then leaves them where the print ended', () => {
     for (const t of [2.8, 3.2, 3.5]) {
@@ -88,7 +106,7 @@ describe('act 2 timeline', () => {
     expect(story.ring.flip).toBeCloseTo(Math.PI)
     expect(story.ring.cureY).toBe(PRINT.cureY)
     // Nothing printed yet: the part's top is at or below the cure plane.
-    expect(story.ring.y + RING_HALF + PRINT.sprue.length).toBeLessThanOrEqual(PRINT.cureY + 1e-6)
+    expect(story.ring.y + (RING_HALF + PRINT.sprue.length) * PRINT.scale).toBeLessThanOrEqual(PRINT.cureY + 1e-6)
   })
 
   it('brings the plate down onto the cure plane before printing', () => {

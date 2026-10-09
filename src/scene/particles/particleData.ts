@@ -41,7 +41,7 @@ export function sampleSurface(geometry: THREE.BufferGeometry, count: number, ran
 /**
  * The resin stream: the dissolved CAD ring pours into the resin bed (bottom points first), and while printing each
  * point flies back to its own spot on the ring, arriving when the cure front reaches it (printPose: the ring hangs
- * upside down, flipped PI around Z, so x and y mirror and z stays).
+ * upside down, flipped PI around Z, so x and y mirror and z stays; it prints at PRINT.scale).
  */
 export function resinStream(from: Float32Array, rand: () => number): ParticleBuffers {
   const count = from.length / 3
@@ -52,7 +52,7 @@ export function resinStream(from: Float32Array, rand: () => number): ParticleBuf
     maxY = Math.max(maxY, from[i * 3 + 1])
   }
   const h = maxY - minY || 1
-  const { pool, cureY, sprue } = PRINT
+  const { pool, cureY, sprue, scale } = PRINT
   const printed = 2 * RING_HALF + sprue.length
   const to = new Float32Array(count * 3)
   const front = new Float32Array(count * 3)
@@ -70,9 +70,9 @@ export function resinStream(from: Float32Array, rand: () => number): ParticleBuf
     to[i * 3] = u * pool.halfWidth
     to[i * 3 + 1] = pool.y + (rand() - 0.5) * pool.thickness * (1 - 0.6 * r)
     to[i * 3 + 2] = v * pool.halfDepth
-    front[i * 3] = -x
+    front[i * 3] = -x * scale
     front[i * 3 + 1] = cureY
-    front[i * 3 + 2] = z
+    front[i * 3 + 2] = z * scale
     delay[i] = ((y - minY) / h) * 0.55 + rand() * 0.1
     arrive[i] = Math.min(Math.max((y + RING_HALF + sprue.length) / printed, 0), 1)
     seed[i] = rand()

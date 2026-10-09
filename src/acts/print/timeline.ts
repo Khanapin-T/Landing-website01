@@ -25,10 +25,11 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   // Ring switch while hidden under the cure plane.
   seg.fromTo(
     story.ring,
-    { fill: 0, cad: 1, resin: 0, sprue: 0, flip: 0, y: 0, cureY: CURE_OFF },
-    { fill: 1, cad: 0, resin: 1, sprue: 1, flip: Math.PI, y: start.ringY, cureY: PRINT.cureY, duration: instant },
+    { fill: 0, cad: 1, resin: 0, sprue: 0, flip: 0, y: 0, cureY: CURE_OFF, scale: 1 },
+    { fill: 1, cad: 0, resin: 1, sprue: 1, flip: Math.PI, y: start.ringY, cureY: PRINT.cureY, scale: PRINT.scale, duration: instant },
     B.setup,
   )
+  seg.fromTo(print, { sup: 0 }, { sup: start.ringY, duration: instant }, B.setup)
 
   seg.fromTo(print, { plate: PRINT.plate.parkedY }, { plate: start.plateY, duration: len(B.plateDownFrom, B.plateDownTo), ease: 'power2.inOut' }, B.plateDownFrom)
 
@@ -52,7 +53,9 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.ring, { flip: Math.PI }, { flip: TURN, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { y: end.ringY }, { y: 0, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { yaw: TURN }, { yaw: TURN + SETTLE_YAW, duration: flip, ease: 'sine.inOut' }, B.flipFrom)
-  // As the ring turns over, the supports break off and fall, turning into points; the sprue stays on the ring.
+  // While it turns over it grows back to full size.
+  seg.fromTo(story.ring, { scale: PRINT.scale }, { scale: 1, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
+  // As the ring turns over, the supports turn into points that fall and fade; the sprue stays on the ring.
   seg.fromTo(print, { drop: 0 }, { drop: 1, duration: flip, ease: 'power1.in' }, B.flipFrom)
   seg.fromTo(print, { bed: 1 }, { bed: 0, duration: len(B.bedOutFrom, B.bedOutTo), ease: 'power2.in' }, B.bedOutFrom)
 

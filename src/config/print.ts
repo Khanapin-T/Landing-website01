@@ -17,6 +17,8 @@ const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 } as cons
 export const PRINT = {
   /** Cure plane (the vat floor): the printed part only exists above it. */
   cureY: -0.6,
+  /** The ring (and its sprue and supports) prints at this size (author: 40% smaller); it grows back while it turns over. */
+  scale: 0.6,
   /**
    * The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it.
    * A rectangle with the build plate's footprint (the author: not a small round pool).
@@ -36,8 +38,9 @@ export const PRINT = {
    * over +-spanX, +-spanZ (ring-local), none within `sprueClear` of the sprue: every one up to maxLength (onto the shank
    * and shoulders under the plate), plus the longer ones in front of and behind the narrow shank (onto the wider part's
    * surfaces that face the plate), sideCount per side (author: 5-10 front and back). A column of `radius`, a cone `tip` of
-   * `tipLength` down to `tipRadius` that bites `bite` into the surface, a `base` foot on the plate. At the flip they
-   * break off and fall `fall` units while they turn into points.
+   * `tipLength` down to `tipRadius` that bites `bite` into the surface, a `base` foot on the plate; the front and back
+   * ones are twice as thick and taper to `radius` at the ring. At the flip they turn straight into points that fall
+   * `fall` units (print-frame units, scaled by `scale`) and fade. All sizes are ring-local (unscaled).
    */
   supports: {
     gridX: 17,
@@ -57,7 +60,7 @@ export const PRINT = {
     bite: 0.006,
     baseRadius: 0.026,
     baseHeight: 0.015,
-    fall: 2.2,
+    fall: 3,
   },
 } as const
 
@@ -76,10 +79,11 @@ export function railSpan(plateY: number): { bottom: number; height: number } {
 }
 
 /**
- * Plate and ring positions while printing (g = 0..1). The ring hangs upside down under the plate on the sprue,
- * so the part's top (sprue top) touches the plate and its newest layer sits on the cure plane.
+ * Plate and ring positions while printing (g = 0..1). The ring hangs upside down under the plate on the sprue, at
+ * PRINT.scale, so the part's top (sprue top) touches the plate and its newest layer sits on the cure plane.
  */
 export function printPose(g: number): { plateY: number; ringY: number } {
-  const plateY = PRINT.cureY + g * (2 * RING_HALF + PRINT.sprue.length)
-  return { plateY, ringY: plateY - PRINT.sprue.length - RING_HALF }
+  const S = PRINT.scale
+  const plateY = PRINT.cureY + g * (2 * RING_HALF + PRINT.sprue.length) * S
+  return { plateY, ringY: plateY - (PRINT.sprue.length + RING_HALF) * S }
 }

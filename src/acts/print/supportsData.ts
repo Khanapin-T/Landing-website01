@@ -11,8 +11,10 @@ export interface Support {
   z: number
   contactY: number
   plateY: number
-  /** Random 0..1: when it breaks off and how it tumbles. */
+  /** Random 0..1: when it turns into points. */
   seed: number
+  /** A long one in front of or behind the ring (twice as thick, tapering to the normal thickness at the ring). */
+  side: boolean
 }
 
 /** The plate's underside in the print frame: the sprue top (sprue on the shank bottom, ring upside down). */
@@ -51,8 +53,8 @@ export function computeSupports(castUp: CastUp, rand: () => number): Support[] {
       const length = hit + PLATE_FRAME_Y
       if (length < minLength) continue
       // Upside down (Rz(PI)): x and y mirror, z stays. The tip bites into the part (lower in the print frame).
-      const s: Support = { x: -x, z, contactY: -hit - bite, plateY: PLATE_FRAME_Y, seed }
-      if (length <= maxLength) out.push(s)
+      const s: Support = { x: -x, z, contactY: -hit - bite, plateY: PLATE_FRAME_Y, seed, side: length > maxLength }
+      if (!s.side) out.push(s)
       else if (Math.abs(z) >= sideMinZ) sides[z < 0 ? 0 : 1].push(s)
     }
   }
@@ -74,31 +76,34 @@ export function meshCastUp(geometry: THREE.BufferGeometry): CastUp {
 }
 
 function tagged(g: THREE.BufferGeometry, s: Support): THREE.BufferGeometry {
-  const n = g.getAttribute('position').count
-  const center = new Float32Array(n * 3)
-  const seed = new Float32Array(n).fill(s.seed)
-  const cy = (s.contactY + s.plateY) / 2
-  for (let i = 0; i < n; i++) center.set([s.x, cy, s.z], i * 3)
-  g.setAttribute('aCenter', new THREE.BufferAttribute(center, 3))
-  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1))
+  g.setAttribute('aSeed', new THREE.BufferAttribute(new Float32Array(g.getAttribute('position').count).fill(s.seed), 1))
   return g
+}
+
+/** Column radius and radius where the support meets the ring (the front and back ones: twice as thick, tapering to the normal radius). */
+export function supportRadii(s: Support): { column: number; contact: number } {
+  const { radius, tipRadius } = PRINT.supports
+  return s.side ? { column: 2 * radius, contact: radius } : { column: radius, contact: tipRadius }
 }
 
 /**
  * All supports as ONE geometry in the print frame (one draw call): per support a foot on the plate, the column and a
- * cone tip down to the contact. Every vertex carries its support's centre (`aCenter`) and `aSeed` for the fall.
+ * cone down to the contact (a sharp tip, or a taper to the normal thickness for the thick front and back ones). Every
+ * vertex carries its support's `aSeed` (when it turns into points).
  */
 export function buildSupportGeometry(supports: readonly Support[]): THREE.BufferGeometry {
-  const { radius, tipRadius, tipLength, baseRadius, baseHeight } = PRINT.supports
+  const { tipLength, baseRadius, baseHeight } = PRINT.supports
   const parts: THREE.BufferGeometry[] = []
   for (const s of supports) {
+    const { column: r, contact } = supportRadii(s)
     const length = s.plateY - s.contactY
-    const tip = Math.min(tipLength, length * 0.5)
+    const tip = Math.min(s.side ? 3 * tipLength : tipLength, length * 0.5)
     const foot = Math.min(baseHeight, length * 0.2)
     const column = Math.max(length - tip - foot, 0.001)
-    parts.push(tagged(new THREE.CylinderGeometry(baseRadius * 0.7, baseRadius, foot, 10, 1, false).translate(s.x, s.plateY - foot / 2, s.z), s))
-    parts.push(tagged(new THREE.CylinderGeometry(radius, radius, column, 8, 1, true).translate(s.x, s.plateY - foot - column / 2, s.z), s))
-    parts.push(tagged(new THREE.CylinderGeometry(radius, tipRadius, tip, 8, 1, false).translate(s.x, s.contactY + tip / 2, s.z), s))
+    const footR = Math.max(baseRadius, r * 1.6)
+    parts.push(tagged(new THREE.CylinderGeometry(footR * 0.7, footR, foot, 10, 1, false).translate(s.x, s.plateY - foot / 2, s.z), s))
+    parts.push(tagged(new THREE.CylinderGeometry(r, r, column, 8, 1, true).translate(s.x, s.plateY - foot - column / 2, s.z), s))
+    parts.push(tagged(new THREE.CylinderGeometry(r, contact, tip, 8, 1, false).translate(s.x, s.contactY + tip / 2, s.z), s))
   }
   const merged = mergeGeometries(parts, false)
   parts.forEach((p) => p.dispose())
@@ -108,8 +113,7 @@ export function buildSupportGeometry(supports: readonly Support[]): THREE.Buffer
 
 export interface SupportPoints {
   position: Float32Array
-  /** The support's centre for each point (the same fall as its support). */
-  center: Float32Array
+  /** The support's seed for each point (they appear when it breaks up). */
   seed: Float32Array
   /** Random -1..1 direction per point for the break-up spread. */
   jitter: Float32Array
@@ -120,20 +124,17 @@ export interface SupportPoints {
 export function sampleSupportPoints(supports: readonly Support[], perSupport: number, rand: () => number): SupportPoints {
   const count = supports.length * perSupport
   const position = new Float32Array(count * 3)
-  const center = new Float32Array(count * 3)
   const seed = new Float32Array(count)
   const jitter = new Float32Array(count * 3)
-  const r = PRINT.supports.radius
   let k = 0
   for (const s of supports) {
-    const cy = (s.contactY + s.plateY) / 2
+    const r = supportRadii(s).column
     for (let i = 0; i < perSupport; i++, k++) {
       const a = rand() * Math.PI * 2
       position.set([s.x + Math.cos(a) * r, s.contactY + rand() * (s.plateY - s.contactY), s.z + Math.sin(a) * r], k * 3)
-      center.set([s.x, cy, s.z], k * 3)
       seed[k] = s.seed
       jitter.set([rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1], k * 3)
     }
   }
-  return { position, center, seed, jitter, count }
+  return { position, seed, jitter, count }
 }

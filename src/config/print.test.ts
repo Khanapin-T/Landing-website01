@@ -3,25 +3,33 @@ import { CAM_INITIAL } from '../story/store'
 import { CURE_OFF, PRINT, RING_HALF, printPose, railOpacity, railSpan } from './print'
 
 describe('print layout', () => {
+  // The ring prints at PRINT.scale (author: 40% smaller while printing).
+  const S = PRINT.scale
+  const part = (RING_HALF + PRINT.sprue.length) * S
+
+  it('prints the ring 40% smaller', () => {
+    expect(S).toBeCloseTo(0.6, 9)
+  })
+
   it('starts with the plate on the vat floor and the whole part below the cure plane', () => {
     const p = printPose(0)
     expect(p.plateY).toBeCloseTo(PRINT.cureY)
     // Upside down: the sprue is on top, its top touches the plate; the ring's lowest point is below the plate.
-    expect(p.ringY + RING_HALF + PRINT.sprue.length).toBeCloseTo(p.plateY)
-    expect(p.ringY + RING_HALF + PRINT.sprue.length).toBeLessThanOrEqual(PRINT.cureY + 1e-9)
+    expect(p.ringY + part).toBeCloseTo(p.plateY)
+    expect(p.ringY + part).toBeLessThanOrEqual(PRINT.cureY + 1e-9)
   })
 
   it('ends with the whole part printed above the cure plane', () => {
     const p = printPose(1)
-    expect(p.ringY - RING_HALF).toBeCloseTo(PRINT.cureY)
-    expect(p.plateY).toBeCloseTo(PRINT.cureY + 2 * RING_HALF + PRINT.sprue.length)
+    expect(p.ringY - RING_HALF * S).toBeCloseTo(PRINT.cureY)
+    expect(p.plateY).toBeCloseTo(PRINT.cureY + (2 * RING_HALF + PRINT.sprue.length) * S)
   })
 
   it('keeps plate and part rigidly attached in between (linear)', () => {
     for (const g of [0.1, 0.37, 0.5, 0.9]) {
       const p = printPose(g)
-      expect(p.plateY - p.ringY).toBeCloseTo(RING_HALF + PRINT.sprue.length)
-      expect(p.plateY).toBeCloseTo(PRINT.cureY + g * (2 * RING_HALF + PRINT.sprue.length))
+      expect(p.plateY - p.ringY).toBeCloseTo(part)
+      expect(p.plateY).toBeCloseTo(PRINT.cureY + g * (2 * RING_HALF + PRINT.sprue.length) * S)
     }
   })
 

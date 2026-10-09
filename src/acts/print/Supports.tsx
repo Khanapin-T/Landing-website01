@@ -17,35 +17,22 @@ const POINTS_PER_SUPPORT = 36
 const POINT_SIZE = 0.012
 
 /**
- * The fall of one support (print frame = world axes): it breaks off at its own moment (seed), tips over a little about
- * its centre and drops with gravity. `d` 0..1 = how far along its own fall it is. Shared by the columns and the points.
+ * The break-up (print frame = world axes): each support turns into points at its own moment (seed, staggered over the
+ * first part of the drop), quickly; its points then fall with gravity and fade. Shared by the columns and the points.
  */
-const FALL_GLSL = /* glsl */ `
+const BREAK_GLSL = /* glsl */ `
 uniform float uDrop;
-float supProgress(float seed) { return clamp((uDrop - seed * 0.3) / 0.7, 0.0, 1.0); }
-mat3 supRot(float seed, float d) {
-  float a = (seed - 0.5) * 1.8 * d;
-  float b = (fract(seed * 7.31) - 0.5) * 1.2 * d;
-  float ca = cos(a);
-  float sa = sin(a);
-  float cb = cos(b);
-  float sb = sin(b);
-  mat3 rz = mat3(ca, sa, 0.0, -sa, ca, 0.0, 0.0, 0.0, 1.0);
-  mat3 rx = mat3(1.0, 0.0, 0.0, 0.0, cb, sb, 0.0, -sb, cb);
-  return rz * rx;
-}
-vec3 supFall(vec3 p, vec3 c, float seed, float d) {
-  vec3 q = supRot(seed, d) * (p - c) + c;
-  q.y -= ${PRINT.supports.fall.toFixed(3)} * d * d;
-  q.x += (fract(seed * 3.17) - 0.5) * 0.35 * d;
-  return q;
-}
+float supStart(float seed) { return seed * 0.25; }
+// 0..1: how far the support has turned into points.
+float supBreak(float seed) { return smoothstep(supStart(seed), supStart(seed) + 0.12, uDrop); }
+// 0..1: time since its points were released.
+float supFallT(float seed) { return clamp((uDrop - supStart(seed)) / (1.0 - supStart(seed)), 0.0, 1.0); }
 `
 
 /**
  * Resin supports (MeshStandardMaterial in the resin colour): clipped by the cure plane like the ring (they print
- * first, from the plate down), and while falling they dissolve with a stable object-space dither as their points
- * take over.
+ * first, from the plate down); at the break-up they vanish in place with a stable object-space dither while their
+ * points take over.
  */
 function createSupportMaterial(cure: { value: number }, drop: { value: number }): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({
@@ -59,19 +46,13 @@ function createSupportMaterial(cure: { value: number }, drop: { value: number })
     shader.uniforms.uCureY = cure
     shader.uniforms.uDrop = drop
     shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        `#include <common>\n${FALL_GLSL}\nattribute vec3 aCenter;\nattribute float aSeed;\nvarying vec3 vObj;\nvarying float vWorldY;\nvarying float vDissolve;`,
-      )
-      .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nobjectNormal = supRot(aSeed, supProgress(aSeed)) * objectNormal;')
+      .replace('#include <common>', `#include <common>\n${BREAK_GLSL}\nattribute float aSeed;\nvarying vec3 vObj;\nvarying float vWorldY;\nvarying float vDissolve;`)
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-        float supD = supProgress(aSeed);
         vObj = position;
-        transformed = supFall(transformed, aCenter, aSeed, supD);
         vWorldY = (modelMatrix * vec4(transformed, 1.0)).y;
-        vDissolve = smoothstep(0.08, 0.7, supD);`,
+        vDissolve = supBreak(aSeed);`,
       )
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uCureY;\nvarying vec3 vObj;\nvarying float vWorldY;\nvarying float vDissolve;')
@@ -82,29 +63,27 @@ function createSupportMaterial(cure: { value: number }, drop: { value: number })
         if (fract(sin(dot(floor(vObj * 500.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453) < vDissolve) discard;`,
       )
   }
-  m.customProgramCacheKey = () => 'print-supports-v1'
+  m.customProgramCacheKey = () => 'print-supports-v2'
   return m
 }
 
 const pointsVertex = /* glsl */ `
-${FALL_GLSL}
-attribute vec3 aCenter;
+${BREAK_GLSL}
 attribute float aSeed;
 attribute vec3 aJitter;
 uniform float uSize;
 uniform float uScale;
 varying float vAlpha;
 void main() {
-  float d = supProgress(aSeed);
-  float k = smoothstep(0.08, 0.7, d);
-  vec3 p = supFall(position, aCenter, aSeed, d);
-  // Once its support breaks up, each point drifts apart and falls a little faster.
-  p += aJitter * 0.18 * k;
-  p.y -= 0.6 * k * k;
+  float k = supBreak(aSeed);
+  float t = supFallT(aSeed);
+  // Released where the support stood: drift apart a little and fall, faster and faster.
+  vec3 p = position + aJitter * 0.08 * t;
+  p.y -= ${PRINT.supports.fall.toFixed(3)} * t * t;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = uSize * uScale * projectionMatrix[1][1] / -mv.z * (0.7 + 0.6 * fract(aSeed * 13.7 + aJitter.x));
-  vAlpha = k * (1.0 - smoothstep(0.75, 1.0, d));
+  vAlpha = k * (1.0 - smoothstep(0.6, 1.0, t));
 }
 `
 
@@ -121,9 +100,9 @@ void main() {
 
 /**
  * Act 2's print supports (author 2026-10-09: many, like real resin printing): thin resin columns from the plate down
- * onto the upside-down ring, landing on its real surface (rays cast once against the light ring model). They print
- * with the ring and rise with it (print.sup); as the ring turns over they break off, tumble down and turn into points
- * (print.drop). The sprue is the ring's own and stays.
+ * onto the upside-down ring, landing on its real surface (rays cast once against the light ring model), drawn at
+ * PRINT.scale like the ring. They print with the ring and rise with it (print.sup); as the ring turns over they turn
+ * straight into points that fall and fade (print.drop). The sprue is the ring's own and stays.
  */
 export function Supports() {
   const ring = useRingLightGeometry()
@@ -137,7 +116,6 @@ export function Supports() {
     const p = sampleSupportPoints(supports, POINTS_PER_SUPPORT, mulberry32(32))
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(p.position, 3))
-    g.setAttribute('aCenter', new THREE.BufferAttribute(p.center, 3))
     g.setAttribute('aSeed', new THREE.BufferAttribute(p.seed, 1))
     g.setAttribute('aJitter', new THREE.BufferAttribute(p.jitter, 3))
     return { geometry: g, count: p.count }
@@ -191,7 +169,7 @@ export function Supports() {
   // Starts visible: Precompile (traverseVisible) runs before the first frame sets the real values. frustumCulled off:
   // the falling vertices leave the geometry's bounds.
   return (
-    <group ref={group} position-y={print.sup}>
+    <group ref={group} position-y={print.sup} scale={PRINT.scale}>
       <mesh ref={columns} geometry={geometry} material={material} frustumCulled={false} />
       <points ref={cloud} geometry={points.geometry} material={pointsMaterial} frustumCulled={false} />
     </group>

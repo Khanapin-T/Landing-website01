@@ -22,9 +22,11 @@ export interface RingState {
   cureY: number
   /** 0..1 blend from the pose above into tree slot 0 (Act 3). */
   tree: number
+  /** Uniform size of the ring and its sprue (Act 2 prints it at PRINT.scale). */
+  scale: number
 }
 
-export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0 }
+export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0, scale: 1 }
 
 /** Camera rig: world Y and Z of the camera (x stays 0) and the world Y of the point on the Y axis it looks at (look == y: straight down -Z). */
 export interface CamState {

@@ -49,14 +49,14 @@ describe('particle data', () => {
     for (let i = 0; i < p.count; i++) {
       const [x, y, z] = [ring[i * 3], ring[i * 3 + 1], ring[i * 3 + 2]]
       // Upside down (flip PI around Z): x and y mirror, z stays; the point is printed on the cure plane.
-      expect(p.front![i * 3]).toBeCloseTo(-x)
+      expect(p.front![i * 3]).toBeCloseTo(-x * PRINT.scale)
       expect(p.front![i * 3 + 1]).toBeCloseTo(PRINT.cureY)
-      expect(p.front![i * 3 + 2]).toBeCloseTo(z)
+      expect(p.front![i * 3 + 2]).toBeCloseTo(z * PRINT.scale)
       // At its arrival progress the printed ring has carried this point exactly onto the cure plane.
       const g = p.arrive![i]
       expect(g).toBeGreaterThan(0)
       expect(g).toBeLessThanOrEqual(1 + 1e-6)
-      expect(printPose(g).ringY - y).toBeCloseTo(PRINT.cureY)
+      expect(printPose(g).ringY - y * PRINT.scale).toBeCloseTo(PRINT.cureY)
     }
   })
 
