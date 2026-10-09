@@ -37,11 +37,16 @@ export function PolishRing() {
     const g = hero.current
     const r = mirror.current
     if (!g || !r) return
-    if (!reduce) spin.current += Math.min(delta, 0.1) * FINAL.spin * birth.finale
+    if (!reduce) {
+      spin.current += Math.min(delta, 0.1) * FINAL.spin * birth.finale
+      // Wrap only in the full final frame, where the spin is fully applied and a 2pi jump is invisible.
+      if (birth.finale >= 1) spin.current %= 2 * Math.PI
+    }
     pose.cut = birth.cut0
     pose.jar = birth.jar
     pose.out = birth.out
-    pose.yaw = birth.turn + spin.current
+    // The spin fades with the final frame, so scrolling back returns the ring to the scripted yaw.
+    pose.yaw = birth.turn + spin.current * birth.finale
     pose.tilt = birth.tilt
     heroMatrix(pose, g.matrix)
     g.matrixWorldNeedsUpdate = true

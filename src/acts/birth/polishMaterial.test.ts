@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { LINE_NORMAL } from '../../config/birth'
+import { RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
 import { POLISHED_GOLD, createPolishMaterials } from './polishMaterial'
 
 const compile = (m: THREE.Material) => {
@@ -40,5 +41,18 @@ describe('polish materials', () => {
     const keys = new Set([ring, stub, mirror].map((m) => m.customProgramCacheKey()))
     expect(keys.size).toBe(3)
     expect(POLISHED_GOLD.roughness).toBeLessThan(0.2)
+    expect(mirror.side).toBe(THREE.FrontSide)
+  })
+
+  it('scales the IBL down to the raw gold intensity on the raw side, always on the stub', () => {
+    const { ring, stub, mirror } = createPolishMaterials()
+    const ratio = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
+    for (const m of [ring, mirror]) {
+      const fs = compile(m).fragmentShader
+      expect(fs).toContain(`float pgEnv = mix(${ratio}, 1.0, polished);`)
+      expect(fs.indexOf('pgEnv')).toBeGreaterThan(fs.indexOf('#include <lights_fragment_maps>'))
+      expect(fs).toContain('iblIrradiance *= pgEnv;')
+    }
+    expect(compile(stub).fragmentShader).toContain(`float pgEnv = ${ratio};`)
   })
 })

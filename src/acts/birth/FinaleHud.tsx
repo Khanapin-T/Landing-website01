@@ -19,7 +19,11 @@ export function FinaleHud() {
       <ul data-links className="mt-8 flex gap-6 font-mono text-sm uppercase tracking-[0.12em]">
         {f.links.map((l) => (
           <li key={l.label}>
-            <a className="pointer-events-auto text-line underline-offset-4 hover:underline focus-visible:underline" href={l.href}>
+            <a className="pointer-events-auto text-line underline-offset-4 hover:underline focus-visible:underline"
+              href={l.href}
+              // Placeholder links (href '#') must not jump to the page top.
+              onClick={l.href === '#' ? (e) => e.preventDefault() : undefined}
+            >
               {l.label}
             </a>
           </li>

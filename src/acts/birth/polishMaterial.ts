@@ -25,12 +25,17 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
     roughness: RAW_GOLD.roughness,
     envMapIntensity: POLISHED_GOLD.envMapIntensity,
     transparent: variant === 'mirror',
-    depthWrite: variant !== 'mirror',
-    side: variant === 'mirror' ? THREE.DoubleSide : THREE.FrontSide,
+    // The mirror copy is drawn last with nothing behind it; writing depth keeps its far faces from showing through.
+    // FrontSide also for the mirror: three flips the winding for its negative-determinant matrix.
+    depthWrite: true,
+    side: THREE.FrontSide,
   })
   const raw = new THREE.Color(RAW_GOLD.color)
   const pol = new THREE.Color(POLISHED_GOLD.color)
   const v3 = (c: THREE.Color) => `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`
+  // envMapIntensity is POLISHED_GOLD's; the raw side scales the IBL back down to RAW_GOLD's (as the cut rings).
+  const rawEnv = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
+  const envScale = variant === 'stub' ? rawEnv : `mix(${rawEnv}, 1.0, polished)`
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
     shader.vertexShader = shader.vertexShader
@@ -64,6 +69,13 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         `#include <roughnessmap_fragment>
         roughnessFactor = mix(clamp(${RAW_GOLD.roughness.toFixed(3)} + 0.08 * (grain - 0.5), 0.0, 1.0), ${POLISHED_GOLD.roughness.toFixed(3)}, polished);`,
       )
+      .replace(
+        '#include <lights_fragment_maps>',
+        `#include <lights_fragment_maps>
+        float pgEnv = ${envScale};
+        radiance *= pgEnv;
+        iblIrradiance *= pgEnv;`,
+      )
     if (variant === 'mirror')
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <opaque_fragment>',
@@ -71,7 +83,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v1`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v2`
   return m
 }
 

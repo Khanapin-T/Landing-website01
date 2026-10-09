@@ -30,13 +30,14 @@ export function CutRings() {
   useFrame(() => {
     const loading = getAppState().phase === 'loading'
     const jarY = jarOffsetY(birth.jar, birth.jarAway)
-    SLOTS.forEach((slot, i) => {
+    for (let i = 0; i < SLOTS.length; i++) {
       const g = refs.current[i]
-      if (!g) return
+      if (!g) continue
+      const slot = SLOTS[i]
       cutRingMatrix(slot, cutOf(birth, slot), jarY, g.matrix)
       g.matrixWorldNeedsUpdate = true
       g.visible = loading || birth.jarAway < 0.999
-    })
+    }
   })
 
   return (

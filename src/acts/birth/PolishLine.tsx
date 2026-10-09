@@ -29,7 +29,16 @@ function drawLabel(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture) {
 export function PolishLine() {
   const line = useMemo(() => new THREE.PlaneGeometry(LINE.width, LINE.length), [])
   const lineMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: NEON, toneMapped: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
+    // depthTest off: the turned ring never hides the line or its label.
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: NEON,
+        toneMapped: false,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
+      }),
     [],
   )
   const { canvas, texture } = useMemo(() => {
@@ -41,12 +50,22 @@ export function PolishLine() {
     return { canvas: c, texture: t }
   }, [])
   const label = useMemo(() => new THREE.PlaneGeometry(LABEL.width, LABEL.height).translate(LABEL.width / 2, 0, 0), [])
-  const labelMat = useMemo(() => new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false }), [texture])
+  const labelMat = useMemo(
+    () => new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false, depthTest: false }),
+    [texture],
+  )
   useEffect(() => {
+    let alive = true
     drawLabel(canvas, texture)
     // The webfont may load after mount: redraw once it is ready (texture upload only, no shader compile).
-    document.fonts?.load('500 56px "IBM Plex Mono"').then(() => drawLabel(canvas, texture))
+    document.fonts
+      ?.load('500 56px "IBM Plex Mono"')
+      .then(() => {
+        if (alive) drawLabel(canvas, texture)
+      })
+      .catch(() => {})
     return () => {
+      alive = false
       line.dispose()
       lineMat.dispose()
       label.dispose()
