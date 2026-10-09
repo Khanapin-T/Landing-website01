@@ -1,4 +1,3 @@
-import { ActScale } from './ActScale'
 import { IntroTitle } from '../acts/intro/IntroTitle'
 import { IdeaHud } from '../acts/idea/IdeaHud'
 import { DimLabels } from '../acts/idea/DimLabels'
@@ -19,7 +18,6 @@ export function Hud() {
       <MoldHud />
       <FireHud />
       <GoldHud />
-      <ActScale />
     </div>
   )
 }

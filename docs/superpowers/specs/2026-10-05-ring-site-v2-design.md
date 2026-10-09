@@ -51,7 +51,7 @@ Design read (design-taste-frontend): desktop scrollytelling portfolio of a jewel
 - **UI color:** monochrome white and blue-grey. **One accent: gold, and it is earned**: no gold in the UI before act 5. Resin green and furnace heat are scene light, not UI accents.
 - **Heat as one mechanism:** a single "frame temperature" uniform in the post pass grades the whole image from cold to hot along the scroll, instead of separate per-act backgrounds.
 - **Type:** one sans display + one mono for HUD. Candidates shown live in the first build session (for example Geist + Geist Mono, Space Grotesk + JetBrains Mono); no serif, no Inter. Self-hosted, `font-display: swap`.
-- **Layout:** no glass panel. Copy sits on the scene in a left column over a soft dark scrim. Focus object at about 58% of the width. Right edge: a thin vertical scale with one tick per act, clickable, keyboard reachable.
+- **Layout:** no glass panel. Copy sits on the scene in a left column over a soft dark scrim. Focus object at about 58% of the width. No chapter scale on the right edge (removed by the author 2026-10-09).
 - **Post-processing, one pass on every screen:** bloom (half resolution), film grain, subtle chromatic aberration, edge blur + vignette, temperature grade. Act 4 adds heat haze inside the same pass.
 - **Banned (design-taste-frontend):** custom cursor, "scroll" cue, em-dashes in site copy, decorative dots, section-number eyebrows.
 - **Signature technique: particles.** One particle system appears in three key moments (CAD dissolves into points, resin burns out in X-ray, investment dissolves in water) and ties the story together.
