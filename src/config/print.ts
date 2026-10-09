@@ -17,7 +17,7 @@ const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 } as cons
 export const PRINT = {
   /** Cure plane (the vat floor): the printed part only exists above it. */
   cureY: -0.6,
-  /** The ring (and its sprue and supports) prints at this size (author: 40% smaller); it grows back while it turns over. */
+  /** The ring (and its sprue and supports) prints at this size (author: 40% smaller); act 3 grows it back on its way to the tree. */
   scale: 0.6,
   /**
    * The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it.

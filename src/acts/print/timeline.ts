@@ -50,15 +50,13 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
 
   // Done: at 100% the supports crumble into a short puff while the ring still hangs on its sprue (the sprue stays).
   seg.fromTo(print, { drop: 0 }, { drop: 1, duration: len(B.crumbleFrom, B.crumbleTo) }, B.crumbleFrom)
-  // Then clip off, plate away, ring turns upright to the center.
+  // Then clip off, plate away, the ring turns upright (still small: act 3 grows it on its way to the tree).
   seg.fromTo(story.ring, { cureY: PRINT.cureY }, { cureY: CURE_OFF, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: end.plateY }, { plate: PRINT.plate.parkedY, duration: len(B.liftFrom, B.liftTo), ease: 'power2.in' }, B.liftFrom)
   const flip = len(B.flipFrom, B.flipTo)
   seg.fromTo(story.ring, { flip: Math.PI }, { flip: TURN, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { y: end.ringY }, { y: 0, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { yaw: TURN }, { yaw: TURN + SETTLE_YAW, duration: flip, ease: 'sine.inOut' }, B.flipFrom)
-  // While it turns over it grows back to full size.
-  seg.fromTo(story.ring, { scale: PRINT.scale }, { scale: 1, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
 
   tl.add(seg, 0)
   return () => {

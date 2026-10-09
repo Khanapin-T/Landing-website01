@@ -27,20 +27,22 @@ afterEach(() => {
 })
 
 describe('act 2 ring size', () => {
-  it('prints the ring smaller, then grows it back to full size while it turns over', () => {
+  it('prints the ring smaller and keeps it small while it turns over (no close-up of the bare ring)', () => {
     tl.time(2.4)
     expect(story.ring.scale).toBe(1)
     tl.time(2.6)
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
     tl.time(3.5)
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
-    tl.time((PRINT_BEATS.flipFrom + PRINT_BEATS.flipTo) / 2)
-    expect(story.ring.scale).toBeGreaterThan(PRINT.scale)
-    expect(story.ring.scale).toBeLessThan(1)
     tl.time(PRINT_BEATS.flipTo)
-    expect(story.ring.scale).toBe(1)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
     tl.time(2.4)
     expect(story.ring.scale).toBe(1)
+  })
+
+  it('keeps the copy on until act 3 starts', () => {
+    expect(PRINT_BEATS.copyOut).toBeGreaterThanOrEqual(PRINT_BEATS.flipTo - 0.05)
+    expect(PRINT_BEATS.copyOut).toBeLessThanOrEqual(4.0)
   })
 })
 

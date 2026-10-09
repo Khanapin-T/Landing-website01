@@ -10,10 +10,10 @@ export const MOLD_BEATS = {
   camTo: 4.4,
   baseInFrom: 4.05,
   baseInTo: 4.3,
-  copyIn: 4.1,
+  copyIn: 4.0,
   /** The hero ring leaves the center and lands on its slot. */
-  heroFrom: 4.1,
-  heroTo: 4.4,
+  heroFrom: 4.0,
+  heroTo: 4.3,
   /** The trunk starts after the base has landed and after the hero ring has left the axis (no piercing). */
   trunkFrom: 4.35,
   trunkTo: 4.6,
@@ -45,5 +45,5 @@ export const MOLD_BEATS = {
   baseOutTo: 6.5,
   copyOut: 6.44,
   /** Step list cues (start screens). */
-  steps: { tree: 4.1, flask: 4.95, tape: 5.25, investment: 5.65, vacuum: 6.0, rest: 6.2, tapeOff: 6.36 },
+  steps: { tree: 4.0, flask: 4.95, tape: 5.25, investment: 5.65, vacuum: 6.0, rest: 6.2, tapeOff: 6.36 },
 } as const
