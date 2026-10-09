@@ -36,7 +36,7 @@ export const WATER_BEATS = {
   /** The flask comes up on its own, milky drips fall from it. */
   riseFrom: 13.05,
   riseTo: 13.3,
-  dripFrom: 13.1,
+  dripFrom: 13.2,
   dripTo: 13.55,
   /** The tree slides out of the funnel end, then stands up in the foreground while the flask and the bucket go. */
   slideFrom: 13.35,

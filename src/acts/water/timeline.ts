@@ -35,7 +35,8 @@ export function registerWater(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.flask, { dip: 1 }, { dip: 0, duration: len(B.riseFrom, B.riseTo), ease: 'power2.inOut' }, B.riseFrom)
   seg.fromTo(water, { drip: 0 }, { drip: 1, duration: len(B.dripFrom, B.dripTo) }, B.dripFrom)
   seg.fromTo(water, { slide: 0 }, { slide: 1, duration: len(B.slideFrom, B.slideTo), ease: 'power1.inOut' }, B.slideFrom)
-  seg.fromTo(water, { stand: 0 }, { stand: 1, duration: len(B.standFrom, B.standTo), ease: 'power2.inOut' }, B.standFrom)
+  // No easing here: rawTreeMatrix already applies smoothstep to `stand` (double easing made the stand-up look like a jump).
+  seg.fromTo(water, { stand: 0 }, { stand: 1, duration: len(B.standFrom, B.standTo), ease: 'none' }, B.standFrom)
   seg.fromTo(story.flask, { away: 0 }, { away: 1, duration: len(B.awayFrom, B.awayTo), ease: 'power2.in' }, B.awayFrom)
   seg.fromTo(story.cam, { ...CAM_WATER.bucket }, { ...CAM_WATER.raw, duration: len(B.camRawFrom, B.camRawTo), ease: 'power2.inOut' }, B.camRawFrom)
   seg.fromTo(water, { yaw: 0 }, { yaw: RAW.yawTo, duration: len(B.yawFrom, B.yawTo), ease: 'power1.out' }, B.yawFrom)
