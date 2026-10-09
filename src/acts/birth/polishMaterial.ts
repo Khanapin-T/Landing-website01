@@ -71,7 +71,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
       .replace(
         '#include <roughnessmap_fragment>',
         `#include <roughnessmap_fragment>
-        roughnessFactor = mix(clamp(${RAW_GOLD.roughness.toFixed(3)} + 0.08 * (grain - 0.5), 0.0, 1.0), ${POLISHED_GOLD.roughness.toFixed(3)}, polished);`,
+        roughnessFactor = mix(clamp(${RAW_GOLD.roughness.toFixed(3)} + 0.08 * (grain - 0.5), 0.0, 1.0), mix(${POLISHED_GOLD.roughness.toFixed(3)}, ${FINAL.roughness.toFixed(3)}, clamp((uBoost - 1.0) / ${(FINAL.envBoost - 1).toFixed(4)}, 0.0, 1.0)), polished);`,
       )
       .replace(
         '#include <lights_fragment_maps>',
@@ -87,7 +87,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v3`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v4`
   return m
 }
 

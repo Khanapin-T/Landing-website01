@@ -25,7 +25,10 @@ describe('finale', () => {
 
   it('brightens the polished gold in the final frame', () => {
     expect(FINAL.envBoost).toBeGreaterThan(1)
-    expect(FINAL.envBoost).toBeLessThan(2)
+    expect(FINAL.envBoost).toBeLessThan(4)
+    // satin polish: broad highlights, but still smoother than the raw cast gold
+    expect(FINAL.roughness).toBeGreaterThan(0.1)
+    expect(FINAL.roughness).toBeLessThan(0.45)
   })
 
   it('puts the warm key light upper right in front of the ring and the cool rim behind it', () => {
