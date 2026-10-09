@@ -9,6 +9,7 @@ import { PRINT_BEATS } from './beats'
 import { BuildPlate } from './BuildPlate'
 import { registerPrint } from './timeline'
 import { CureBed } from './CureBed'
+import { Supports } from './Supports'
 
 /** Act 2: cure light under the resin bed and the build plate (the bed itself is ResinStream's points). The ring itself (resin state, clip, sprue) is the persistent HeroRing. */
 export function PrintScene() {
@@ -29,6 +30,7 @@ export function PrintScene() {
     <group ref={root}>
       <CureBed />
       <BuildPlate />
+      <Supports />
     </group>
   )
 }

@@ -55,14 +55,16 @@ export const content = {
       'The flask goes under vacuum and molten yellow gold is poured into the funnel. It runs down the trunk and fills the rings from the bottom up, then rests for 5 to 15 minutes before the flask is quenched in water.',
     steps: ['Vacuum', 'Pour', 'Rest'],
   },
+  water: {
+    heading: 'Then it meets the water',
+    caption:
+      'The flask goes into a bucket of water on its side. The water boils for a moment and turns white as the investment breaks down. Ten minutes later the flask comes out clean and the gold tree slides out of it.',
+    steps: ['Water', 'Rest', 'Tree out'],
+  },
   /** Label of the vacuum gauge (Acts 3 and 5). */
   gauge: 'Vacuum',
   /** Label of the rest timer chip (Acts 3 and 5). */
   rest: 'Rest',
-  scale: {
-    label: 'Chapters',
-    goTo: (name: string) => `Go to ${name}`,
-  },
   actNames: {
     intro: 'Intro',
     idea: 'Idea',
@@ -70,6 +72,7 @@ export const content = {
     mold: 'Mold',
     fire: 'Fire',
     gold: 'Gold',
+    water: 'Water',
     birth: 'Birth',
   } satisfies Record<ActId, string>,
 } as const

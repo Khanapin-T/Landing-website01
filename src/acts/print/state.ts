@@ -10,8 +10,12 @@ export interface PrintState {
   grow: number
   /** Cure light strength 0..1 (on while printing). */
   glow: number
+  /** World Y of the supports' print frame (set at the ring switch; the ring centre while printing; it stays where the print ended). */
+  sup: number
+  /** 0..1: the supports crumble into a short puff of points (at 100%, before the ring leaves the plate). */
+  drop: number
 }
 
-export const PRINT_INITIAL: Readonly<PrintState> = { bed: 0, plate: PRINT.plate.parkedY, grow: 0, glow: 0 }
+export const PRINT_INITIAL: Readonly<PrintState> = { bed: 0, plate: PRINT.plate.parkedY, grow: 0, glow: 0, sup: 0, drop: 0 }
 
 export const print: PrintState = { ...PRINT_INITIAL }

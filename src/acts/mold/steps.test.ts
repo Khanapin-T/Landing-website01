@@ -8,7 +8,7 @@ describe('stepAt', () => {
   it('is -1 before the first step', () => {
     expect(stepAt(0)).toBe(-1)
     expect(stepAt(B.steps.tree - 0.001)).toBe(-1)
-    expect(stepAt(4.09)).toBe(-1)
+    expect(stepAt(3.99)).toBe(-1)
   })
 
   it('returns each index at its own start and until the next one', () => {

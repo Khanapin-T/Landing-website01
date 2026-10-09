@@ -11,7 +11,7 @@ const blended = newPose()
 const slot0 = slotPose(0)
 
 /**
- * Applies the ring's scroll-driven placement to everything attached to it: T(0, y, 0) * Rz(flip) * Ry(yaw),
+ * Applies the ring's scroll-driven placement to everything attached to it: T(0, y, 0) * Rz(flip) * Ry(yaw) * S(scale),
  * blended into tree slot 0 by story.ring.tree (Act 3). With tree = 0 this equals the old nested groups.
  */
 export function RingPivot({ children }: { children: ReactNode }) {
@@ -24,6 +24,7 @@ export function RingPivot({ children }: { children: ReactNode }) {
     const pose = t > 0 ? blendPose(free, slot0, t, blended) : free
     g.position.copy(pose.position)
     g.quaternion.copy(pose.quaternion)
+    g.scale.setScalar(story.ring.scale)
   })
   return <group ref={group}>{children}</group>
 }

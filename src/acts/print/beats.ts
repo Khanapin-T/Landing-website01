@@ -14,11 +14,14 @@ export const PRINT_BEATS = {
   copyIn: 2.6,
   printFrom: 2.75,
   printTo: 3.6,
-  liftFrom: 3.6,
-  liftTo: 3.85,
-  flipFrom: 3.6,
-  flipTo: 3.95,
-  bedOutFrom: 3.6,
-  bedOutTo: 3.8,
-  copyOut: 3.85,
+  /** At 100% the supports crumble into a short puff while the ring still hangs on its sprue under the plate. */
+  crumbleFrom: 3.6,
+  crumbleTo: 3.72,
+  /** Then the plate goes up and the ring turns over, still small (act 3 grows it back on its way to the tree). */
+  liftFrom: 3.72,
+  liftTo: 3.92,
+  flipFrom: 3.72,
+  flipTo: 3.97,
+  /** The copy stays while the ring turns over, until act 3 starts. */
+  copyOut: 3.97,
 } as const

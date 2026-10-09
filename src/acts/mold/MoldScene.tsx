@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import { FLIP } from '../../config/fire'
 import { MOLD, tapeSpin } from '../../config/mold'
+import { flaskOffset } from '../../config/water'
 import { Cavity } from '../../scene/furnace/Cavity'
 import { heatColor } from '../../scene/furnace/heat'
 import { heatUniforms, xrayUniform } from '../../scene/furnace/uniforms'
@@ -46,8 +47,11 @@ export function MoldScene() {
       root.current.visible = shouldRender(getAppState().phase, story.screen, MOLD_BEATS.windowFrom, MOLD_BEATS.windowTo)
     }
     if (rig.current) {
-      rig.current.visible = loading || mold.flask > 0.001
-      rig.current.position.y = (1 - mold.flask) * MOLD.flask.dropHeight
+      // Act 6: down into the bucket and up again (dip), then back and down out of the frame (away).
+      const o = flaskOffset(story.flask)
+      rig.current.visible = loading || (mold.flask > 0.001 && story.flask.away < 0.999)
+      rig.current.position.y = (1 - mold.flask) * MOLD.flask.dropHeight + o.y
+      rig.current.position.z = o.z
     }
     // The flask turns while the tape is laid, so the lay point stays facing the camera. The unwind runs on a
     // still flask (6 turns in 0.2 screens would strobe against the hole pattern); tapeSpin(1) is a whole number
@@ -69,7 +73,8 @@ export function MoldScene() {
       <group ref={rig}>
         {/* Pivot at the flask middle (including the foot): rotate there, then undo the offset for the contents.
             GoldFill and PourCloud (src/acts/gold) reproduce this flip as a fixed Rz(pi) about FLIP.pivotY at the scene
-            root, so a change here must be mirrored there. */}
+            root, so a change here must be mirrored there. config/water.ts flaskMatrix reproduces rig -> flipper -> -pivot
+            for the raw tree (Act 6), so a change here must be mirrored there too. */}
         <group ref={flipper} position-y={FLIP.pivotY}>
           <group position-y={-FLIP.pivotY}>
             <group ref={spinner}>

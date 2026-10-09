@@ -18,13 +18,13 @@ Consequences:
 - **Desktop only.** Touch-primary devices (`(hover: none) and (pointer: coarse)` or a mobile user agent) get a static full-screen message: "This experience is built for desktop. Please open it on a computer." No viewport-width threshold. The gate runs before React, three.js or any model is requested.
 - **Performance:** >= 45 fps (60 target) at 1080p on the author's laptop (AMD Radeon 740M iGPU, 16 GB RAM). Never trade fps for effects: lower effect quality first.
 - **Native scroll**, no hijacking. Keyboard scrolling must work. `prefers-reduced-motion`: shorter transitions, fewer particles, slower ambient motion.
-- **Process facts must stay correct:** printed resin (not wax) burns out in the furnace; tape is wrapped around the perforated flask before the investment is poured (author: mandatory); investment is de-aired under vacuum; the flask is flipped after the furnace; vacuum casting; the gold rests 5-15 min before quenching in water; the investment dissolves in water and the raw tree comes out. No gemstones.
+- **Process facts must stay correct:** printed resin (not wax) burns out in the furnace; tape is wrapped around the perforated flask before the investment is poured (author: mandatory); investment is de-aired under vacuum; the flask is flipped after the furnace; vacuum casting; the gold rests 5-15 min before quenching in water; the investment dissolves in water and the raw tree comes out. No gemstones. Act 6/7 detail (author 2026-10-09): the flask goes into a blue plastic bucket of water **on its side**; the water boils only for the first moments, turns **white**, and the flask lies 10 minutes in the calm white water; it comes out clean and the tree comes out of its **funnel end**; the ring is pinched off the tree and goes into a jar of acid for 10 minutes; then processing and polishing. **Cast metal is strongly matte and rough** until polishing (never shiny before the polish line); tarnish only as one small patch on the sprue. Tongs and the ultrasonic cleaner are real but not shown (author: "others don't need to know").
 - **Metal: yellow gold** (author's decision after Session 1, replaces "red gold" from the original brief).
 - **Never invent facts** in copy (dimensions only from the model data below; contacts are placeholders until the author provides them).
 - Print facts from the author (2026-10-06): the real print is angled on many supports (the animation's single upside-down sprue is a stylization, do not claim it in copy); a print usually takes about 4 hours.
 - Model facts usable in HUD copy: ring size 20.5 = inner diameter 20.5 mm, EU 64 (circumference pi x 20.5 = 64.4 mm) (from the author; act 1 spec list starts with "Ring size 20.5 (EU 64)"); bounding box 2.35 x 2.48 x 1.03 cm (23.5 x 24.8 x 10.3 mm); max deviation of the optimized model from the original < 0.07 mm; honeycomb pattern inside the shank.
 
-## 3. Story: six acts (about 14 screens of scroll)
+## 3. Story: seven acts (about 17 screens of scroll)
 
 The camera stays on the ring. The world around it and the ring's own material change. The world **heats up** from a cold blueprint to gold.
 
@@ -36,9 +36,10 @@ The camera stays on the ring. The world around it and the ring's own material ch
 | 3 Mold | 2.5 | cool blue-grey | The ring lands on the tree, 2-3 more rings pop in (`ring_light.glb`). Rubber base from below, perforated steel flask from above. **Tape wraps the flask bottom to top.** Investment pours to the top; the front half of the flask is semi-transparent so the rings stay visible. Short vacuum beat: the investment surface boils. Tape comes off. |
 | 4 Fire | 2.5 | black to dark red to orange | The camera returns to a level view. **Twelve heating coils** (3 per side of the frame: left, right, top, bottom) fade in along the walls of a tunnel in perspective, the farther rows smaller. They heat from cold steel to orange; the flask reddens with them and the frame gets a heat haze (author 2026-10-06: coils instead of a furnace model). **X-ray (only here):** the flask becomes a cyan fresnel shell, the resin tree burns away from the top down and its points flow down the trunk and **out through the funnel** (author 2026-10-06), leaving a **glowing outline of the hollow cavity**. X-ray turns off. The flask flips 180 deg (funnel up). |
 | 5 Gold | 2.5 | first warm full-frame color | Still X-ray. SVG vacuum gauge in a corner, needle drops to full vacuum. Molten gold pours in from the top and **fills the cavity** (sprue first, then the ring) with a moving meniscus; color cools from white-orange to gold; bloom flash when full. Timer chip "00:00 -> 10:00" (rest). |
-| 6 Birth | 2.0 + final | steam, then warm off-black studio | The flask plunges into water: steam fills the frame, the investment dissolves into milky particles, the raw matte tree is revealed. The ring snaps off with a spark and moves to the center. A light sweep turns matte into mirror polish. **Final:** polished ring tilted 5-15 deg, endless slow Y rotation (no drag), soft reflection below, name and contact links. |
+| 6 Water | 2.5 | neutral, water and steam | A blue plastic bucket rises into a side, slightly high view. The flask turns 90 deg onto its side (funnel to the right) and goes down into the water. Short boil and steam, the water turns milky white. Calm white water, timer chip "00:00 -> 10:00". The flask rises out on its own, clean (no investment left), milky drips fall from it (third particle moment). The raw tree slides out of the funnel end, moves to the foreground and stands upright (funnel up) while the flask and bucket recede and dissolve. Raw metal: strongly matte and rough, one small tarnish patch on the sprue. |
+| 7 Birth | 3.0 incl. final | warm off-black studio | The ring is pinched off the standing tree, falls (short, a little spin) into a jar of transparent pale-green acid; timer "00:00 -> 10:00". The ring comes out to the frame center, a line labelled "processing and polishing" passes and turns matte into mirror polish. **Final:** polished ring tilted 5-15 deg, endless slow Y rotation (no drag), soft reflection below, name, promo block and contact links (placeholders until the author writes them last). |
 
-Removed from the old flow: catalog notebook, full printer, tweezers, tongs, water bucket, separate "Processing" wipe. Vacuum and gauge survive as short beats inside acts 3 and 5.
+Removed from the old flow: catalog notebook, full printer, tweezers, tongs, ultrasonic cleaner, separate "Processing" wipe. The water bucket is back (author 2026-10-09). Vacuum and gauge survive as short beats inside acts 3 and 5.
 
 Reusable lengths live in one config (`ACTS` with screen lengths); total is tuned by eye later.
 
@@ -50,7 +51,7 @@ Design read (design-taste-frontend): desktop scrollytelling portfolio of a jewel
 - **UI color:** monochrome white and blue-grey. **One accent: gold, and it is earned**: no gold in the UI before act 5. Resin green and furnace heat are scene light, not UI accents.
 - **Heat as one mechanism:** a single "frame temperature" uniform in the post pass grades the whole image from cold to hot along the scroll, instead of separate per-act backgrounds.
 - **Type:** one sans display + one mono for HUD. Candidates shown live in the first build session (for example Geist + Geist Mono, Space Grotesk + JetBrains Mono); no serif, no Inter. Self-hosted, `font-display: swap`.
-- **Layout:** no glass panel. Copy sits on the scene in a left column over a soft dark scrim. Focus object at about 58% of the width. Right edge: a thin vertical scale with 6 ticks (one per act), clickable, keyboard reachable.
+- **Layout:** no glass panel. Copy sits on the scene in a left column over a soft dark scrim. Focus object at about 58% of the width. No chapter scale on the right edge (removed by the author 2026-10-09).
 - **Post-processing, one pass on every screen:** bloom (half resolution), film grain, subtle chromatic aberration, edge blur + vignette, temperature grade. Act 4 adds heat haze inside the same pass.
 - **Banned (design-taste-frontend):** custom cursor, "scroll" cue, em-dashes in site copy, decorative dots, section-number eyebrows.
 - **Signature technique: particles.** One particle system appears in three key moments (CAD dissolves into points, resin burns out in X-ray, investment dissolves in water) and ties the story together.
@@ -75,7 +76,8 @@ React Bits and Magic UI are used as **technique sources**: their React code is c
 | Act 3 | Tape unwrap, investment level, vacuum bubbles | Shader reveal on a cylinder; `InstancedMesh` |
 | Act 4 | Heating coils, molten heat background, heat haze, X-ray shell, burnout particles | Coils: `TubeGeometry` helices; background: full-screen shader in the spirit of React Bits `MoltenMetal`; haze inside the lens effect (no extra pass); fresnel shell shader |
 | Act 5 | Cavity fill with meniscus, cooling color, gauge | Fill-level shader; SVG + GSAP |
-| Act 6 | Steam sprites, polish sweep, environment reflections, contact links | Sprites; drei `Environment` with Lightformers rendered once; React Bits `Magnet` |
+| Act 6 | Bucket, boiling/milky water surface, steam sprites, milky drip particles, raw matte tree | Lathe geometry; surface shader (`boil`, `milk`); instanced billboards; points; `TreeShapes` with a raw-gold material |
+| Act 7 | Acid jar, polish sweep, environment reflections, contact links | Fresnel/alpha jar (no transmission); drei `Environment` with Lightformers rendered once; React Bits `Magnet` |
 
 ## 6. Architecture
 
@@ -92,7 +94,7 @@ React Bits and Magic UI are used as **technique sources**: their React code is c
 - `HeroRing`: the one persistent ring mesh, loaded once and auto-normalized (center bbox, scale to target height, keep Y up). One custom material with uniforms covering every state: CAD lines, resin, void outline, molten fill, raw gold, polished gold.
 - `Particles`: one points system whose targets morph between sampled shapes.
 - `PostFX`: one EffectComposer with merged effects and the temperature grade.
-- `acts/Act0Intro ... Act6Birth`: each owns its props, its timeline segment and its HUD copy. Outside its scroll window an act is hidden (no draw calls). Acts do not import each other.
+- `acts/Act0Intro ... Act7Birth`: each owns its props, its timeline segment and its HUD copy. Outside its scroll window an act is hidden (no draw calls). Acts do not import each other.
 - `hud/*`: DOM overlay components (titles, labels, chips, gauge, act scale), animated by GSAP through refs.
 - `content.ts`: all user-visible text.
 - `quality`: drei `PerformanceMonitor` driving steps: DPR 1.5 -> 1.25 -> 1.0, then particle count. Post-processing settings (MSAA, bloom) stay constant: changing them rebuilds the composer and recompiles shaders mid-scroll.
@@ -117,3 +119,46 @@ React Bits and Magic UI are used as **technique sources**: their React code is c
 ## 9. Out of scope
 
 Mobile/tablet layouts, sound, custom cursor, drag-to-rotate finale, photo cards from `assets/reference/`, CMS, analytics, i18n.
+
+## 10. Act 6 Water: design (s06, approved by the author 2026-10-09)
+
+**Beats** (2.5 screens, act id `water` between `gold` and `birth`, frame temperature 0.45, chapter name "Water"):
+1. Act 5 copy and rest chip leave (`GOLD_BEATS.copyOut` moves to the water start). The camera reframes to a side, slightly high view; the blue bucket rises in from below, seen whole.
+2. The flask turns 90 deg onto its side (funnel to the right, away from the copy column) and goes down into the water.
+3. Short boil with steam (a few scroll moments); the water turns milky white fast.
+4. Calm white water, faint steam fading; rest chip "00:00 -> 10:00".
+5. The flask rises out on its own, still on its side and clean: no investment, **no gold glint through the holes** (cast metal is matte). Milky drip particles fall from it.
+6. The raw tree slides out of the funnel end along the flask axis, then moves to the foreground and stands upright (funnel up, rings hanging) while the flask and bucket recede back and sink out of the frame.
+7. Hold: the raw tree centered, slowly turning with scroll around Y. Act 7 continues from here.
+
+**Copy (draft for the author):** heading "Then it meets the water"; caption "The flask goes into a bucket of water on its side. The water boils for a moment and turns white as the investment breaks down. Ten minutes later the flask comes out clean and the gold tree slides out of it."; steps Water / Rest / Tree out.
+
+**Architecture:**
+- `story.flask` gains `dip` (into and out of the bucket), `wash` (investment gone), `away` (flask and bucket recede back and sink out of the frame); `flip` goes 1 -> 0.5 (on its side, funnel end to +X). One pure flask-pose function is shared by `MoldScene` (the flask owner) and the raw tree, so the tree inside the flask matches it exactly.
+- `src/acts/water/`: `WaterScene` (timeline registration, act window), `Bucket` (blue plastic lathe; recedes with the flask), `WaterSurface` (opaque disk; `boil`, `milk` uniforms; no transmission), `Steam` (about 80 soft billboards; amount scroll-driven, drift on time), `Drips` (milky points), `RawTree` (`TreeShapes` + raw-gold material: roughness about 0.85, slightly duller than polished; one small tarnish patch on the trunk only; pose from a pure, tested function: in the flask frame, slide out funnel first, blend to the upright foreground pose), `WaterHud` (copy column, step list, shared `RestChip`).
+- Camera: two targets (bucket view, foreground tree).
+- Performance: everything compiles in the loader; the raw tree costs the same as the Act 5 gold fill, which is hidden by then; steam and drips are cheap.
+- Verification: Vitest for act windows, flask and tree poses, and the act timeline restoring state on scrub-back; Playwright look pass at 1920x1080 and 1536x730; fps with `?debug`.
+
+## 11. Act 7 Birth: design (s07, approved by the author 2026-10-10)
+
+Replaces the Act 7 row of section 3 where they differ: **all four rings** are cut off, not one.
+
+**Beats** (3 screens, act id `birth`, screens 14.0-17.0, frame temperature 0.6, chapter name "Birth"). Screens are a first draft, tuned by eye:
+1. 14.0-14.15: Act 6 copy leaves (`WATER_BEATS.copyOut` moves to the birth start), Act 7 copy comes in. A low jar of transparent pale-green acid rises in from below, under the standing raw tree (like the bucket in Act 6). The jar is about as wide as the flask and no taller than its diameter.
+2. 14.15-14.95: the four rings come off the tree **one by one** (about 0.2 screens each). Each ring leaves at the tip of its sprue on the trunk and **keeps its sprue stub**; a short fall with a little spin; it settles on the jar floor, the later rings on top of the earlier ones. No tools on screen.
+3. 14.95-15.15: the empty tree (trunk and funnel) goes up out of the frame.
+4. 15.15-15.65: the rings lie in the acid; rest chip "00:00 -> 10:00".
+5. 15.65-15.95: the ring lying on top rises out to the frame center; the jar with the other three goes down out of the frame.
+6. 15.95-16.5: **polish line.** A neon gold line, long enough that the whole ring fits along it, tilted 60-70 deg, moves horizontally across the ring from right to left while the ring slowly turns the other way (to the right, about Y). Right of the line (already passed) the ring is mirror-polished and its sprue stub is gone; left of it the ring is still raw matte with the stub. A small label "processing and polishing" rides with the line.
+7. 16.5-17.0: **final.** The polished ring tilted 5-15 deg, endless slow Y rotation (no drag), a soft reflection below; name, promo block ("this is just one example of our work, get in touch") and contact links, all placeholders until the author writes them last.
+
+**Copy (draft for the author):** heading "Then the ring is born"; caption "Each ring is cut from the tree and goes into a jar of acid for ten minutes. Then one of them is processed and polished until it shines."; steps Cut off / Acid / Polish. Facts only from the author: the cut, ten minutes in acid, processing and polishing.
+
+**Architecture:**
+- `src/acts/birth/`: `BirthScene` (timeline registration, act window), `Jar` (low glass jar + pale-green acid: fresnel/alpha, no transmission, the rings show through), `BirthTree` (trunk and funnel at the Act 6 end pose `finalTreeMatrix(RAW.yawTo)`, raw-gold material), `CutRings` (the four rings with their sprue stubs: on the tree, falling, in the jar; poses from pure, tested functions), `PolishRing` (the ring that comes out, polish split and final pose), `PolishLine` (neon quad; bloom does the glow), `BirthHud` (copy, steps, `RestChip`, the line label positioned per frame through a ref).
+- Act 6 hands over at 14.0: `RawTree` stops rendering there (`WATER_BEATS.windowTo` = 14.0) and Act 7 draws the same tree in the same pose, so the switch is invisible.
+- **Polish split:** one material for the ring and its stub: raw (Act 6 raw gold) on one side of a moving plane (the line's plane in world space), polished on the other; the stub is discarded on the polished side, so it vanishes exactly where the line has passed. Uniforms only, one program.
+- Final reflection: a mirrored copy of the polished ring under it with a fade (cheap, no reflector pass). Polished gold needs reflections: drei `Environment` with Lightformers rendered once, compiled in the loader.
+- Camera targets: tree + jar view, close center view for the polish, final view.
+- Performance: everything compiles in the loader; the hero ring (100k) only for the ring that comes out, the cut rings use `ring_light`.

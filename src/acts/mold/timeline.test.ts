@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { TOTAL_SCREENS } from '../../config/acts'
 import { CAM } from '../../config/mold'
+import { PRINT } from '../../config/print'
 import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
@@ -43,6 +44,19 @@ describe('act 3 timeline', () => {
     expect(story.cam).toMatchObject(CAM_INITIAL)
     expect(story.ring.tree).toBe(0)
     expect(snap(mold)).toEqual(MOLD_INITIAL)
+  })
+
+  it('grows the small printed ring to full size on its way to the tree, while the camera pulls back', () => {
+    tl.time(B.heroFrom)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    tl.time((B.heroFrom + B.heroTo) / 2)
+    expect(story.ring.scale).toBeGreaterThan(PRINT.scale)
+    expect(story.ring.scale).toBeLessThan(1)
+    tl.time(B.heroTo)
+    expect(story.ring.scale).toBe(1)
+    expect(story.ring.tree).toBe(1)
+    tl.time(3.99)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
   })
 
   it('pulls the camera back and raises the base, then lands the hero ring on the trunk', () => {

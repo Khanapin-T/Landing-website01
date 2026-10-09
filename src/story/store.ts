@@ -22,9 +22,11 @@ export interface RingState {
   cureY: number
   /** 0..1 blend from the pose above into tree slot 0 (Act 3). */
   tree: number
+  /** Uniform size of the ring and its sprue (Act 2 prints it at PRINT.scale). */
+  scale: number
 }
 
-export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0 }
+export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0, scale: 1 }
 
 /** Camera rig: world Y and Z of the camera (x stays 0) and the world Y of the point on the Y axis it looks at (look == y: straight down -Z). */
 export interface CamState {
@@ -55,15 +57,21 @@ export interface FlaskState {
   xray: number
   /** 0..1 burnout: the front sweeps the tree top to bottom (config/fire.ts), points then flow out through the funnel. */
   burn: number
-  /** 0..1 flip: 0 funnel down, 1 turned 180 degrees about Z (funnel up). */
+  /** 0..1 flip: 0 funnel down, 1 turned 180 degrees about Z (funnel up); Act 6 takes it to 0.5 (on its side, funnel end to +X). */
   flip: number
   /** 0..1 metal fill (Act 5): the stream arrives, then the solid front rises (config/gold.ts). */
   fill: number
   /** 0..1 cooling of the gold after the fill: white-orange to yellow gold. */
   cool: number
+  /** 0..1 Act 6: 0 = at its place, 1 = lowered into the bucket, under the water (config/water.ts DIP_DEPTH). */
+  dip: number
+  /** 0..1 Act 6: the investment has dissolved in the water (> 0.5 = gone, the raw tree shows). */
+  wash: number
+  /** 0..1 Act 6: the flask and the bucket recede back and sink out of the frame. */
+  away: number
 }
 
-export const FLASK_INITIAL: Readonly<FlaskState> = { heat: 0, xray: 0, burn: 0, flip: 0, fill: 0, cool: 0 }
+export const FLASK_INITIAL: Readonly<FlaskState> = { heat: 0, xray: 0, burn: 0, flip: 0, fill: 0, cool: 0, dip: 0, wash: 0, away: 0 }
 
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {

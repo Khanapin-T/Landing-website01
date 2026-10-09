@@ -4,8 +4,8 @@ export const GOLD_BEATS = {
   windowFrom: 8.95,
   windowTo: 11.55,
   copyIn: 9.1,
-  /** The copy column (and the rest timer at 10:00) stays after the act, as the end state, until act 6 takes it off. */
-  copyOut: 20,
+  /** The copy column (and the rest timer at 10:00) stays after the act until act 6 takes the column (WATER_BEATS.copyIn). */
+  copyOut: 11.55,
   /** The vacuum chamber slides up onto the flask from below. */
   chamberFrom: 9.05,
   chamberTo: 9.35,
