@@ -5,7 +5,7 @@ import { rawTreeMatrix } from '../../config/water'
 import { TreeShapes } from '../../scene/furnace/TreeShapes'
 import { getAppState } from '../../story/appState'
 import { story } from '../../story/store'
-import { createRawGoldMaterial } from './rawGoldMaterial'
+import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
 import { water } from './state'
 
 /**

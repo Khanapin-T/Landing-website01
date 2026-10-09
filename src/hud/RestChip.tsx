@@ -16,6 +16,8 @@ export interface RestChipProps {
   /** The chip is shown for story.screen in [showFrom, showTo). Static: read once at mount. */
   showFrom: number
   showTo: number
+  /** Chip label (default content.rest, "Rest"); Act 7 shows "Acid". */
+  label?: string
 }
 
 /**
@@ -24,7 +26,7 @@ export interface RestChipProps {
  * while shown and only when the text changes. Lives inside an act's ActCopy, so the column's fade-out hides it too.
  * The gold dot is the accent.
  */
-export function RestChip({ read, seconds, showFrom, showTo }: RestChipProps) {
+export function RestChip({ read, seconds, showFrom, showTo, label = content.rest }: RestChipProps) {
   const chip = useRef<HTMLDivElement>(null)
   const time = useRef<HTMLSpanElement>(null)
 
@@ -75,7 +77,7 @@ export function RestChip({ read, seconds, showFrom, showTo }: RestChipProps) {
       className="mt-8 inline-flex items-center gap-3 rounded-full border border-line/25 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-line"
     >
       <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-gold" />
-      <span>{content.rest}</span>
+      <span>{label}</span>
       <span ref={time} className="tabular-nums text-mute" />
     </div>
   )

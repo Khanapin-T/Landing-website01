@@ -71,6 +71,12 @@ describe('act 6 timeline', () => {
     expect(B.windowFrom).toBeLessThanOrEqual(B.camFrom)
   })
 
+  it('hands the stage and the copy column to act 7 at 14.0', () => {
+    expect(B.windowTo).toBe(14)
+    expect(B.copyOut).toBeGreaterThan(B.yawTo)
+    expect(B.copyOut).toBeLessThan(14.1)
+  })
+
   it('moves nothing of act 6 before it starts', () => {
     tl.time(B.camFrom - 0.01)
     expect(snap(water)).toEqual(WATER_INITIAL)

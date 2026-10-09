@@ -61,6 +61,25 @@ export const content = {
       'The flask goes into a bucket of water on its side. The water boils for a moment and turns white as the investment breaks down. Ten minutes later the flask comes out clean and the gold tree slides out of it.',
     steps: ['Water', 'Rest', 'Tree out'],
   },
+  birth: {
+    heading: 'Then the ring is born',
+    caption:
+      'Each ring is cut from the tree and goes into a jar of acid for ten minutes. Then one of them is processed and polished until it shines.',
+    steps: ['Cut off', 'Acid', 'Polish'],
+    /** Label of the acid timer chip. */
+    timer: 'Acid',
+    /** Label riding with the neon polish line. */
+    polishLabel: 'processing and polishing',
+  },
+  /** Final frame. PLACEHOLDERS: the author writes the name, the wording and the contacts last. */
+  finale: {
+    name: 'Your name',
+    promo: 'This is just one example of our work. Get in touch.',
+    links: [
+      { label: 'WhatsApp', href: '#' },
+      { label: 'Email', href: '#' },
+    ],
+  },
   /** Label of the vacuum gauge (Acts 3 and 5). */
   gauge: 'Vacuum',
   /** Label of the rest timer chip (Acts 3 and 5). */
