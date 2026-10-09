@@ -54,13 +54,22 @@ describe('act 2 supports', () => {
     expect(print.sup).toBeCloseTo(printPose(1).ringY, 9)
   })
 
-  it('drops the supports while the ring flips, and puts them back when scrolled back', () => {
-    tl.time(PRINT_BEATS.flipFrom - 0.001)
+  it('crumbles the supports at 100% while the ring still hangs on the plate, then the ring leaves and turns over', () => {
+    const B = PRINT_BEATS
+    expect(B.crumbleFrom).toBeGreaterThanOrEqual(B.printTo)
+    expect(B.liftFrom).toBeGreaterThanOrEqual(B.crumbleTo)
+    expect(B.flipFrom).toBeGreaterThanOrEqual(B.crumbleTo)
+    tl.time(B.crumbleFrom - 0.001)
     expect(print.drop).toBe(0)
-    tl.time((PRINT_BEATS.flipFrom + PRINT_BEATS.flipTo) / 2)
+    tl.time((B.crumbleFrom + B.crumbleTo) / 2)
     expect(print.drop).toBeGreaterThan(0)
     expect(print.drop).toBeLessThan(1)
-    tl.time(PRINT_BEATS.flipTo)
+    // Still hanging under the plate, upside down and small.
+    expect(story.ring.y).toBeCloseTo(printPose(1).ringY, 9)
+    expect(story.ring.flip).toBeCloseTo(Math.PI, 5)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    expect(print.plate).toBeCloseTo(printPose(1).plateY, 9)
+    tl.time(B.crumbleTo)
     expect(print.drop).toBe(1)
     tl.time(3.3)
     expect(print.drop).toBe(0)

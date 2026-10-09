@@ -24,7 +24,7 @@ export const PRINT = {
    * A rectangle with the build plate's footprint (the author: not a small round pool).
    */
   pool: { y: -0.615, thickness: 0.03, halfWidth: PLATE.width / 2, halfDepth: PLATE.depth / 2 },
-  /** One sprue on the shank bottom (the top while printing upside down). Printed with the ring; it stays after the supports fall. */
+  /** One sprue on the shank bottom (the top while printing upside down). Printed with the ring; it stays after the supports crumble. */
   sprue: { length: 0.25, radius: 0.045 },
   plate: PLATE,
   /**
@@ -39,8 +39,8 @@ export const PRINT = {
    * and shoulders under the plate), plus the longer ones in front of and behind the narrow shank (onto the wider part's
    * surfaces that face the plate), sideCount per side (author: 5-10 front and back). A column of `radius`, a cone `tip` of
    * `tipLength` down to `tipRadius` that bites `bite` into the surface, a `base` foot on the plate; the front and back
-   * ones are twice as thick and taper to `radius` at the ring. At the flip they turn straight into points that fall
-   * `fall` units (print-frame units, scaled by `scale`) and fade. All sizes are ring-local (unscaled).
+   * ones are twice as thick and taper to `radius` at the ring. At 100% (before the ring leaves the plate) they turn into
+   * a short puff of points that drift `puff` units outward and back and fade. All sizes are ring-local (unscaled).
    */
   supports: {
     gridX: 17,
@@ -60,7 +60,7 @@ export const PRINT = {
     bite: 0.006,
     baseRadius: 0.026,
     baseHeight: 0.015,
-    fall: 3,
+    puff: 0.35,
   },
 } as const
 

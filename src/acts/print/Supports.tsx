@@ -18,14 +18,14 @@ const POINT_SIZE = 0.012
 
 /**
  * The break-up (print frame = world axes): each support turns into points at its own moment (seed, staggered over the
- * first part of the drop), quickly; its points then fall with gravity and fade. Shared by the columns and the points.
+ * first part of the drop), quickly; its points then drift away in a short puff and fade. Shared by the columns and the points.
  */
 const BREAK_GLSL = /* glsl */ `
 uniform float uDrop;
 float supStart(float seed) { return seed * 0.25; }
 // 0..1: how far the support has turned into points.
 float supBreak(float seed) { return smoothstep(supStart(seed), supStart(seed) + 0.12, uDrop); }
-// 0..1: time since its points were released.
+// 0..1: time since its points were released (the puff).
 float supFallT(float seed) { return clamp((uDrop - supStart(seed)) / (1.0 - supStart(seed)), 0.0, 1.0); }
 `
 
@@ -77,13 +77,15 @@ varying float vAlpha;
 void main() {
   float k = supBreak(aSeed);
   float t = supFallT(aSeed);
-  // Released where the support stood: drift apart a little and fall, faster and faster.
-  vec3 p = position + aJitter * 0.08 * t;
-  p.y -= ${PRINT.supports.fall.toFixed(3)} * t * t;
+  // A short puff from where the support stood: outward (away from the ring axis) and back (away from the camera),
+  // slowing down, never down through the ring that still hangs below.
+  vec3 dir = normalize(vec3(position.x * 2.5, 0.12, -0.5 - abs(position.z)));
+  float go = 1.0 - (1.0 - t) * (1.0 - t);
+  vec3 p = position + (dir * ${PRINT.supports.puff.toFixed(3)} + aJitter * 0.06) * go;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = uSize * uScale * projectionMatrix[1][1] / -mv.z * (0.7 + 0.6 * fract(aSeed * 13.7 + aJitter.x));
-  vAlpha = k * (1.0 - smoothstep(0.6, 1.0, t));
+  vAlpha = k * (1.0 - smoothstep(0.35, 1.0, t));
 }
 `
 
@@ -101,8 +103,8 @@ void main() {
 /**
  * Act 2's print supports (author 2026-10-09: many, like real resin printing): thin resin columns from the plate down
  * onto the upside-down ring, landing on its real surface (rays cast once against the light ring model), drawn at
- * PRINT.scale like the ring. They print with the ring and rise with it (print.sup); as the ring turns over they turn
- * straight into points that fall and fade (print.drop). The sprue is the ring's own and stays.
+ * PRINT.scale like the ring. They print with the ring and rise with it (print.sup); at 100%, while the ring still hangs
+ * on its sprue, they crumble into a short puff of points (print.drop). The sprue is the ring's own and stays.
  */
 export function Supports() {
   const ring = useRingLightGeometry()

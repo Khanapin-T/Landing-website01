@@ -14,9 +14,13 @@ export const PRINT_BEATS = {
   copyIn: 2.6,
   printFrom: 2.75,
   printTo: 3.6,
-  liftFrom: 3.6,
-  liftTo: 3.85,
-  flipFrom: 3.6,
-  flipTo: 3.95,
+  /** At 100% the supports crumble into a short puff while the ring still hangs on its sprue under the plate. */
+  crumbleFrom: 3.6,
+  crumbleTo: 3.72,
+  /** Then the plate goes up and the ring turns over to the center, growing back to full size. */
+  liftFrom: 3.72,
+  liftTo: 3.92,
+  flipFrom: 3.72,
+  flipTo: 3.97,
   copyOut: 3.85,
 } as const

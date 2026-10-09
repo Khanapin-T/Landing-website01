@@ -12,7 +12,7 @@ export interface PrintState {
   glow: number
   /** World Y of the supports' print frame (set at the ring switch; the ring centre while printing; it stays where the print ended). */
   sup: number
-  /** 0..1: the supports turn straight into points that fall and fade (during the flip). */
+  /** 0..1: the supports crumble into a short puff of points (at 100%, before the ring leaves the plate). */
   drop: number
 }
 

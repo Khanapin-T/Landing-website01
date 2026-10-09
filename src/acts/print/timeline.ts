@@ -48,7 +48,9 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   seg.fromTo(print, { glow: 0 }, { glow: 1, duration: 0.03 }, B.printFrom)
   seg.fromTo(print, { glow: 1 }, { glow: 0, duration: 0.03 }, B.printTo - 0.03)
 
-  // Done: clip off, plate away, ring flips upright to the center, bed light off.
+  // Done: at 100% the supports crumble into a short puff while the ring still hangs on its sprue (the sprue stays).
+  seg.fromTo(print, { drop: 0 }, { drop: 1, duration: len(B.crumbleFrom, B.crumbleTo) }, B.crumbleFrom)
+  // Then clip off, plate away, ring turns upright to the center.
   seg.fromTo(story.ring, { cureY: PRINT.cureY }, { cureY: CURE_OFF, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: end.plateY }, { plate: PRINT.plate.parkedY, duration: len(B.liftFrom, B.liftTo), ease: 'power2.in' }, B.liftFrom)
   const flip = len(B.flipFrom, B.flipTo)
@@ -57,8 +59,6 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.ring, { yaw: TURN }, { yaw: TURN + SETTLE_YAW, duration: flip, ease: 'sine.inOut' }, B.flipFrom)
   // While it turns over it grows back to full size.
   seg.fromTo(story.ring, { scale: PRINT.scale }, { scale: 1, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
-  // As the ring turns over, the supports turn into points that fall and fade; the sprue stays on the ring.
-  seg.fromTo(print, { drop: 0 }, { drop: 1, duration: flip, ease: 'power1.in' }, B.flipFrom)
 
   tl.add(seg, 0)
   return () => {
