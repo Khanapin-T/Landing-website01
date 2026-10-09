@@ -128,14 +128,14 @@ Mobile/tablet layouts, sound, custom cursor, drag-to-rotate finale, photo cards 
 3. Short boil with steam (a few scroll moments); the water turns milky white fast.
 4. Calm white water, faint steam fading; rest chip "00:00 -> 10:00".
 5. The flask rises out on its own, still on its side and clean: no investment, **no gold glint through the holes** (cast metal is matte). Milky drip particles fall from it.
-6. The raw tree slides out of the funnel end along the flask axis, then moves to the foreground and stands upright (funnel up, rings hanging) while the flask and bucket recede and dissolve (screen-door, like the X-ray).
+6. The raw tree slides out of the funnel end along the flask axis, then moves to the foreground and stands upright (funnel up, rings hanging) while the flask and bucket recede back and sink out of the frame.
 7. Hold: the raw tree centered, slowly turning with scroll around Y. Act 7 continues from here.
 
 **Copy (draft for the author):** heading "Then it meets the water"; caption "The flask goes into a bucket of water on its side. The water boils for a moment and turns white as the investment breaks down. Ten minutes later the flask comes out clean and the gold tree slides out of it."; steps Water / Rest / Tree out.
 
 **Architecture:**
-- `story.flask` gains `dip` (into and out of the bucket), `wash` (investment gone), `away` (flask recedes and dissolves); `flip` continues 1 -> 1.5 (on its side). One pure flask-pose function is shared by `MoldScene` (the flask owner) and the raw tree, so the tree inside the flask matches it exactly.
-- `src/acts/water/`: `WaterScene` (timeline registration, act window), `Bucket` (blue plastic lathe, screen-door fade), `WaterSurface` (opaque disk; `boil`, `milk` uniforms; no transmission), `Steam` (about 80 soft billboards; amount scroll-driven, drift on time), `Drips` (milky points), `RawTree` (`TreeShapes` + raw-gold material: roughness about 0.85, slightly duller than polished; one small tarnish patch on the trunk only; pose from a pure, tested function: in the flask frame, slide out funnel first, blend to the upright foreground pose), `WaterHud` (copy column, step list, shared `RestChip`).
+- `story.flask` gains `dip` (into and out of the bucket), `wash` (investment gone), `away` (flask and bucket recede back and sink out of the frame); `flip` goes 1 -> 0.5 (on its side, funnel end to +X). One pure flask-pose function is shared by `MoldScene` (the flask owner) and the raw tree, so the tree inside the flask matches it exactly.
+- `src/acts/water/`: `WaterScene` (timeline registration, act window), `Bucket` (blue plastic lathe; recedes with the flask), `WaterSurface` (opaque disk; `boil`, `milk` uniforms; no transmission), `Steam` (about 80 soft billboards; amount scroll-driven, drift on time), `Drips` (milky points), `RawTree` (`TreeShapes` + raw-gold material: roughness about 0.85, slightly duller than polished; one small tarnish patch on the trunk only; pose from a pure, tested function: in the flask frame, slide out funnel first, blend to the upright foreground pose), `WaterHud` (copy column, step list, shared `RestChip`).
 - Camera: two targets (bucket view, foreground tree).
 - Performance: everything compiles in the loader; the raw tree costs the same as the Act 5 gold fill, which is hidden by then; steam and drips are cheap.
 - Verification: Vitest for act windows, flask and tree poses, and the act timeline restoring state on scrub-back; Playwright look pass at 1920x1080 and 1536x730; fps with `?debug`.
