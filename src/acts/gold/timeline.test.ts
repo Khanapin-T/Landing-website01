@@ -115,20 +115,39 @@ describe('act 5 timeline', () => {
     expect(B.coolFrom).toBeGreaterThanOrEqual(B.fillTo)
   })
 
-  it('runs the rest timer after the pour and settles the heat', () => {
-    expect(B.restFrom).toBeGreaterThanOrEqual(B.fillTo)
+  it('weakens the heat by half for the pour and removes it completely before the rest starts', () => {
+    tl.time(B.xrayInFrom - 0.01)
+    expect(story.flask.heat).toBeCloseTo(FIRE_END_HEAT, 6)
+    tl.time(B.heatPourTo)
+    expect(story.flask.heat).toBeCloseTo(FIRE_END_HEAT * 0.5, 6)
+    tl.time(B.fillTo)
+    expect(story.flask.heat).toBeCloseTo(FIRE_END_HEAT * 0.5, 6)
+    tl.time(B.xrayOutTo)
+    expect(story.flask.heat).toBe(0)
+    tl.time(B.restFrom)
+    expect(story.flask.heat).toBe(0)
+    expect(B.heatPourTo).toBeLessThanOrEqual(B.fillFrom)
+    expect(B.heatOutTo).toBeLessThanOrEqual(B.restFrom)
+  })
+
+  it('keeps the chamber and the gauge on through the rest: the rest starts only after the X-ray is off', () => {
+    expect(B.restFrom).toBeGreaterThanOrEqual(B.xrayOutTo)
     expect(B.restFrom).toBe(B.steps.rest)
     tl.time(B.restFrom)
     expect(gold.rest).toBe(0)
+    expect(gold.chamber).toBe(1)
+    expect(story.flask.xray).toBe(0)
     tl.time(B.restTo)
     expect(gold.rest).toBe(1)
-    expect(story.flask.heat).toBeCloseTo(B.heatEnd, 6)
+    expect(gold.chamber).toBe(1)
+    expect(B.restTo).toBeLessThanOrEqual(B.copyOut)
   })
 
   it('leaves the documented end state for act 6 and holds it', () => {
     tl.time(TOTAL_SCREENS)
-    expect(story.flask).toMatchObject({ fill: 1, cool: 1, xray: 0, burn: 1, flip: 1 })
-    expect(story.flask.heat).toBeCloseTo(B.heatEnd, 6)
+    expect(story.flask).toMatchObject({ fill: 1, cool: 1, xray: 0, burn: 1, flip: 1, heat: 0 })
+    // The vacuum rig stays on the flask until act 6 takes it off (when the gold tree appears).
+    expect(gold).toMatchObject({ chamber: 1, vacuum: 1, rest: 1 })
     const held = state()
     tl.time(TOTAL_SCREENS - 0.01)
     tl.time(TOTAL_SCREENS)

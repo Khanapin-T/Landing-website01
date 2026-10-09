@@ -4,6 +4,9 @@ import { story } from '../../story/store'
 import { GOLD_BEATS as B } from './beats'
 import { gold } from './state'
 
+/** Half of what the furnace leaves, for the pour. */
+const HEAT_POUR = FIRE_END_HEAT * 0.5
+
 /**
  * Adds Act 5's scrubbed tweens to `tl` at absolute screens. fromTo + immediateRender:false everywhere, so both scroll
  * directions restore exact values. Act 5 owns `gold.*` and `story.flask.{xray, fill, cool, heat}` from 9.2 on (Act 4
@@ -23,9 +26,10 @@ export function registerGold(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.flask, { cool: 0 }, { cool: 1, duration: len(B.coolFrom, B.coolTo), ease: 'power1.out' }, B.coolFrom)
   seg.fromTo(story.flask, { xray: 1 }, { xray: 0, duration: len(B.xrayOutFrom, B.xrayOutTo) }, B.xrayOutFrom)
 
-  // The rest timer runs while the heat settles.
+  // The heat is halved for the pour and gone before the rest; the rest timer runs on the cooled flask.
   seg.fromTo(gold, { rest: 0 }, { rest: 1, duration: len(B.restFrom, B.restTo) }, B.restFrom)
-  seg.fromTo(story.flask, { heat: FIRE_END_HEAT }, { heat: B.heatEnd, duration: len(B.coolFrom, B.restTo), ease: 'power1.out' }, B.coolFrom)
+  seg.fromTo(story.flask, { heat: FIRE_END_HEAT }, { heat: HEAT_POUR, duration: len(B.heatPourFrom, B.heatPourTo) }, B.heatPourFrom)
+  seg.fromTo(story.flask, { heat: HEAT_POUR }, { heat: 0, duration: len(B.heatOutFrom, B.heatOutTo) }, B.heatOutFrom)
 
   tl.add(seg, 0)
   return () => {
