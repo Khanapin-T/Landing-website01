@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { MOLD, TAPE_LENGTH, tapeLayers } from '../../config/mold'
+import { MOLD, TAPE_LENGTH, tapeCenter, tapeLayers } from '../../config/mold'
 import {
   TAPE_EDGE_WIDTH,
   TAPE_LAP_LINE_WIDTH,
@@ -55,14 +55,14 @@ describe('tape material', () => {
 
   it('injects the wrap constants from MOLD.tape and TAPE_LENGTH so they cannot drift', () => {
     const { shader } = compile('front')
-    const { turns, coverage, azimuth0 } = MOLD.tape
-    expect(shader.fragmentShader).toContain(`#define TAPE_TURNS ${glslFloat(turns)}`)
-    expect(shader.fragmentShader).toContain(`#define TAPE_COVERAGE ${glslFloat(coverage)}`)
+    const { width, azimuth0 } = MOLD.tape
+    expect(shader.fragmentShader).toContain(`#define TAPE_WIDTH ${glslFloat(width)}`)
+    expect(shader.fragmentShader).toContain(`#define TAPE_PASSES ${TAPE_LENGTH}`)
     expect(shader.fragmentShader).toContain(`#define TAPE_AZIMUTH0 ${glslFloat(azimuth0)}`)
     expect(shader.fragmentShader).toContain(`#define TAPE_LENGTH ${glslFloat(TAPE_LENGTH)}`)
     expect(shader.vertexShader).toContain(`#define TAPE_HEIGHT ${glslFloat(MOLD.flask.height)}`)
-    expect(glslFloat(4)).toBe('4.0')
-    expect(glslFloat(1.3)).toBe('1.3')
+    expect(glslFloat(7)).toBe('7.0')
+    expect(glslFloat(0.325)).toBe('0.325')
   })
 
   it('injects the layer evaluation, the discard and the lap shading, with no alpha', () => {
@@ -109,10 +109,6 @@ describe('tape material', () => {
 })
 
 describe('tape shader mirror', () => {
-  it('relies on at most two candidate turns per point', () => {
-    expect(MOLD.tape.coverage).toBeLessThan(2)
-  })
-
   it('counts exactly the same layers as tapeLayers everywhere', () => {
     let checked = 0
     for (let h = 0; h <= 1.0001; h += 0.0137) {
@@ -129,26 +125,24 @@ describe('tape shader mirror', () => {
   })
 
   it('puts the leading edge at the lay point while the tape is being laid', () => {
-    const { turns, azimuth0 } = MOLD.tape
+    const { azimuth0 } = MOLD.tape
     for (const p of [0.3, 0.5, 0.7]) {
-      const front = -1 + p * TAPE_LENGTH
+      const front = p * TAPE_LENGTH
       const f = front - Math.floor(front)
       // A point on the strip's center line just behind its end (object-space azimuth a hair before the end).
       const u = front - 0.005
       const fu = u - Math.floor(u)
       const az = azimuth0 + TAU * fu
-      const h = u / turns
-      const res = tapeLayersGlsl(h, az, p)
+      const res = tapeLayersGlsl(tapeCenter(u), az, p)
       expect(res.layers).toBeGreaterThanOrEqual(1)
       expect(res.edge).toBeLessThan(TAPE_EDGE_WIDTH)
       // Just past the end on the same turn, nothing new is laid there (no edge glow).
-      const ahead = tapeLayersGlsl((front + 0.005) / turns, azimuth0 + TAU * (f + 0.005), p)
+      const ahead = tapeLayersGlsl(tapeCenter(front + 0.005), azimuth0 + TAU * (f + 0.005), p)
       expect(ahead.edge).toBeGreaterThan(TAPE_EDGE_WIDTH)
     }
   })
 
-  it('puts a thin lap line on the later strip only where two layers overlap', () => {
-    const { turns, coverage } = MOLD.tape
+  it('puts a thin lap line on the later strip only where layers overlap', () => {
     let overlap = 0
     let onLine = 0
     let inside = 0
@@ -160,15 +154,14 @@ describe('tape shader mirror', () => {
           continue
         }
         overlap++
-        // The overlap band is (coverage - 1) pitches wide, the lap edge is its lower boundary.
+        // The lap edge is the lower boundary of the topmost strip; lap runs 0..1 over its width.
         expect(r.lap).toBeGreaterThanOrEqual(-1e-9)
-        expect(r.lap).toBeLessThanOrEqual(coverage - 1 + 1e-9)
+        expect(r.lap).toBeLessThanOrEqual(1 + 1e-9)
         if (r.lap < TAPE_LAP_LINE_WIDTH) onLine++
         else inside++
       }
     }
-    expect(turns).toBeGreaterThan(1)
-    expect(TAPE_LAP_LINE_WIDTH).toBeLessThan((coverage - 1) / 2)
+    expect(TAPE_LAP_LINE_WIDTH).toBeLessThan(0.1)
     expect(overlap).toBeGreaterThan(100)
     expect(onLine).toBeGreaterThan(0)
     expect(inside).toBeGreaterThan(onLine)

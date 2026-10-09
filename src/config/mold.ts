@@ -51,8 +51,11 @@ export const MOLD = {
   yaw: Math.PI / 4,
   /** The investment stream: a vertical line at this radius and azimuth (far side, between two branches). */
   pour: { radius: 1.05, azimuth: Math.PI / 2 },
-  /** Strip of tape: `turns` full turns up the flask, `coverage` = band width in pitches (1.3 = 30% overlap). */
-  tape: { turns: 4, coverage: 1.3, azimuth0: -Math.PI / 2 },
+  /**
+   * Strip of tape: `length` turns in all (an integer, so tapeSpin(1) is whole turns), `width` = strip width as a
+   * fraction of the flask height. The first and last turn are flat (zero pitch); in between the strip climbs.
+   */
+  tape: { length: 7, width: 0.325, azimuth0: -Math.PI / 2 },
 } as const
 
 export interface TreeSlot {
@@ -108,25 +111,35 @@ export const CAM = {
   furnace: { y: 0.25, z: 13.4 + FURNACE_BACK, look: 0.25 },
 } as const
 
-/**
- * The strip starts one turn below the flask bottom (u = -1, so the first turn covers the bottom edge) and runs one
- * turn past the top (u = turns + 1), so the whole surface is covered. Length in turns.
- */
-export const TAPE_LENGTH = MOLD.tape.turns + 2
+/** Length of the strip in turns (an integer). */
+export const TAPE_LENGTH = MOLD.tape.length
 
 /**
- * Number of tape layers (0, 1 or 2) covering a flask surface point, given the point's height fraction `h` (0 bottom,
- * 1 top), its object-space azimuth `az` and the wrap progress `p` (0..1). The strip's helix: height fraction
- * (u) / turns, azimuth azimuth0 + 2 PI u, for u from -1 to turns + 1. The shader mirrors this function.
+ * Height fraction (0 bottom, 1 top) of the strip's center line at `u` turns along it. The first turn (u <= 1) is flat
+ * with the strip's lower edge flush with the flask bottom; the last turn (u >= length - 1) is flat with its upper edge
+ * flush with the top; in between a smoothstep ramp (zero slope at both ends, so the angle grows and fades smoothly).
+ * The shader mirrors this expression.
+ */
+export function tapeCenter(u: number): number {
+  const { length, width } = MOLD.tape
+  const t = Math.min(Math.max((u - 1) / (length - 2), 0), 1)
+  return width * 0.5 + (1 - width) * (t * t * (3 - 2 * t))
+}
+
+/**
+ * Number of tape layers covering a flask surface point, given the point's height fraction `h` (0 bottom, 1 top), its
+ * object-space azimuth `az` and the wrap progress `p` (0..1). The strip passes azimuth fraction f (0 at azimuth0) at
+ * u = k + f for k = 0..length-1; pass k covers the point when |h - tapeCenter(k + f)| <= width / 2 and that part of the
+ * strip is laid (k + f < p * length). The shader mirrors this function.
  */
 export function tapeLayers(h: number, az: number, p: number): number {
-  const { turns, coverage, azimuth0 } = MOLD.tape
+  const { length, width, azimuth0 } = MOLD.tape
   const f = mod((az - azimuth0) / TAU, 1)
-  const c = h * turns - f
-  const front = -1 + p * TAPE_LENGTH
+  const front = p * length
   let layers = 0
-  for (let k = Math.max(-1, Math.ceil(c - coverage / 2)); k <= Math.floor(c + coverage / 2); k++) {
-    if (k + f <= front) layers++
+  for (let k = 0; k < length; k++) {
+    if (k + f >= front) break
+    if (Math.abs(h - tapeCenter(k + f)) <= width * 0.5) layers++
   }
   return layers
 }
