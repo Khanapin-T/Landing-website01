@@ -1,4 +1,4 @@
-export type ActId = 'intro' | 'idea' | 'print' | 'mold' | 'fire' | 'gold' | 'birth'
+export type ActId = 'intro' | 'idea' | 'print' | 'mold' | 'fire' | 'gold' | 'water' | 'birth'
 
 export interface ActDef {
   id: ActId
@@ -21,6 +21,7 @@ export const ACTS: readonly ActDef[] = [
   { id: 'mold', screens: 2.5, temperature: 0.15, entry: 0.5 },
   { id: 'fire', screens: 2.5, temperature: 0.8, entry: 0.5 },
   { id: 'gold', screens: 2.5, temperature: 1, entry: 0.15 },
+  { id: 'water', screens: 2.5, temperature: 0.45 },
   { id: 'birth', screens: 3, temperature: 0.6 },
 ]
 

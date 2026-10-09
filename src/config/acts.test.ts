@@ -3,7 +3,14 @@ import { ACTS, TOTAL_SCREENS, actAt, actLocalProgress, actWindows, temperatureAt
 
 describe('acts config', () => {
   it('sums screens to the total', () => {
-    expect(TOTAL_SCREENS).toBe(14.5)
+    expect(TOTAL_SCREENS).toBe(17)
+  })
+
+  it('puts the water act between gold and birth', () => {
+    const w = actWindows()
+    expect(w.find((x) => x.id === 'gold')).toMatchObject({ start: 9, end: 11.5 })
+    expect(w.find((x) => x.id === 'water')).toMatchObject({ start: 11.5, end: 14 })
+    expect(w.find((x) => x.id === 'birth')).toMatchObject({ start: 14, end: 17 })
   })
 
   it('builds contiguous windows', () => {
