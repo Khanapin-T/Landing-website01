@@ -3,7 +3,8 @@ import * as THREE from 'three'
 import { MOLD } from '../../config/mold'
 import { PRINT, RING_HALF } from '../../config/print'
 import { slotPose } from './slots'
-import { SPRUE_WAX, createSprueWaxGeometry } from './sprueWax'
+import { createSprueGeometry } from '../ring/sprue'
+import { SPRUE_TIP_LOCAL, SPRUE_WAX, createSprueWaxGeometry } from './sprueWax'
 
 describe('red wax continuation of a ring sprue', () => {
   const g = createSprueWaxGeometry()
@@ -27,5 +28,15 @@ describe('red wax continuation of a ring sprue', () => {
       // Distance of the far end center from the trunk axis (trunk axis = world Y), plus the stub radius, stays inside the trunk.
       expect(Math.hypot(end.x, end.z) + PRINT.sprue.radius).toBeLessThan(MOLD.trunk.radius)
     }
+  })
+})
+
+describe('sprue tip position', () => {
+  it('SPRUE_TIP_LOCAL is the lowest point of the ring sprue in the ring-local frame (where the wax stub starts)', () => {
+    const sprue = createSprueGeometry()
+    sprue.computeBoundingBox()
+    expect(SPRUE_TIP_LOCAL[0]).toBe(0)
+    expect(SPRUE_TIP_LOCAL[1]).toBeCloseTo(sprue.boundingBox!.min.y, 6)
+    expect(SPRUE_TIP_LOCAL[2]).toBe(0)
   })
 })
