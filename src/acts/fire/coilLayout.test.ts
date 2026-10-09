@@ -17,10 +17,11 @@ describe.each([16 / 9, 2.1, 1.6])('coilLayout at aspect %f', (aspect) => {
   const layout = coilLayout({ aspect, fovDeg: FOV, camZ: CAM_Z })
   const wall = (side: string) => layout.walls.find((w) => w.side === side)!
 
-  it('has a spring on the left, right and ceiling walls and none on the floor, started at the near plane', () => {
-    expect(layout.walls.map((w) => w.side).sort()).toEqual(['left', 'right', 'top'])
+  it('has hairpins on the left and right walls only (no ceiling, no floor), started at the near plane', () => {
+    expect(layout.walls.map((w) => w.side).sort()).toEqual(['left', 'right'])
     for (const w of layout.walls) expect(w.position[2]).toBe(COILS.zNear)
     expect(layout.length).toBe(COILS.zNear - COILS.zFar)
+    expect(layout.hairpinY).toHaveLength(3)
   })
 
   it('puts the near end of each wall close to the screen edge, inside the frame', () => {
@@ -29,14 +30,16 @@ describe.each([16 / 9, 2.1, 1.6])('coilLayout at aspect %f', (aspect) => {
     expect(fracX(wall('left').position[0], z, aspect)).toBeCloseTo(FOCUS_X * (1 - COILS.edge), 1)
     expect(fracX(wall('right').position[0] + outer, z, aspect)).toBeLessThan(0.99)
     expect(fracX(wall('right').position[0], z, aspect)).toBeCloseTo(FOCUS_X + (1 - FOCUS_X) * COILS.edge, 1)
-    expect(fracY(wall('top').position[1] + outer, z)).toBeLessThan(0.99)
+    const topEdge = wall('left').position[1] + layout.hairpinY[0] + layout.hairpinHeight / 2 + outer
+    const bottomEdge = wall('left').position[1] + layout.hairpinY[2] - layout.hairpinHeight / 2 - outer
+    expect(fracY(topEdge, z)).toBeLessThan(0.99)
+    expect(fracY(bottomEdge, z)).toBeGreaterThan(0.01)
   })
 
-  it('keeps the flask in the middle of the runs, at the same frame size as before the pull-back', () => {
+  it('puts the flask between the near and far planes, at the same frame size as before the pull-back', () => {
     expect(COILS.zNear).toBeGreaterThan(0)
     expect(COILS.zFar).toBeLessThan(0)
-    expect(COILS.zNear + COILS.zFar).toBeCloseTo(0, 9)
-    // Distance camera to the near plane is the old level-view distance, so the springs keep their size.
+    // Distance camera to the near plane is the old level-view distance, so the elements keep their size.
     expect(CAM_Z - COILS.zNear).toBeCloseTo(CAM.tree.z, 9)
   })
 
@@ -45,26 +48,34 @@ describe.each([16 / 9, 2.1, 1.6])('coilLayout at aspect %f', (aspect) => {
     const far = COILS.zFar
     const left = wall('left').position[0]
     expect(Math.abs(fracX(left, far, aspect) - FOCUS_X)).toBeLessThan(Math.abs(fracX(left, near, aspect) - FOCUS_X) * 0.6)
-    const top = wall('top').position[1]
+    const top = wall('left').position[1] + layout.hairpinY[0] + layout.hairpinHeight / 2
     expect(Math.abs(fracY(top, far) - 0.5)).toBeLessThan(Math.abs(fracY(top, near) - 0.5) * 0.6)
   })
 
-  it('keeps every spring clear of the flask (tube, flange and top)', () => {
+  it('keeps every spring clear of the flask flange', () => {
     const flangeR = MOLD.flask.innerRadius + MOLD.flask.wall + 0.6
-    const flaskTop = MOLD.flask.bottomY + MOLD.flask.height
     expect(-wall('left').position[0] - outer).toBeGreaterThan(flangeR)
     expect(wall('right').position[0] - outer).toBeGreaterThan(flangeR)
-    expect(wall('top').position[1] - outer).toBeGreaterThan(flaskTop)
-    // The ceiling spring stays clear in X too once its runs are spread across the width.
-    expect(layout.spanSpacing).toBeGreaterThan(0)
-    expect(layout.sideSpacing).toBeGreaterThan(0)
   })
 
-  it('orients the walls: left and right are mirrored, the ceiling is turned a quarter', () => {
+  it('stacks three hairpins inside the wall height with clear gaps, top hairpin first', () => {
+    const wallY = COILS.edge * (CAM_Z - COILS.zNear) * tan
+    const [a, b, c] = layout.hairpinY
+    expect(a).toBeGreaterThan(b)
+    expect(b).toBeGreaterThan(c)
+    expect(a + layout.hairpinHeight / 2 + outer).toBeLessThan(wallY)
+    expect(c - layout.hairpinHeight / 2 - outer).toBeGreaterThan(-wallY)
+    // Neighbouring hairpins do not overlap: the gap between run B of one and run A of the next is wider than the tube.
+    for (const [upper, lower] of [[a, b], [b, c]]) {
+      const gap = upper - layout.hairpinHeight / 2 - (lower + layout.hairpinHeight / 2)
+      expect(gap).toBeGreaterThan(2 * outer)
+      expect(gap).toBeCloseTo(COILS.hairpinGap * 2 * wallY, 9)
+    }
+    expect(layout.hairpinHeight).toBeCloseTo(COILS.hairpin * 2 * wallY, 9)
+  })
+
+  it('orients the walls: left and right are mirrored', () => {
     expect(wall('left').rotationZ).toBe(0)
     expect(wall('right').rotationZ).toBeCloseTo(Math.PI, 9)
-    expect(wall('top').rotationZ).toBeCloseTo(-Math.PI / 2, 9)
-    expect(wall('left').spacing).toBe(layout.sideSpacing)
-    expect(wall('top').spacing).toBe(layout.spanSpacing)
   })
 })

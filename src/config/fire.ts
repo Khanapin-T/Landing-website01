@@ -43,20 +43,23 @@ export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foo
 export const FIRE_END_HEAT = 0.6
 
 /**
- * Heating coils (after the muffle furnace photos): on each of three walls of a box tunnel (left, right, ceiling; no
- * floor spring) one long spring is laid in a serpentine, three long runs along the depth (from the front opening toward
- * the back, so they converge toward the middle in perspective) joined by U-turns. `zNear` / `zFar` = depth range of the
- * runs, offset by `FURNACE_BACK` so the flask (z = 0) stands half way along the runs while the camera is pulled back to
- * `CAM.furnace` (the near plane stays at the old level-view distance, so the springs keep their frame size), `edge` = how far the front opening reaches toward
- * the screen edge (fraction of the distance from the flask axis to that edge), `spacing` = distance between
- * neighbouring runs as a fraction of the wall half extent across the runs. `pitch` = distance along the path per turn
- * of the spring. `centerY` = world Y of the screen center (the camera looks level there).
+ * Heating elements (after the photo of a real muffle furnace): only the two side walls carry them, ceiling and floor
+ * are bare. Each wall has three separate hairpin springs stacked one above the other with clear gaps: two long straight
+ * runs along the depth (they converge toward the back wall in perspective) joined by a rounded U-turn at the front
+ * (near) end; the far ends simply go into the back wall. `zNear` / `zFar` = depth range of the runs, offset by
+ * `FURNACE_BACK` so the flask (z = 0) stands between the near and far planes while the camera is pulled back to
+ * `CAM.furnace` (the near plane stays at the old level-view distance, so the elements keep their frame size), `edge` =
+ * how far the front opening reaches toward the screen edge (fraction of the distance from the flask axis to that edge).
+ * `hairpin` = opening of one hairpin (distance between its two runs) and `hairpinGap` = distance between neighbouring
+ * hairpins, both as fractions of the full wall height. `pitch` = distance along the path per turn of the spring.
+ * `centerY` = world Y of the screen center (the camera looks level there).
  */
 export const COILS = {
   zNear: FURNACE_BACK,
-  zFar: FURNACE_BACK - 9,
+  zFar: FURNACE_BACK - 11,
   edge: 0.9,
-  spacing: 0.55,
+  hairpin: 0.2,
+  hairpinGap: 0.1,
   coilRadius: 0.16,
   tubeRadius: 0.04,
   pitch: 0.2,
