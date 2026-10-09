@@ -6,6 +6,8 @@ import { MoldHud } from '../acts/mold/MoldHud'
 import { FireHud } from '../acts/fire/FireHud'
 import { GoldHud } from '../acts/gold/GoldHud'
 import { WaterHud } from '../acts/water/WaterHud'
+import { BirthHud } from '../acts/birth/BirthHud'
+import { FinaleHud } from '../acts/birth/FinaleHud'
 
 /** DOM overlay above the canvas. Acts mount their copy here; the scrim keeps the left copy column readable. */
 export function Hud() {
@@ -20,6 +22,8 @@ export function Hud() {
       <FireHud />
       <GoldHud />
       <WaterHud />
+      <BirthHud />
+      <FinaleHud />
     </div>
   )
 }
