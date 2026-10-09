@@ -13,7 +13,8 @@ export function registerGold(tl: gsap.core.Timeline): () => void {
   const seg = gsap.timeline({ defaults: { ease: 'none', immediateRender: false } })
   const len = (from: number, to: number) => to - from
 
-  // The needle falls to full vacuum.
+  // The vacuum chamber slides up onto the flask, then the needle falls to full vacuum.
+  seg.fromTo(gold, { chamber: 0 }, { chamber: 1, duration: len(B.chamberFrom, B.chamberTo), ease: 'power2.out' }, B.chamberFrom)
   seg.fromTo(gold, { vacuum: 0 }, { vacuum: 1, duration: len(B.vacuumFrom, B.vacuumTo), ease: 'power2.inOut' }, B.vacuumFrom)
 
   // X-ray on, the pour and the solid fill, the cooling, X-ray off after the flash.

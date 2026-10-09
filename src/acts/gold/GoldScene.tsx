@@ -9,6 +9,7 @@ import { GOLD_BEATS } from './beats'
 import { GoldFill } from './GoldFill'
 import { PourCloud } from './PourCloud'
 import { registerGold } from './timeline'
+import { VacuumChamber } from './VacuumChamber'
 
 /**
  * Act 5: the solid gold fill and the pour particles inside the act's window. The flask itself, its X-ray shell and the
@@ -30,6 +31,7 @@ export function GoldScene() {
 
   return (
     <group ref={root}>
+      <VacuumChamber />
       <GoldFill />
       <PourCloud />
     </group>

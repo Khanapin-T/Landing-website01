@@ -1,4 +1,4 @@
-import { BURN } from './fire'
+import { BURN, FLIP } from './fire'
 import { MOLD } from './mold'
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
@@ -56,6 +56,37 @@ export function goldFillVisible(f: { fill: number; xray: number; flip: number })
 }
 export function pourVisible(f: { fill: number; xray: number; flip: number }): boolean {
   return goldFillVisible(f) && f.fill < 0.999
+}
+
+/** Flange thickness of the flask (FLANGE.height in acts/mold/flaskMaterial.ts, pinned by gold.test.ts). */
+const FLANGE_HEIGHT = 0.16
+
+/**
+ * The vacuum chamber (Act 5), in world space around the flipped flask: a plain dark iron cup that slides up from
+ * below. Wider than the flask tube, narrower than the flange, so the flange rests on its rim (`topY` = the flange's
+ * lower face once flipped); the closed bottom sits below the flask's far end. `dropOffset` = start position, fully below
+ * the frame. A first shape for the author to correct; no details yet.
+ */
+export const CHAMBER = {
+  radius: 1.75,
+  wall: 0.08,
+  floor: 0.1,
+  topY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE_HEIGHT),
+  bottomY: 2 * FLIP.pivotY - (MOLD.flask.bottomY + MOLD.flask.height) - 0.35,
+  dropOffset: -7,
+} as const
+
+/** Lathe profile (x = radius, y = world height) of the chamber cup: outer wall, rim, inner wall, floor. */
+export function chamberProfile(): [number, number][] {
+  const { radius: r, wall, floor, topY, bottomY } = CHAMBER
+  return [
+    [0, bottomY],
+    [r, bottomY],
+    [r, topY],
+    [r - wall, topY],
+    [r - wall, bottomY + floor],
+    [0, bottomY + floor],
+  ]
 }
 
 /** The rest timer runs 00:00 to 10:00 (a stylization inside the real 5 to 15 minute rest). */

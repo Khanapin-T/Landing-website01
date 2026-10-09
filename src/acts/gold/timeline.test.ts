@@ -52,8 +52,18 @@ describe('act 5 timeline', () => {
     expect(B.windowFrom).toBeLessThanOrEqual(B.copyIn)
   })
 
-  it('moves nothing of act 5 before the vacuum starts, and takes over the heat Act 4 leaves', () => {
-    tl.time(B.vacuumFrom - 0.01)
+  it('slides the vacuum chamber on from below before the needle drops', () => {
+    tl.time(B.chamberFrom - 0.01)
+    expect(gold.chamber).toBe(0)
+    tl.time(B.chamberTo)
+    expect(gold.chamber).toBe(1)
+    expect(gold.vacuum).toBe(0)
+    expect(B.vacuumFrom).toBeGreaterThanOrEqual(B.chamberTo)
+    expect(B.chamberFrom).toBeGreaterThanOrEqual(FIRE_BEATS.flipTo)
+  })
+
+  it('moves nothing of act 5 before the chamber comes, and takes over the heat Act 4 leaves', () => {
+    tl.time(B.chamberFrom - 0.01)
     expect(snap(gold)).toEqual(GOLD_INITIAL)
     expect(story.flask.fill).toBe(0)
     expect(story.flask.cool).toBe(0)

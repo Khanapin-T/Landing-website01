@@ -5,10 +5,13 @@ export const GOLD_BEATS = {
   windowTo: 11.55,
   copyIn: 9.1,
   copyOut: 11.35,
-  /** The gauge is in with the copy; the needle falls to full vacuum. */
+  /** The vacuum chamber slides up onto the flask from below. */
+  chamberFrom: 9.05,
+  chamberTo: 9.35,
+  /** The gauge is in with the copy; once the chamber is on, the needle falls to full vacuum. */
   gaugeIn: 9.1,
   gaugeOut: 11.35,
-  vacuumFrom: 9.2,
+  vacuumFrom: 9.4,
   vacuumTo: 9.8,
   /** X-ray on, the stream and the solid fill, flash, cooling, X-ray off (after the flash). */
   xrayInFrom: 9.85,

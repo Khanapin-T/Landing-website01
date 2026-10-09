@@ -1,8 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import { ringBoxCorners } from '../scene/tree/slots'
 import { FLIP, FUNNEL } from './fire'
-import { CAM } from './mold'
-import { FILL, REST_SECONDS, arriveAt, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
+import { CAM, MOLD } from './mold'
+import { FLANGE, FLANGE_RADIUS, FLASK_RADIUS } from '../acts/mold/flaskMaterial'
+import { CHAMBER, FILL, REST_SECONDS, arriveAt, chamberProfile, fillFrontY, fillProgress, goldFillVisible, goldGlow, pourVisible, restClock } from './gold'
+
+describe('vacuum chamber', () => {
+  const frameHalf = CAM.tree.z * Math.tan((30 * Math.PI) / 360)
+  const frameBottom = CAM.tree.look - frameHalf
+
+  it('is wider than the flask tube and narrower than the flange, so the flange rests on its rim', () => {
+    expect(CHAMBER.radius - CHAMBER.wall).toBeGreaterThan(FLASK_RADIUS)
+    expect(CHAMBER.radius).toBeLessThan(FLANGE_RADIUS)
+  })
+
+  it('reaches up to the underside of the flange of the flipped flask', () => {
+    expect(CHAMBER.topY).toBeCloseTo(2 * FLIP.pivotY - (MOLD.flask.bottomY + FLANGE.height), 9)
+  })
+
+  it('closes below the flipped flask and stays inside the frame', () => {
+    const flaskEnd = 2 * FLIP.pivotY - (MOLD.flask.bottomY + MOLD.flask.height)
+    expect(CHAMBER.bottomY).toBeLessThan(flaskEnd)
+    expect(CHAMBER.bottomY).toBeGreaterThan(frameBottom)
+  })
+
+  it('starts fully below the frame', () => {
+    expect(CHAMBER.topY + CHAMBER.dropOffset).toBeLessThan(frameBottom)
+  })
+
+  it('is a closed cup: outer wall, rim, inner wall, floor', () => {
+    const p = chamberProfile()
+    expect(p[0]).toEqual([0, CHAMBER.bottomY])
+    expect(p.at(-1)).toEqual([0, CHAMBER.bottomY + CHAMBER.floor])
+    expect(Math.max(...p.map(([r]) => r))).toBe(CHAMBER.radius)
+    expect(Math.max(...p.map(([, y]) => y))).toBe(CHAMBER.topY)
+  })
+})
 
 describe('fill front', () => {
   it('shows nothing until the fill starts', () => {
