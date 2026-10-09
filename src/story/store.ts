@@ -57,9 +57,13 @@ export interface FlaskState {
   burn: number
   /** 0..1 flip: 0 funnel down, 1 turned 180 degrees about Z (funnel up). */
   flip: number
+  /** 0..1 metal fill (Act 5): the stream arrives, then the solid front rises (config/gold.ts). */
+  fill: number
+  /** 0..1 cooling of the gold after the fill: white-orange to yellow gold. */
+  cool: number
 }
 
-export const FLASK_INITIAL: Readonly<FlaskState> = { heat: 0, xray: 0, burn: 0, flip: 0 }
+export const FLASK_INITIAL: Readonly<FlaskState> = { heat: 0, xray: 0, burn: 0, flip: 0, fill: 0, cool: 0 }
 
 /** Scroll-driven values. Mutated by ScrollDirector every scroll frame; read in useFrame. Never put this in React state. */
 export interface Story {

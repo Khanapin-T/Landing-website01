@@ -1,3 +1,5 @@
+import { FIRE_END_HEAT } from '../../config/fire'
+
 /** Act 4 choreography in absolute screens (fire 6.5..9.0). Tune by eye. */
 export const FIRE_BEATS = {
   /** Act 4 props render in [windowFrom, windowTo] (the flask itself persists in MoldScene). */
@@ -31,7 +33,7 @@ export const FIRE_BEATS = {
   /** The heat settles for Act 5. */
   coolFrom: 8.5,
   coolTo: 9.0,
-  heatEnd: 0.6,
+  heatEnd: FIRE_END_HEAT,
   /** Step list cues (start screens). */
   steps: { furnace: 6.95, burnout: 7.45, flip: 8.42 },
 } as const

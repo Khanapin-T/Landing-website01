@@ -48,6 +48,14 @@ export const content = {
       'The flask goes into a furnace. The wax runs out and evaporates, the resin burns out, and both leave a hollow in the investment in the exact shape of the tree and our rings. The flask is then turned over for casting.',
     steps: ['Furnace', 'Burnout', 'Flip'],
   },
+  gold: {
+    heading: 'Then the gold goes in',
+    caption:
+      'The flask goes under vacuum and molten yellow gold is poured into the funnel. It fills the hollow, the trunk first and then the rings, and rests for 5 to 15 minutes before the flask is quenched in water.',
+    steps: ['Vacuum', 'Pour', 'Rest'],
+    gauge: 'Vacuum',
+    rest: 'Rest',
+  },
   scale: {
     label: 'Chapters',
     goTo: (name: string) => `Go to ${name}`,

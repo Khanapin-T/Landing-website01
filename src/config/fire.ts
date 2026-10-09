@@ -39,6 +39,9 @@ export const FUNNEL = { exitY: MOLD.flask.bottomY - MOLD.foot.height - 0.4 } as 
 /** The flask flips about this world Y: the middle of the flask including its foot, so it stays framed. */
 export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foot.height) / 2 } as const
 
+/** Heat the furnace leaves in the flask at the end of Act 4 (Act 5 continues from it). */
+export const FIRE_END_HEAT = 0.6
+
 /**
  * Heating coils (after the muffle furnace photos): on each of the four walls of a box tunnel one long spring is laid
  * in a serpentine, three long runs along the depth (from the front opening toward the back, so they converge toward the
