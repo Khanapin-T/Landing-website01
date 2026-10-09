@@ -1,3 +1,5 @@
+import { WIPE } from '../../config/birth'
+
 /** Scroll-scrubbed Act 7 values, written by the master timeline and read by the birth scene and the HUD. */
 export interface BirthState {
   /** 0 = jar below the frame, 1 = in place (config/birth.ts jarOffsetY). */
@@ -23,8 +25,12 @@ export interface BirthState {
   all: number
   /** Final tilt of the ring, radians. */
   tilt: number
-  /** 0..1 the final frame: reflection and the slow ambient spin. */
+  /** 0..1 the final frame: reflection, slow ambient spin, the lights, the brighter gold. */
   finale: number
+  /** 0..1 the line from the end of its pass to a full-height vertical line at the left page edge (config/birth.ts WIPE). */
+  edge: number
+  /** NDC x of the vertical wipe line while it sweeps left to right (WIPE.leftX = not started, WIPE.rightX = done). */
+  wipeX: number
 }
 
 export const BIRTH_INITIAL: Readonly<BirthState> = {
@@ -42,6 +48,8 @@ export const BIRTH_INITIAL: Readonly<BirthState> = {
   all: 0,
   tilt: 0,
   finale: 0,
+  edge: 0,
+  wipeX: WIPE.leftX,
 }
 
 export const birth: BirthState = { ...BIRTH_INITIAL }

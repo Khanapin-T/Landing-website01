@@ -1,5 +1,5 @@
 import { gsap } from 'gsap'
-import { CAM_BIRTH, CAM_BIRTH_START, CUT_ORDER, FINAL, POLISH_TURN } from '../../config/birth'
+import { CAM_BIRTH, CAM_BIRTH_START, CUT_ORDER, FINAL, POLISH_TURN, WIPE } from '../../config/birth'
 import { story } from '../../story/store'
 import { BIRTH_BEATS as B } from './beats'
 import { birth } from './state'
@@ -37,7 +37,11 @@ export function registerBirth(tl: gsap.core.Timeline): () => void {
   seg.fromTo(birth, { turn: 0 }, { turn: POLISH_TURN, duration: len(B.polishFrom, B.polishTo) }, B.polishFrom)
   seg.fromTo(birth, { all: 0 }, { all: 1, duration: 0.01 }, B.polishTo)
 
-  // Final: tilt, reflection and spin, the final camera.
+  // The line goes on to the left page edge (upright, full height), then sweeps the page left to right (black behind it).
+  seg.fromTo(birth, { edge: 0 }, { edge: 1, duration: len(B.edgeFrom, B.edgeTo), ease: 'power1.inOut' }, B.edgeFrom)
+  seg.fromTo(birth, { wipeX: WIPE.leftX }, { wipeX: WIPE.rightX, duration: len(B.sweepFrom, B.sweepTo), ease: 'power1.inOut' }, B.sweepFrom)
+
+  // Final: tilt, reflection and spin, the lights and the brighter gold (birth.finale), the final camera.
   seg.fromTo(birth, { tilt: 0 }, { tilt: FINAL.tilt, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)
   seg.fromTo(birth, { finale: 0 }, { finale: 1, duration: len(B.finalFrom, B.finalTo), ease: 'power1.inOut' }, B.finalFrom)
   seg.fromTo(story.cam, { ...CAM_BIRTH.polish }, { ...CAM_BIRTH.final, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)

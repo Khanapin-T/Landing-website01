@@ -1,34 +1,47 @@
+import { useLayoutEffect, useRef } from 'react'
 import { content } from '../../content'
-import { ActCopy } from '../../hud/ActCopy'
-import { BIRTH_BEATS } from './beats'
+import { registerWipeLayer, useWipeClip } from './useWipeClip'
 
 const f = content.finale
 
-/** The links join the column's reveal as a whole, like the step list: hidden until the block comes in. */
-function revealLinks(tl: gsap.core.Timeline, root: HTMLElement, reduce: boolean) {
-  const list = root.querySelector('[data-links]')
-  if (!list) return
-  if (reduce) tl.from(list, { autoAlpha: 0, duration: 0.2 }, 0)
-  else tl.from(list, { autoAlpha: 0, y: 12, duration: 0.6, ease: 'power2.out' }, 0.45)
-}
-
-/** The final block: name, promo line and contact links (placeholders until the author writes them last). */
+/**
+ * The final block: name, promo line and contact links (placeholders until the author writes them last). Same column
+ * markup and type as ActCopy, but no timed reveal: the sweeping line reveals it (useWipeClip 'reveal': visible only
+ * left of the line, each link hidden until the line has passed it). The copy scrim is pushed out with the sweep too,
+ * so the page left of the line is pure black.
+ */
 export function FinaleHud() {
+  const layer = useRef<HTMLDivElement>(null)
+  useWipeClip(layer, 'reveal')
+  useLayoutEffect(() => {
+    const scrim = document.querySelector<HTMLElement>('[data-scrim]')
+    return scrim ? registerWipeLayer(scrim, 'scrim') : undefined
+  }, [])
+
   return (
-    <ActCopy label={f.name} heading={f.name} caption={f.promo} copyIn={BIRTH_BEATS.finaleIn} copyOut={20} extendReveal={revealLinks}>
-      <ul data-links className="mt-8 flex gap-6 font-mono text-sm uppercase tracking-[0.12em]">
-        {f.links.map((l) => (
-          <li key={l.label}>
-            <a className="pointer-events-auto text-line underline-offset-4 hover:underline focus-visible:underline"
-              href={l.href}
-              // Placeholder links (href '#') must not jump to the page top.
-              onClick={l.href === '#' ? (e) => e.preventDefault() : undefined}
-            >
-              {l.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </ActCopy>
+    <div ref={layer} className="absolute inset-0">
+      <section aria-label={f.name} className="pointer-events-none absolute inset-y-0 left-[7vw] flex w-[min(32vw,480px)] items-center">
+        <div>
+          <h2 className="text-[clamp(40px,4vw,68px)] font-semibold leading-[0.98] tracking-[-0.01em] text-line" style={{ fontStretch: '125%' }}>
+            {f.name}
+          </h2>
+          <p className="mt-6 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.promo}</p>
+          <ul data-links className="mt-8 flex gap-6 font-mono text-sm uppercase tracking-[0.12em]">
+            {f.links.map((l) => (
+              <li key={l.label}>
+                <a
+                  className="pointer-events-auto text-line underline-offset-4 hover:underline focus-visible:underline"
+                  href={l.href}
+                  // Placeholder links (href '#') must not jump to the page top.
+                  onClick={l.href === '#' ? (e) => e.preventDefault() : undefined}
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </div>
   )
 }

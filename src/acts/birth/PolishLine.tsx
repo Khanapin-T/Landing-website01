@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { LINE, LINE_DIR, polishLinePoint } from '../../config/birth'
+import { LINE, LINE_DIR, POLISH, polishLinePoint } from '../../config/birth'
 import { content } from '../../content'
 import { getAppState } from '../../story/appState'
 import { birth } from './state'
+import { wipeView } from './useWipeClip'
 
 /** HDR neon gold (above the bloom threshold); toneMapped off so it stays bright. */
-const NEON = new THREE.Color(2.6, 1.75, 0.6)
+export const NEON = new THREE.Color(2.6, 1.75, 0.6)
 const LABEL = { width: 1.3, height: 0.13, px: [1024, 102] as const, color: '#f2c46d' }
 
 function drawLabel(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture) {
@@ -24,7 +25,8 @@ function drawLabel(canvas: HTMLCanvasElement, texture: THREE.CanvasTexture) {
 /**
  * The neon polish line (Act 7): a thin glowing quad tilted LINE.angle, moving right to left in front of the ring
  * (config/birth.ts polishLinePoint), with the label "processing and polishing" riding above its top end. Bloom does
- * the glow. Shown only while the line passes.
+ * the glow. Shown from the start of the pass until the screen-space WipeLine takes over (birth.edge > 0); the label
+ * then follows the wipe line's top end (wipeView, unprojected onto the line's plane) and fades out.
  */
 export function PolishLine() {
   const line = useMemo(() => new THREE.PlaneGeometry(LINE.width, LINE.length), [])
@@ -77,20 +79,35 @@ export function PolishLine() {
   const group = useRef<THREE.Group>(null)
   const tag = useRef<THREE.Mesh>(null)
   const p = useMemo(() => new THREE.Vector3(), [])
-  useFrame(() => {
+  const ray = useMemo(() => new THREE.Vector3(), [])
+  useFrame(({ camera }) => {
     const g = group.current
     const t = tag.current
     if (!g || !t) return
     polishLinePoint(birth.line, p)
     g.position.copy(p)
-    t.position.copy(p).addScaledVector(LINE_DIR, LINE.length / 2 + 0.08)
-    // Soft in and out at the ends of the pass.
-    const fade = Math.min(1, birth.line / 0.06, (1 - birth.line) / 0.06)
-    lineMat.opacity = fade
-    labelMat.opacity = fade
-    const show = getAppState().phase === 'loading' || (birth.line > 0.001 && birth.line < 0.999)
-    g.visible = show
-    t.visible = show
+    // Soft in at the start of the pass; at its end the line stays for the hand-over to WipeLine.
+    const fadeIn = Math.min(1, birth.line / 0.06)
+    lineMat.opacity = fadeIn
+    const loading = getAppState().phase === 'loading'
+    g.visible = loading || (birth.line > 0.001 && birth.edge <= 0)
+
+    if (birth.edge <= 0) {
+      t.position.copy(p).addScaledVector(LINE_DIR, LINE.length / 2 + 0.08)
+      labelMat.opacity = fadeIn
+    } else {
+      // Ride with the top end of the screen-space line (WipeLine has written wipeView this frame), on the line's plane.
+      const l = wipeView.line
+      const ex = l.x + Math.cos(l.angle) * l.half
+      const ey = l.y + Math.sin(l.angle) * l.half
+      ray.set(ex / wipeView.aspect, ey, 0.5).unproject(camera).sub(camera.position).normalize()
+      const k = (POLISH.z + LINE.zFront - camera.position.z) / ray.z
+      t.position.copy(camera.position).addScaledVector(ray, k)
+      t.position.x += Math.cos(l.angle) * 0.08
+      t.position.y += Math.sin(l.angle) * 0.08
+      labelMat.opacity = Math.max(0, 1 - birth.edge / 0.35)
+    }
+    t.visible = loading || (birth.line > 0.001 && labelMat.opacity > 0.001)
   })
 
   return (

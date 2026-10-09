@@ -14,6 +14,8 @@ export interface PolishUniforms {
   uAll: { value: number }
   /** 0..1 opacity of the reflection copy. */
   uReflect: { value: number }
+  /** IBL factor of the polished side: 1, up to FINAL.envBoost in the final frame (the raw side keeps its own). */
+  uBoost: { value: number }
 }
 
 type Variant = 'ring' | 'stub' | 'mirror'
@@ -33,9 +35,10 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
   const raw = new THREE.Color(RAW_GOLD.color)
   const pol = new THREE.Color(POLISHED_GOLD.color)
   const v3 = (c: THREE.Color) => `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`
-  // envMapIntensity is POLISHED_GOLD's; the raw side scales the IBL back down to RAW_GOLD's (as the cut rings).
+  // envMapIntensity is POLISHED_GOLD's; the raw side scales the IBL back down to RAW_GOLD's (as the cut rings), the
+  // polished side up by uBoost in the final frame.
   const rawEnv = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
-  const envScale = variant === 'stub' ? rawEnv : `mix(${rawEnv}, 1.0, polished)`
+  const envScale = variant === 'stub' ? rawEnv : `mix(${rawEnv}, uBoost, polished)`
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
     shader.vertexShader = shader.vertexShader
@@ -52,6 +55,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         uniform vec3 uLineNormal;
         uniform float uAll;
         uniform float uReflect;
+        uniform float uBoost;
         varying vec3 vPolishWorld;
         varying vec3 vPolishObj;
         float pgGrain(vec3 p) { return fract(sin(dot(floor(p), vec3(12.9898, 78.233, 37.719))) * 43758.5453); }`,
@@ -83,7 +87,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v2`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v3`
   return m
 }
 
@@ -91,7 +95,8 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
  * The hero ring's materials (Act 7): raw as-cast gold on one side of the moving polish plane (through
  * uLinePoint, normal uLineNormal), mirror-polished gold on the other; uAll polishes everything. `stub` discards the
  * sprue stub on the polished side (it vanishes where the line has passed); `mirror` is the faded reflection copy
- * under the ring. One shared uniforms object; uniforms only, so each variant compiles once.
+ * under the ring; uBoost brightens the polished gold in the final frame. One shared uniforms object; uniforms only, so
+ * each variant compiles once.
  */
 export function createPolishMaterials() {
   const uniforms: PolishUniforms = {
@@ -99,6 +104,7 @@ export function createPolishMaterials() {
     uLineNormal: { value: LINE_NORMAL.clone() },
     uAll: { value: 0 },
     uReflect: { value: 0 },
+    uBoost: { value: 1 },
   }
   return { ring: create('ring', uniforms), stub: create('stub', uniforms), mirror: create('mirror', uniforms), uniforms }
 }

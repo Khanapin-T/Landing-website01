@@ -21,10 +21,13 @@ describe('polish materials', () => {
       const s = compile(m)
       expect(s.uniforms.uLinePoint).toBe(uniforms.uLinePoint)
       expect(s.uniforms.uAll).toBe(uniforms.uAll)
+      expect(s.uniforms.uBoost).toBe(uniforms.uBoost)
+      expect(s.fragmentShader).toContain('uniform float uBoost;')
       expect(s.fragmentShader).toContain('uniform vec3 uLinePoint;')
       expect(s.vertexShader).toContain('vPolishWorld')
     }
     expect(uniforms.uAll.value).toBe(0)
+    expect(uniforms.uBoost.value).toBe(1)
     expect(uniforms.uLineNormal.value.equals(LINE_NORMAL)).toBe(true)
   })
 
@@ -44,12 +47,12 @@ describe('polish materials', () => {
     expect(mirror.side).toBe(THREE.FrontSide)
   })
 
-  it('scales the IBL down to the raw gold intensity on the raw side, always on the stub', () => {
+  it('scales the IBL down to the raw gold intensity on the raw side (always on the stub), the polished side by uBoost', () => {
     const { ring, stub, mirror } = createPolishMaterials()
     const ratio = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
     for (const m of [ring, mirror]) {
       const fs = compile(m).fragmentShader
-      expect(fs).toContain(`float pgEnv = mix(${ratio}, 1.0, polished);`)
+      expect(fs).toContain(`float pgEnv = mix(${ratio}, uBoost, polished);`)
       expect(fs.indexOf('pgEnv')).toBeGreaterThan(fs.indexOf('#include <lights_fragment_maps>'))
       expect(fs).toContain('iblIrradiance *= pgEnv;')
     }

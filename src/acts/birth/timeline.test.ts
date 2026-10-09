@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { TOTAL_SCREENS } from '../../config/acts'
-import { CAM_BIRTH, CUT_ORDER, FINAL, POLISH_TURN } from '../../config/birth'
+import { CAM_BIRTH, CUT_ORDER, FINAL, POLISH_TURN, WIPE } from '../../config/birth'
 import { CAM_WATER } from '../../config/water'
 import { FIRE_INITIAL, fire } from '../fire/state'
 import { registerFire } from '../fire/timeline'
@@ -106,9 +106,42 @@ describe('act 7 timeline', () => {
     expect(birth.all).toBe(1)
   })
 
+  it('takes the line on to the left edge after the pass, then sweeps it across the page', () => {
+    expect(B.edgeFrom).toBeGreaterThanOrEqual(B.polishTo)
+    expect(B.sweepFrom).toBeGreaterThanOrEqual(B.edgeTo)
+    expect(B.sweepTo).toBeLessThanOrEqual(TOTAL_SCREENS)
+    tl.time(B.edgeFrom)
+    expect(birth.edge).toBe(0)
+    expect(birth.wipeX).toBe(WIPE.leftX)
+    tl.time(B.edgeTo)
+    expect(birth.edge).toBe(1)
+    expect(birth.all).toBe(1)
+    expect(birth.wipeX).toBe(WIPE.leftX)
+    tl.time(B.sweepTo)
+    expect(birth.wipeX).toBe(WIPE.rightX)
+  })
+
+  it('keeps the ring fully polished from before the line moves on until the end', () => {
+    expect(B.polishTo + 0.01).toBeLessThanOrEqual(B.sweepFrom)
+    for (const t of [B.edgeFrom + 0.02, B.edgeTo, B.sweepFrom + 0.1, B.sweepTo, TOTAL_SCREENS]) {
+      tl.time(t)
+      expect(birth.all).toBe(1)
+      expect(birth.line).toBe(1)
+    }
+  })
+
+  it('hides the act copy when the sweep starts and finishes the final frame with the sweep', () => {
+    expect(B.copyOut).toBe(B.sweepFrom)
+    expect(B.finalFrom).toBeGreaterThanOrEqual(B.polishTo)
+    expect(B.finalTo).toBeLessThanOrEqual(B.sweepTo)
+    tl.time(B.sweepTo)
+    expect(birth.finale).toBe(1)
+    expect(snap(story.cam)).toEqual({ ...CAM_BIRTH.final })
+  })
+
   it('leaves the final state at the end and holds it', () => {
     tl.time(TOTAL_SCREENS)
-    expect(birth).toMatchObject({ jar: 1, cut0: 1, cut1: 1, cut2: 1, cut3: 1, treeUp: 1, rest: 1, out: 1, jarAway: 1, line: 1, all: 1, finale: 1 })
+    expect(birth).toMatchObject({ jar: 1, cut0: 1, cut1: 1, cut2: 1, cut3: 1, treeUp: 1, rest: 1, out: 1, jarAway: 1, line: 1, all: 1, finale: 1, edge: 1, wipeX: WIPE.rightX })
     expect(birth.tilt).toBeCloseTo(FINAL.tilt, 5)
     expect(snap(story.cam)).toEqual({ ...CAM_BIRTH.final })
     const held = state()
@@ -120,7 +153,7 @@ describe('act 7 timeline', () => {
   it('restores the end of act 6 exactly when scrubbed back', () => {
     tl.time(B.camFrom - 0.01)
     const before = state()
-    tl.time(16.6)
+    tl.time(16.7)
     tl.time(B.camFrom - 0.01)
     expect(state()).toEqual(before)
   })
@@ -132,11 +165,13 @@ describe('act 7 timeline', () => {
     tl.time(14.5)
     tl.time(15.4)
     expect(state()).toEqual(jumped)
-    tl.time(0)
-    tl.time(16.2)
-    const far = state()
-    tl.time(TOTAL_SCREENS)
-    tl.time(16.2)
-    expect(state()).toEqual(far)
+    for (const at of [16.2, B.edgeFrom + 0.1, B.sweepFrom + 0.15]) {
+      tl.time(0)
+      tl.time(at)
+      const far = state()
+      tl.time(TOTAL_SCREENS)
+      tl.time(at)
+      expect(state()).toEqual(far)
+    }
   })
 })

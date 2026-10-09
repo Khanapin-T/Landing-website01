@@ -57,6 +57,8 @@ export function PolishRing() {
     if (birth.line <= 0) mats.uniforms.uLinePoint.value.x += 20
     mats.uniforms.uAll.value = birth.all
     mats.uniforms.uReflect.value = birth.finale
+    // The brighter "render" look of the final frame (polished side only).
+    mats.uniforms.uBoost.value = 1 + (FINAL.envBoost - 1) * birth.finale
     r.visible = getAppState().phase === 'loading' || birth.finale > 0.001
   })
 

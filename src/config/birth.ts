@@ -10,7 +10,7 @@ const deg = (d: number) => (d * Math.PI) / 180
  * the flask, no taller than its diameter (the author). `dropOffset` = start offset below the frame, `sink` = how far
  * it goes down at the end. Shapes for the author to correct.
  */
-export const JAR = { radius: 1.5, wall: 0.06, height: 2.4, rimY: -2.1, dropOffset: -10, sink: 9 } as const
+export const JAR = { radius: 1.65, wall: 0.06, height: 2.4, rimY: -2.1, dropOffset: -10, sink: 9 } as const
 export const JAR_FLOOR_Y = JAR.rimY - JAR.height
 /** World Y of the acid surface (jar in place). */
 export const ACID_Y = JAR.rimY - 0.3
@@ -24,18 +24,38 @@ export const CUT_ORDER = [1, 2, 3, HERO_SLOT] as const
 /** How far the empty tree goes up (world units) at birth.treeUp = 1: out of the frame. */
 export const TREE_UP = 9
 
-/** Half thickness of a ring lying flat (its hole axis vertical). */
-const LIE_HALF = RING_HALF_EXTENTS.z
-/** Rest poses in the jar per slot: offset from the jar axis, stack level, turn about Y (stubs point outward). */
+/** Half thickness of a ring lying flat (its hole axis vertical): the rounded box half plus 0.002 (the mesh is 0.001 thicker). */
+const LIE_HALF = RING_HALF_EXTENTS.z + 0.002
+/** A rest pose from polar values: centre `d` from the jar axis at world azimuth `az` (deg, atan2(z, x)), stub toward `stub` (deg, same convention). */
+const lying = (d: number, az: number, level: number, stub: number) => ({
+  x: d * Math.cos(deg(az)),
+  z: d * Math.sin(deg(az)),
+  level,
+  yaw: deg(90 - stub), // restMatrix turns the stub (ring-local -Y) to (sin yaw, 0, cos yaw)
+})
+
+/**
+ * Rest poses in the jar per slot: offset from the jar axis, stack level, turn about Y. Rings 1-3 lie flat on the floor
+ * near the side they hung on (1 left, 2 front, 3 back), apart from each other, stubs out toward the wall (clear of it),
+ * so their thick signet plates point in, under the hero ring. The hero ring lies flat on top across all three, its
+ * thin shank and stub over the open side (right, where it hung), its centre inside their contacts so it would not tip.
+ * Pinned by birthCollide.test.ts (no overlaps, inside the jar under the acid, every ring supported).
+ */
 export const JAR_REST: readonly { x: number; z: number; level: number; yaw: number }[] = [
-  { x: 0.05, z: -0.05, level: 2, yaw: 0.4 },
-  { x: -0.5, z: 0, level: 0, yaw: -Math.PI / 2 },
-  { x: 0.5, z: 0, level: 0, yaw: Math.PI / 2 },
-  { x: 0, z: 0.05, level: 1, yaw: Math.PI },
+  lying(0.04, 180, 1, -15),
+  lying(0.76, 168, 0, 180),
+  lying(0.74, 60, 0, 75),
+  lying(0.77, -95, 0, -110),
 ]
 
-/** Fall shape: the sideways move is done by `xzTo` of the fall (before the rim), `spin` = the little extra turn about Y. */
-export const FALL = { xzTo: 0.6, spin: 0.7 } as const
+/**
+ * Fall shape. The cut ring first slides `pull` straight out from the trunk (horizontal, along its branch) during the
+ * first `pullTo` of the cut, which clears the rings still hanging on the tree; then it drops (height t^2 like gravity).
+ * It keeps its hanging pose until its centre passes `turnHi` (relative to the jar rim, below the lowest ring still on
+ * the tree) and turns flat and moves over its rest spot by `turnLo` (above the rings already lying in the jar), with a
+ * little extra turn about Y (`spin`, radians at the middle of the turn).
+ */
+export const FALL = { pull: 0.6, pullTo: 0.25, turnHi: 0.55, turnLo: -1.2, spin: 0.5 } as const
 
 /** Centre of the ring while it is polished and in the final frame (where the tree stood). */
 export const POLISH = { x: 0, y: RAW.y, z: RAW.z } as const
@@ -52,8 +72,29 @@ export const LINE_DIR = new THREE.Vector3(Math.cos(LINE.angle), Math.sin(LINE.an
 /** Unit normal of the split plane (contains the line and the view axis), pointing right: the polished side. */
 export const LINE_NORMAL = new THREE.Vector3(Math.sin(LINE.angle), -Math.cos(LINE.angle), 0)
 
-/** Final frame: ring tilt, ambient spin speed (rad/s at birth.finale = 1), the reflection plane under the ring. */
-export const FINAL = { tilt: deg(10), spin: 0.35, mirrorY: RAW.y - 0.78 } as const
+/**
+ * Final frame: ring tilt, ambient spin speed (rad/s at birth.finale = 1), the reflection plane under the ring, and
+ * `envBoost`: the polished gold's IBL is scaled up to this factor with birth.finale (the brighter "render" look).
+ */
+export const FINAL = { tilt: deg(10), spin: 0.35, mirrorY: RAW.y - 0.78, envBoost: 1.35 } as const
+
+/**
+ * The real lights of the final frame (world space, relative to POLISH): a warm key upper right in front of the ring
+ * and a faint cool rim behind it. Mounted from the start at intensity 0 (a changed light count recompiles every
+ * shader) and scaled 0..intensity by birth.finale. Point lights, candela, decay 2. Tune by eye.
+ */
+export const FINAL_LIGHT = {
+  key: { position: [POLISH.x + 1.6, POLISH.y + 1.7, POLISH.z + 2.3] as const, color: '#ffd8a6', intensity: 10 },
+  rim: { position: [POLISH.x - 1.5, POLISH.y + 0.9, POLISH.z - 1.9] as const, color: '#a8c6ff', intensity: 4 },
+} as const
+
+/**
+ * The page-wide wipe after the polish (screen space). The line goes from the end of its pass to a vertical line at
+ * NDC x = leftX (rotating up and growing to `half`, in half-viewport-heights), then sweeps to NDC x = rightX (off the
+ * right edge, glow included). `width` is its full thickness at the left edge (half-viewport-heights; the 3D line is
+ * about 0.024 in the polish view), `glow` the soft halo it gains on the way.
+ */
+export const WIPE = { leftX: -0.985, rightX: 1.08, half: 1.25, width: 0.016, glow: 0.35 } as const
 
 /** Camera targets (same shape as CAM in config/mold.ts). Tune by eye; framing pinned by birth.test.ts. */
 export const CAM_BIRTH = {
@@ -61,12 +102,13 @@ export const CAM_BIRTH = {
   jar: { y: -0.4, z: RAW.z + 16.5, look: -1.2 },
   /** Close on the ring in the centre for the polish line. */
   polish: { y: RAW.y, z: RAW.z + 4.6, look: RAW.y },
-  /** Final: a little higher and further, so the reflection shows under the ring. */
-  final: { y: RAW.y + 0.4, z: RAW.z + 6.4, look: RAW.y - 0.45 },
+  /** Final: a little higher, looking down, so the reflection shows under the ring; about 19% larger than the s07 draft. */
+  final: { y: RAW.y + 0.3, z: RAW.z + 5.4, look: RAW.y - 0.45 },
 } as const
 /** Act 7 starts from the act 6 end camera. */
 export const CAM_BIRTH_START = CAM_WATER.raw
 
+/** World Y of the centre of a flat ring at stack `level` (jar in place): on the floor, then 0.02 apart. */
 export const restY = (level: number) => JAR_FLOOR_Y + JAR.wall + LIE_HALF + level * (2 * LIE_HALF + 0.02)
 
 /** World Y offset of the jar: up from below the frame (jar 0..1), then down out of it (away 0..1). */
@@ -124,9 +166,12 @@ export function restMatrix(slot: number, jarY: number, out: THREE.Matrix4): THRE
   return out.multiply(mA.makeRotationX(-Math.PI / 2))
 }
 
+const OUT = new THREE.Vector3()
+
 /**
- * Ring-local -> world of a cut ring: on the tree at cut 0, falling (sideways move done by FALL.xzTo, height t^2 like
- * gravity, a little spin about Y), at rest in the jar at cut 1. Exact at both ends.
+ * Ring-local -> world of a cut ring (FALL): on the tree at cut 0; slides straight out from the trunk; drops (height
+ * t^2 like gravity) in its hanging pose past the rings still on the tree; turns flat over its rest spot (a little spin
+ * about Y) above the rings already in the jar; at rest in the jar at cut 1. Exact at both ends.
  */
 export function cutRingMatrix(slot: number, cut: number, jarY: number, out: THREE.Matrix4): THREE.Matrix4 {
   slotMatrix(slot, out)
@@ -134,10 +179,16 @@ export function cutRingMatrix(slot: number, cut: number, jarY: number, out: THRE
   const t = Math.min(cut, 1)
   out.decompose(pA, qA, sA)
   restMatrix(slot, jarY, mB).decompose(pB, qB, sA)
-  const kxz = smooth(t / FALL.xzTo)
-  pA.set(pA.x + (pB.x - pA.x) * kxz, pA.y + (pB.y - pA.y) * t * t, pA.z + (pB.z - pA.z) * kxz)
-  qA.slerp(qB, smooth(t))
-  qS.setFromAxisAngle(Y, FALL.spin * 4 * t * (1 - t))
+  // Out from the trunk: the ring-local +Y (from the sprue tip to the ring) laid flat.
+  OUT.set(0, 1, 0).applyQuaternion(qA).setY(0).normalize()
+  pA.addScaledVector(OUT, FALL.pull * smooth(t / FALL.pullTo))
+  const s = Math.max(t - FALL.pullTo, 0) / (1 - FALL.pullTo)
+  const y = pA.y + (pB.y - pA.y) * s * s
+  const hi = JAR.rimY + jarY + FALL.turnHi
+  const k = smooth((hi - y) / (hi - (JAR.rimY + jarY + FALL.turnLo)))
+  pA.set(pA.x + (pB.x - pA.x) * k, y, pA.z + (pB.z - pA.z) * k)
+  qA.slerp(qB, k)
+  qS.setFromAxisAngle(Y, FALL.spin * 4 * k * (1 - k))
   qA.premultiply(qS)
   return out.compose(pA, qA, ONE)
 }

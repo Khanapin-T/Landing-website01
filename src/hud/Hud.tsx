@@ -13,7 +13,8 @@ import { FinaleHud } from '../acts/birth/FinaleHud'
 export function Hud() {
   return (
     <div className="pointer-events-none fixed inset-0 z-10">
-      <div className="absolute inset-y-0 left-0 w-[55vw] bg-[linear-gradient(90deg,rgb(10_22_34/0.72),rgb(10_22_34/0.35)_55%,transparent)]" />
+      {/* data-scrim: the finale wipe (acts/birth/FinaleHud) pushes it out, so the page left of the line is pure black. */}
+      <div data-scrim className="absolute inset-y-0 left-0 w-[55vw] bg-[linear-gradient(90deg,rgb(10_22_34/0.72),rgb(10_22_34/0.35)_55%,transparent)]" />
       <IntroTitle />
       <IdeaHud />
       <DimLabels />
