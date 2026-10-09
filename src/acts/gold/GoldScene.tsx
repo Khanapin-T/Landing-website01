@@ -12,7 +12,7 @@ import { registerGold } from './timeline'
 import { VacuumChamber } from './VacuumChamber'
 
 /**
- * Act 5: the solid gold fill and the molten stream inside the act's window; the vacuum chamber outside it (it stays on). The flask itself, its X-ray shell and the
+ * Act 5: the solid gold fill and the molten stream inside the act's window; the vacuum chamber too (it comes off when the rest starts). The flask itself, its X-ray shell and the
  * cavity outline live in MoldScene (the flask owner) and follow story.flask; the gauge and the rest chip are DOM (GoldHud).
  */
 export function GoldScene() {
@@ -30,13 +30,10 @@ export function GoldScene() {
   })
 
   return (
-    <>
-      {/* The vacuum rig stays on the flask after the act's window: act 6 takes it off (gold.chamber -> 0). */}
+    <group ref={root}>
       <VacuumChamber />
-      <group ref={root}>
-        <GoldFill />
-        <GoldStream />
-      </group>
-    </>
+      <GoldFill />
+      <GoldStream />
+    </group>
   )
 }

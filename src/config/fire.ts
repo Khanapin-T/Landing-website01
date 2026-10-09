@@ -39,8 +39,8 @@ export const FUNNEL = { exitY: MOLD.flask.bottomY - MOLD.foot.height - 0.4 } as 
 /** The flask flips about this world Y: the middle of the flask including its foot, so it stays framed. */
 export const FLIP = { pivotY: MOLD.flask.bottomY + (MOLD.flask.height - MOLD.foot.height) / 2 } as const
 
-/** Heat the furnace leaves in the flask at the end of Act 4 (Act 5 continues from it). */
-export const FIRE_END_HEAT = 0.6
+/** Heat left in the flask once the coils are gone: half of the furnace's (the author's 50% cut). Act 5 holds it through the pour. */
+export const FIRE_END_HEAT = 0.3
 
 /**
  * Heating elements (after the photo of a real muffle furnace): only the two side walls carry them, ceiling and floor

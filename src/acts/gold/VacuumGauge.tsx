@@ -38,7 +38,7 @@ export function VacuumGauge() {
 
       let on = false
       const sync = contextSafe!(() => {
-        const next = story.screen >= GOLD_BEATS.gaugeIn
+        const next = story.screen >= GOLD_BEATS.gaugeIn && story.screen < GOLD_BEATS.gaugeOut
         if (next === on) return
         on = next
         if (next) {
@@ -52,7 +52,7 @@ export function VacuumGauge() {
       })
 
       sync()
-      const offs = [addCue({ at: GOLD_BEATS.gaugeIn, enter: sync, leaveBack: sync })]
+      const offs = [GOLD_BEATS.gaugeIn, GOLD_BEATS.gaugeOut].map((at) => addCue({ at, enter: sync, leaveBack: sync }))
       return () => {
         offs.forEach((off) => off())
         gsap.ticker.remove(tick)
