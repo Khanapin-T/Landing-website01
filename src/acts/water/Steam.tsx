@@ -6,8 +6,8 @@ import { mulberry32 } from '../../lib/random'
 import { getAppState } from '../../story/appState'
 import { water } from './state'
 
-/** Number of steam puffs. */
-const COUNT = 80
+/** Number of steam puffs (the author: half of the first 80). */
+const COUNT = 40
 /** How high a puff rises over its life, world units. */
 const RISE = 4.2
 

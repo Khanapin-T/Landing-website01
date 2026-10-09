@@ -1,9 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
+import * as THREE from 'three'
 import { TOTAL_SCREENS } from '../../config/acts'
 import { FLIP } from '../../config/fire'
-import { CAM } from '../../config/mold'
-import { CAM_WATER, FLASK_FLANGE_RADIUS, RAW, SIDE_FLIP, WATER_Y, flaskOffset } from '../../config/water'
+import { CAM, MOLD } from '../../config/mold'
+import {
+  CAM_WATER,
+  FLASK_FLANGE_RADIUS,
+  FLASK_TUBE_RADIUS,
+  FOOT_END_Y,
+  RAW,
+  SIDE_FLIP,
+  TREE_SPAN,
+  WATER_Y,
+  flaskMatrix,
+  flaskOffset,
+  rawTreeMatrix,
+} from '../../config/water'
 import { FIRE_INITIAL, fire } from '../fire/state'
 import { registerFire } from '../fire/timeline'
 import { GOLD_BEATS } from '../gold/beats'
@@ -148,5 +161,33 @@ describe('act 6 timeline', () => {
     tl.time(TOTAL_SCREENS)
     tl.time(13.7)
     expect(state()).toEqual(far)
+  })
+  it('lets the steam go with the boil: none left once the rest timer runs', () => {
+    expect(B.steamOutTo).toBeLessThanOrEqual(B.restFrom)
+    tl.time(B.restFrom)
+    expect(water.steam).toBe(0)
+  })
+
+  it('never passes the tree through the flask on its way out and up', () => {
+    // The tree fits inside the flask tube, so a cylinder of the tube radius around its axis bounds it.
+    const tree = new THREE.Matrix4()
+    const inv = new THREE.Matrix4()
+    const p = new THREE.Vector3()
+    const flaskTop = MOLD.flask.bottomY + MOLD.flask.height
+    let worst = Infinity
+    for (let at = B.slideTo; at <= B.standTo + 1e-9; at += 0.004) {
+      tl.time(at)
+      rawTreeMatrix(story.flask, water, tree)
+      flaskMatrix(story.flask, inv).invert()
+      for (let y = TREE_SPAN.bottomY; y <= TREE_SPAN.topY + 1e-9; y += 0.1)
+        for (let a = 0; a < 16; a++) {
+          const ang = (a / 16) * Math.PI * 2
+          p.set(Math.cos(ang) * FLASK_TUBE_RADIUS, y, Math.sin(ang) * FLASK_TUBE_RADIUS).applyMatrix4(tree).applyMatrix4(inv)
+          if (p.y < FOOT_END_Y || p.y > flaskTop) continue
+          const d = Math.hypot(p.x, p.z) - FLASK_FLANGE_RADIUS
+          worst = Math.min(worst, d)
+        }
+    }
+    expect(worst).toBeGreaterThan(0.1)
   })
 })

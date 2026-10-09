@@ -111,20 +111,41 @@ export function finalTreeMatrix(yaw: number, out: THREE.Matrix4): THREE.Matrix4 
   return out.multiply(mA.makeTranslation(0, -mid, 0))
 }
 
+/** Tree middle in the tree frame (the point the stand-up moves and turns about). */
+const TREE_MID = (TREE_SPAN.bottomY + TREE_SPAN.topY) / 2
+
+/**
+ * Stand-up path phases (fractions of `stand`): the tree first comes forward toward the camera (z) while it still lies
+ * beside the flask, and only then swings over to the middle (x, y), so it never crosses the flask (pinned by
+ * water/timeline.test.ts together with the AWAY timing in beats.ts).
+ */
+const STAND_PATH = { forwardTo: 0.45, acrossFrom: 0.3, turnFrom: 0.2 } as const
+
+const smooth = (t: number) => {
+  const c = Math.min(Math.max(t, 0), 1)
+  return c * c * (3 - 2 * c)
+}
+
 /**
  * World matrix of the raw tree: in the flask frame (ignoring `away`: the tree has left the flask before it goes),
- * slid `slide * SLIDE` along the flask axis toward the funnel end (local -Y), then blended (smoothstep of `stand`:
- * position lerp, rotation slerp) into finalTreeMatrix(yaw).
+ * slid `slide * SLIDE` along the flask axis toward the funnel end (local -Y), then blended into finalTreeMatrix(yaw):
+ * the middle comes forward first and then across, the rotation (about the middle) starts a little after the forward
+ * move (STAND_PATH).
  */
 export function rawTreeMatrix(f: { dip: number; flip: number; away?: number }, w: { slide: number; stand: number; yaw: number }, out: THREE.Matrix4): THREE.Matrix4 {
   flaskMatrix({ dip: f.dip, flip: f.flip, away: 0 }, out)
   out.multiply(mB.makeTranslation(0, -w.slide * SLIDE, 0))
   if (w.stand <= 0) return out
-  out.decompose(pA, qA, sA)
-  finalTreeMatrix(w.yaw, mB).decompose(pB, qB, sA)
   const t = Math.min(w.stand, 1)
-  const k = t * t * (3 - 2 * t)
-  pA.lerp(pB, k)
-  qA.slerp(qB, k)
-  return out.compose(pA, qA, ONE)
+  // Middles (pA start, pB end) and rotations of both poses.
+  out.decompose(sA, qA, sA)
+  pA.set(0, TREE_MID, 0).applyMatrix4(out)
+  finalTreeMatrix(w.yaw, mB).decompose(sA, qB, sA)
+  pB.set(0, RAW.y, RAW.z)
+  const kz = smooth(t / STAND_PATH.forwardTo)
+  const kxy = smooth((t - STAND_PATH.acrossFrom) / (1 - STAND_PATH.acrossFrom))
+  pA.set(pA.x + (pB.x - pA.x) * kxy, pA.y + (pB.y - pA.y) * kxy, pA.z + (pB.z - pA.z) * kz)
+  qA.slerp(qB, smooth((t - STAND_PATH.turnFrom) / (1 - STAND_PATH.turnFrom)))
+  out.compose(pA, qA, ONE)
+  return out.multiply(mB.makeTranslation(0, -TREE_MID, 0))
 }

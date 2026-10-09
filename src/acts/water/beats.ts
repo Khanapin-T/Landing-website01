@@ -24,9 +24,10 @@ export const WATER_BEATS = {
   boilOutFrom: 12.3,
   boilOutTo: 12.48,
   steamFrom: 12.08,
-  steamTo: 12.23,
-  steamOutFrom: 12.45,
-  steamOutTo: 12.9,
+  steamTo: 12.15,
+  /** The steam goes with the boil: none left once the rest timer runs (restFrom). */
+  steamOutFrom: 12.2,
+  steamOutTo: 12.42,
   milkFrom: 12.12,
   milkTo: 12.45,
   /** Calm white water, the timer runs; the investment is gone while the flask is under. */
