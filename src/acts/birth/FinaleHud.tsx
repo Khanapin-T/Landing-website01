@@ -5,7 +5,7 @@ import { registerWipeLayer, useWipeClip } from './useWipeClip'
 const f = content.finale
 
 /**
- * The final block: name, promo line and contact links (placeholders until the author writes them last). Same column
+ * The final block: name, promo line and the contact links (WhatsApp, email, Instagram). Same column
  * markup and type as ActCopy, but no timed reveal: the sweeping line reveals it (useWipeClip 'reveal': visible only
  * left of the line, each link hidden until the line has passed it). The copy scrim is pushed out with the sweep too,
  * so the page left of the line is pure black.
@@ -27,16 +27,16 @@ export function FinaleHud() {
           </h2>
           <p className="mt-6 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.made}</p>
           <p className="mt-4 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.promo}</p>
-          <ul data-links className="mt-8 flex gap-6 font-mono text-sm uppercase tracking-[0.12em]">
+          <ul data-links className="mt-8 flex flex-col gap-3 font-mono text-sm tracking-[0.04em]">
             {f.links.map((l) => (
               <li key={l.label}>
                 <a
                   className="pointer-events-auto text-line underline-offset-4 hover:underline focus-visible:underline"
                   href={l.href}
-                  // Placeholder links (href '#') must not jump to the page top.
-                  onClick={l.href === '#' ? (e) => e.preventDefault() : undefined}
+                  {...(l.href.startsWith('https:') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 >
-                  {l.label}
+                  <span className="mr-3 inline-block w-[7.5em] uppercase tracking-[0.12em] text-line/60">{l.label}</span>
+                  {l.value}
                 </a>
               </li>
             ))}

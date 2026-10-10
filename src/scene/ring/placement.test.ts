@@ -7,7 +7,7 @@ import { slotPose } from '../tree/slots'
 import { flightScale, ringPlacement } from './placement'
 import { newPose, ringPose } from './pose'
 
-/** The print row at the end of Act 2: four upright rings, small, spread out. */
+/** The rings where Act 2 leaves them: upright, small, the front two moved outward. */
 const row = (flight: RingState['flight']): RingState => ({
   ...RING_INITIAL,
   fill: 1,
@@ -16,7 +16,7 @@ const row = (flight: RingState['flight']): RingState => ({
   flip: Math.PI * 2,
   yaw: Math.PI * 2 + 0.6,
   y: 0,
-  spread: PRINT.row.liftSpread,
+  spread: PRINT.grid.liftSpread,
   scale: PRINT.scale,
   flight,
 })
@@ -29,8 +29,8 @@ const only = (k: number, t: number): RingState['flight'] => {
 
 const axis = (k: number) => new Vector3(0, 1, 0).applyQuaternion(slotPose(k).quaternion)
 
-describe('ring placement (print row -> tree slot)', () => {
-  it('keeps every ring exactly in its row pose at the print size with flight 0', () => {
+describe('ring placement (Act 2 end pose -> tree slot)', () => {
+  it('keeps every ring exactly in its Act 2 end pose at the print size with flight 0 (no pop at the hand-over)', () => {
     const r = row([0, 0, 0, 0])
     for (let k = 0; k < RING_COUNT; k++) {
       const o = newPose()
@@ -39,6 +39,11 @@ describe('ring placement (print row -> tree slot)', () => {
       expect(o.position.distanceTo(free.position)).toBe(0)
       expect(o.quaternion.angleTo(free.quaternion)).toBeLessThan(1e-6)
       expect(s).toBe(PRINT.scale)
+      // And a hair into the flight it is still there (continuous start).
+      const b = newPose()
+      ringPlacement(row(only(k, 1e-9)), k, b)
+      expect(b.position.distanceTo(free.position)).toBeLessThan(1e-6)
+      expect(b.quaternion.angleTo(free.quaternion)).toBeLessThan(1e-6)
     }
   })
 
@@ -123,13 +128,15 @@ describe('ring placement (print row -> tree slot)', () => {
   })
 
   it('grows from the print size to full size, smoothly and monotonically, by the staging point', () => {
-    expect(flightScale(PRINT.scale, 0)).toBe(PRINT.scale)
-    expect(flightScale(PRINT.scale, ASSEMBLY.curve)).toBe(1)
-    expect(flightScale(PRINT.scale, 1)).toBe(1)
-    expect(flightScale(PRINT.scale, ASSEMBLY.curve / 2)).toBeCloseTo((PRINT.scale + 1) / 2, 12)
+    const h = PRINT.scale
+    expect(flightScale(h, 0)).toBe(h)
+    expect(flightScale(h, ASSEMBLY.curve)).toBe(1)
+    expect(flightScale(h, 1)).toBe(1)
+    expect(flightScale(h, ASSEMBLY.curve / 2)).toBeCloseTo((h + 1) / 2, 12)
     let prev = 0
     for (let t = 0; t <= 1.0001; t += 0.01) {
-      const s = flightScale(PRINT.scale, t)
+      const s = ringPlacement(row(only(0, t)), 0, newPose())
+      expect(s).toBeCloseTo(flightScale(h, t), 12)
       expect(s).toBeGreaterThanOrEqual(prev)
       prev = s
     }

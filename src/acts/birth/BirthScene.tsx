@@ -13,6 +13,7 @@ import { FinaleLights } from './FinaleLights'
 import { Jar } from './Jar'
 import { PolishLine } from './PolishLine'
 import { PolishRing } from './PolishRing'
+import { Sparks } from './Sparks'
 import { Table } from './Table'
 import { Vessels } from './Vessels'
 import { WipeLine } from './WipeLine'
@@ -41,6 +42,7 @@ export function BirthScene() {
         <Curtain />
         <BirthTree />
         <CutRings />
+        <Sparks />
         <PolishRing />
         <Table />
         <Vessels />

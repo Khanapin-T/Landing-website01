@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { PRINT, RESIN_COLOR, RING_COUNT, printRingX } from '../../config/print'
+import { PRINT, PRINT_SPOTS, RESIN_COLOR, RING_COUNT } from '../../config/print'
 import { mulberry32 } from '../../lib/random'
 import { particleDrawCount } from '../../scene/particles/particleData'
 import { useQuality } from '../../scene/quality/qualityStore'
@@ -78,7 +78,7 @@ void main() {
   float k = supBreak(aSeed);
   float t = supFallT(aSeed);
   // A short puff from where the support stood: mostly back (away from the camera) and a little outward (away from the
-  // ring axis, staying in its own lane of the four-ring row), slowing down, never down through the ring below.
+  // ring axis, staying in its own lane of the four-ring grid), slowing down, never down through the ring below.
   vec3 dir = normalize(vec3(position.x * 0.6, 0.12, -0.5 - abs(position.z)));
   float go = 1.0 - (1.0 - t) * (1.0 - t);
   vec3 p = position + (dir * ${PRINT.supports.puff.toFixed(3)} + aJitter * 0.06) * go;
@@ -100,8 +100,8 @@ void main() {
 }
 `
 
-/** Supports copies: one per printed ring, at its place in the print row. */
-const COPIES = Array.from({ length: RING_COUNT }, (_, k) => printRingX(k))
+/** Supports copies: one per printed ring, at its spot in the print grid. */
+const COPIES = PRINT_SPOTS
 
 /**
  * Act 2's print supports (author 2026-10-09: many, like real resin printing): thin resin columns from the plate down
@@ -182,8 +182,8 @@ export function Supports() {
   // the falling vertices leave the geometry's bounds.
   return (
     <group ref={group} position-y={print.sup}>
-      {COPIES.map((x, k) => (
-        <group key={k} position-x={x} scale={PRINT.scale}>
+      {COPIES.map((spot, k) => (
+        <group key={k} position-x={spot.x} position-z={spot.z} scale={PRINT.scale}>
           <mesh
             ref={(m) => {
               columns.current[k] = m

@@ -41,12 +41,12 @@ export function registerBirth(tl: gsap.core.Timeline): () => void {
   seg.fromTo(birth, { edge: 0 }, { edge: 1, duration: len(B.edgeFrom, B.edgeTo), ease: 'power1.inOut' }, B.edgeFrom)
   seg.fromTo(birth, { wipeX: WIPE.leftX }, { wipeX: WIPE.rightX, duration: len(B.sweepFrom, B.sweepTo), ease: 'power1.inOut' }, B.sweepFrom)
 
-  // Final: tilt and spin, the lights and the brighter gold (birth.finale), the final camera.
+  // Final: tilt and the final camera; the lights, the brighter gold and the spin (birth.finale) come in with the sweep.
   seg.fromTo(birth, { tilt: 0 }, { tilt: FINAL.tilt, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)
-  seg.fromTo(birth, { finale: 0 }, { finale: 1, duration: len(B.finalFrom, B.finalTo), ease: 'power1.inOut' }, B.finalFrom)
+  seg.fromTo(birth, { finale: 0 }, { finale: 1, duration: len(B.shineFrom, B.shineTo), ease: 'power1.inOut' }, B.shineFrom)
   seg.fromTo(story.cam, { ...CAM_BIRTH.polish }, { ...CAM_BIRTH.final, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)
 
-  // The reflection, once the sweep has blacked out the whole page.
+  // The reflection's strength, up early in the sweep; the mirror is clipped to the swept side (birth.wipeX).
   seg.fromTo(birth, { reflect: 0 }, { reflect: 1, duration: len(B.reflectFrom, B.reflectTo), ease: 'power1.inOut' }, B.reflectFrom)
 
   tl.add(seg, 0)

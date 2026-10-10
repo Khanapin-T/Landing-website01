@@ -71,15 +71,16 @@ export const content = {
     /** Label riding with the neon polish line. */
     polishLabel: 'processing and polishing',
   },
-  /** Final frame. PLACEHOLDERS: the author writes the name, the wording and the contacts last. */
+  /** Final frame: name and contacts from the author (2026-10-10); the wording of `made` is approximate and he may refine it. */
   finale: {
-    name: 'Your name',
+    name: 'NVGOLD',
     /** Closing line before the promo (author 2026-10-10, wording approximate: he may refine it). */
     made: 'One beautiful, graceful, masculine ring has been made. Now you know how rings are created in our workshop.',
     promo: 'This is just one example of our work. Get in touch.',
     links: [
-      { label: 'WhatsApp', href: '#' },
-      { label: 'Email', href: '#' },
+      { label: 'WhatsApp', value: '+7 708 226 9235', href: 'https://wa.me/77082269235' },
+      { label: 'Email', value: 'hanapin08@gmail.com', href: 'mailto:hanapin08@gmail.com' },
+      { label: 'Instagram', value: '@almac_astana', href: 'https://www.instagram.com/almac_astana/' },
     ],
   },
   /** Label of the vacuum gauge (Acts 3 and 5). */

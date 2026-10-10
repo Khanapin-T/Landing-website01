@@ -57,6 +57,25 @@ export const JAR_REST: readonly { x: number; z: number; level: number; yaw: numb
  */
 export const FALL = { pull: 0.6, pullTo: 0.25, turnHi: 0.55, turnLo: -1.2, spin: 0.5 } as const
 
+/**
+ * The sparks of a cut (Act 7, scrubbed by birth.cut*): a flash and `count` thin hot streaks fly from the cut point.
+ * Everything is a function of the cut progress c (0..1 of the fall): a spark lives for `life` (cut progress, so the
+ * burst is over within the first 20-50% of the fall), moves at speed `speed` (world units per unit of c) slowed by
+ * `drag`, and falls with `gravity`; its streak stretches back over `trail` (cut progress). `width` is the half width
+ * at the head in px at 1080 p, `flashLife` the flash's life, `flashSize` its radius in px at 1080 p. Tune by eye.
+ */
+export const SPARKS = {
+  count: 72,
+  life: [0.2, 0.5],
+  speed: [5, 15],
+  drag: 3.5,
+  gravity: 16,
+  trail: 0.05,
+  width: 1.8,
+  flashLife: 0.1,
+  flashSize: 34,
+} as const
+
 /** Centre of the ring while it is polished and in the final frame (where the tree stood). */
 export const POLISH = { x: 0, y: RAW.y, z: RAW.z } as const
 /** How far the ring turns (to the right, +Y) while the line passes. */
@@ -85,22 +104,20 @@ export const FINAL = {
   mirrorY: RAW.y - 0.646,
   reflectStrength: 0.32,
   reflectFade: 0.9,
-  envBoost: 2.99,
-  roughness: 0.255,
+  envBoost: 3.6,
+  roughness: 0.3,
 } as const
 
 /**
  * The real lights of the final frame (world space, relative to POLISH): a warm key upper right in front of the ring,
  * a warm fill front left (about 40% of the key, so no spin angle shows only the dark environment) and a faint cool
  * rim behind it. Mounted from the start at intensity 0 (a changed light count recompiles every shader) and scaled
- * 0..intensity by birth.finale. Point lights, candela, decay 2. Tune by eye.
+ * 0..intensity by birth.finale (the second pass, the sweep: no light, no glare during the first polish pass). Point lights, candela, decay 2. Tune by eye.
  */
 export const FINAL_LIGHT = {
-  /** Fraction of the final light that is already on while the ring comes out and is polished (birth.out). */
-  earlyShare: 0.3,
-  key: { position: [POLISH.x + 1.6, POLISH.y + 1.7, POLISH.z + 2.3] as const, color: '#ffd8a6', intensity: 70 },
-  fill: { position: [POLISH.x - 1.8, POLISH.y + 0.6, POLISH.z + 2.0] as const, color: '#ffe0b8', intensity: 28 },
-  rim: { position: [POLISH.x - 1.5, POLISH.y + 0.9, POLISH.z - 1.9] as const, color: '#a8c6ff', intensity: 24 },
+  key: { position: [POLISH.x + 1.6, POLISH.y + 1.7, POLISH.z + 2.3] as const, color: '#ffdcae', intensity: 105 },
+  fill: { position: [POLISH.x - 1.4, POLISH.y + 0.2, POLISH.z + 2.4] as const, color: '#ffe4bd', intensity: 62 },
+  rim: { position: [POLISH.x - 1.5, POLISH.y + 0.9, POLISH.z - 1.9] as const, color: '#b4ceff', intensity: 34 },
 } as const
 
 /**
@@ -182,6 +199,18 @@ export function restMatrix(slot: number, jarY: number, out: THREE.Matrix4): THRE
 }
 
 const OUT = new THREE.Vector3()
+const STUB_TIP = new THREE.Vector3(0, -(RING_HALF + PRINT.sprue.length), 0)
+
+/** World point where slot `slot`'s sprue meets the trunk on the standing tree (the cut point). */
+export function cutPoint(slot: number, out: THREE.Vector3): THREE.Vector3 {
+  return out.copy(STUB_TIP).applyMatrix4(slotMatrix(slot, mB))
+}
+
+/** Unit horizontal direction from the trunk out along slot `slot`'s branch (the way the cut ring slides out). */
+export function cutOutDir(slot: number, out: THREE.Vector3): THREE.Vector3 {
+  slotMatrix(slot, mB).decompose(pB, qB, sA)
+  return out.set(0, 1, 0).applyQuaternion(qB).setY(0).normalize()
+}
 
 /**
  * Ring-local -> world of a cut ring (FALL): on the tree at cut 0; slides straight out from the trunk; drops (height
@@ -241,8 +270,6 @@ export function mirrorMatrix(src: THREE.Matrix4, out: THREE.Matrix4): THREE.Matr
 export function polishLinePoint(line: number, out: THREE.Vector3): THREE.Vector3 {
   return out.set(POLISH.x + LINE.fromX + (LINE.toX - LINE.fromX) * line, POLISH.y, POLISH.z + LINE.zFront)
 }
-
-const STUB_TIP = new THREE.Vector3(0, -(RING_HALF + PRINT.sprue.length), 0)
 
 /** The ring's bounding-box corners and its stub tip in world space, for fit and framing checks. */
 export function ringPoints(m: THREE.Matrix4): THREE.Vector3[] {

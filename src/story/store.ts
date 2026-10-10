@@ -21,17 +21,18 @@ export interface RingState {
   /** World Y of the print cure plane; the ring is clipped below it. CURE_OFF = no clip. */
   cureY: number
   /**
-   * 0..1 print row: 0 = every ring at x = 0 (Act 1, one ring), 1 = ring k at ringRowX(k) (set at the Act 2 ring
-   * switch); above 1 the row spreads wider (PRINT.row.liftSpread, while the rings turn over).
+   * Print grid: 0 = every ring at the origin (Act 1, one ring), 1 = ring k at its grid spot (ringPrintX(k),
+   * ringPrintZ(k), set at the Act 2 ring switch); from 1 to PRINT.grid.liftSpread the front two move outward while the
+   * rings turn over (gridX in config/print.ts).
    */
   spread: number
   /**
-   * Per ring 0..1 (Act 3): 0 = in the print row (the pose above), 1 = seated on tree slot k (slotPose(k)). Its drawn
-   * size goes from `scale` to 1 with it (src/scene/ring/placement.ts). The array is a GSAP tween target: never
+   * Per ring 0..1 (Act 3): 0 = where Act 2 left it (the pose above), 1 = seated on tree slot k (slotPose(k)). Its
+   * drawn size goes from `scale` to 1 with it (src/scene/ring/placement.ts). The array is a GSAP tween target: never
    * replace it at runtime, only its values.
    */
   flight: [number, number, number, number]
-  /** Uniform print size of the rings and their sprues (Act 2 prints them at PRINT.scale; each grows back with its flight). */
+  /** Uniform size of the rings and their sprues (Act 2 prints them at PRINT.scale and grows them back to 1 while they turn over). */
   scale: number
 }
 

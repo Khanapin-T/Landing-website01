@@ -5,25 +5,27 @@ export const MOLD_BEATS = {
   /** Act 3 props render in [windowFrom, windowTo]; the flask with the tree stays until Act 4 takes over. */
   windowFrom: 4.0,
   windowTo: TOTAL_SCREENS,
-  /** Camera pulls back to the tree view. */
-  camFrom: 4.0,
-  camTo: 4.4,
-  baseInFrom: 4.05,
-  baseInTo: 4.3,
+  /**
+   * Camera pulls back from LIFT_CAM (end of Act 2) to the tree view while the rings fly onto the tree (not before).
+   */
+  camFrom: 4.05,
+  camTo: 4.5,
+  /**
+   * Right after Act 2 the rubber base rises in fast with the wax trunk already standing on it (mold.base and
+   * mold.trunk run the same tween: the trunk moves with the base and stays in the flask when the base drops away at
+   * the end of the act).
+   */
+  baseInFrom: 4.0,
+  baseInTo: 4.15,
   copyIn: 4.0,
   /**
-   * The wax trunk grows up from the cone once the base has landed (power2.out: within 0.006 of its seat at 4.29),
-   * between the hovering print row (no ring is in its way).
+   * The full-size rings fly onto the tree right away, one right after another, in ASSEMBLY.order
+   * (src/config/assembly.ts): the i-th flight runs over [flightFrom + i * flightStagger, + flightLen]; the first starts
+   * while the base finishes its rise, all four are seated by 4.48, then a calm look at the finished tree.
    */
-  trunkFrom: 4.29,
-  trunkTo: 4.46,
-  /**
-   * Then the four printed rings fly to their slots one after another, in ASSEMBLY.order (src/config/assembly.ts): the
-   * i-th flight runs over [flightFrom + i * flightStagger, + flightLen]; the last ring is seated before the flask drops.
-   */
-  flightFrom: 4.44,
-  flightStagger: 0.1,
-  flightLen: 0.16,
+  flightFrom: 4.1,
+  flightStagger: 0.06,
+  flightLen: 0.2,
   flaskFrom: 4.95,
   flaskTo: 5.25,
   tapeFrom: 5.25,

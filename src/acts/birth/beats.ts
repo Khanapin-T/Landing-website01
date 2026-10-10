@@ -15,10 +15,13 @@ export const BIRTH_BEATS = {
   camTo: 14.3,
   jarFrom: 14.0,
   jarTo: 14.3,
-  /** The rings come off one by one (CUT_ORDER): ring k falls from cutFrom + k * cutStep for fallLen. */
+  /**
+   * The rings come off in a cascade (CUT_ORDER): ring k is cut at cutFrom + k * cutStep and falls for fallLen, so the
+   * next cut follows almost at once and the falls overlap (pinned by config/birthCollide.test.ts).
+   */
   cutFrom: 14.3,
-  cutStep: 0.16,
-  fallLen: 0.13,
+  cutStep: 0.05,
+  fallLen: 0.2,
   /** The empty tree goes up out of the frame. */
   treeUpFrom: 14.95,
   treeUpTo: 15.15,
@@ -37,12 +40,22 @@ export const BIRTH_BEATS = {
   /** Then straight back across the page, left to right: black and the final block behind it. */
   sweepFrom: 16.5,
   sweepTo: 16.78,
-  /** Final: tilt, slow spin, the final camera, the lights and the brighter gold; done with the sweep. */
+  /** Final: tilt and the final camera; done with the sweep. */
   finalFrom: 16.42,
   finalTo: 16.78,
-  /** The reflection fades in only once the sweep is done (the whole page black behind it); then a short hold. */
-  reflectFrom: 16.78,
-  reflectTo: 16.92,
+  /**
+   * The second pass adds the shine with the sweep (and not before): the final lights, the brighter polished gold
+   * (uBoost), the bloom they cause and the slow spin ramp over the sweep. The first polish pass stays plain polished.
+   */
+  shineFrom: 16.5,
+  shineTo: 16.78,
+  /**
+   * The reflection is there as the line passes: its strength ramps up at the start of the sweep (long before the line
+   * reaches the ring) and the mirror is clipped to the swept side (polishMaterial.ts uWipe), so it shows the moment
+   * the line has crossed under the ring and never on the part of the page not yet swept.
+   */
+  reflectFrom: 16.5,
+  reflectTo: 16.6,
   /** Step list cues (start screens). */
   steps: { cut: 14.3, acid: 15.15, polish: 15.95 },
 } as const

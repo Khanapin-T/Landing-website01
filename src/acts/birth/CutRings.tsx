@@ -4,7 +4,7 @@ import type { Group } from 'three'
 import { CUT_ORDER, HERO_SLOT, cutRingMatrix, jarOffsetY } from '../../config/birth'
 import { createSprueGeometry } from '../../scene/ring/sprue'
 import { useRingLightGeometry } from '../../scene/ring/useRingGeometry'
-import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
+import { cleanOf, createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
 import { getAppState } from '../../story/appState'
 import { birth, cutOf } from './state'
 
@@ -17,7 +17,9 @@ const SLOTS = CUT_ORDER.filter((s) => s !== HERO_SLOT)
 export function CutRings() {
   const ring = useRingLightGeometry()
   const sprue = useMemo(() => createSprueGeometry(), [])
-  const material = useMemo(() => createRawGoldMaterial(), [])
+  // As-cast and darker until the acid has cleaned them (birth.rest).
+  const clean = useMemo(() => ({ value: 0 }), [])
+  const material = useMemo(() => createRawGoldMaterial(clean), [clean])
   useEffect(
     () => () => {
       sprue.dispose()
@@ -28,6 +30,7 @@ export function CutRings() {
 
   const refs = useRef<(Group | null)[]>([])
   useFrame(() => {
+    clean.value = cleanOf(birth.rest)
     const loading = getAppState().phase === 'loading'
     const jarY = jarOffsetY(birth.jar, birth.jarAway)
     for (let i = 0; i < SLOTS.length; i++) {

@@ -6,10 +6,10 @@ import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
 import { PRINT_BEATS } from './beats'
 import { Vector3 } from 'three'
-import { CURE_OFF, PRINT, PRINT_ROW, RING_COUNT, RING_HALF, printPose } from '../../config/print'
+import { CURE_OFF, LIFT_CAM, PRINT, RING_COUNT, RING_HALF, printPose } from '../../config/print'
 import { newPose, ringPose } from '../../scene/ring/pose'
 import { RING_HALF_EXTENTS } from '../../scene/tree/slots'
-import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
+import { CAM_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
 let tl: gsap.core.Timeline
 let offs: (() => void)[] = []
@@ -19,6 +19,7 @@ beforeEach(() => {
   Object.assign(print, PRINT_INITIAL)
   Object.assign(story.ring, RING_INITIAL)
   Object.assign(story.stream, STREAM_INITIAL)
+  Object.assign(story.cam, CAM_INITIAL)
   tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
   tl.set({}, {}, 14.5)
   offs = [registerIdea(tl), registerPrint(tl)]
@@ -30,17 +31,37 @@ afterEach(() => {
 })
 
 describe('act 2 ring size', () => {
-  it('prints the ring smaller and keeps it small while it turns over (no close-up of the bare ring)', () => {
+  it('prints the rings smaller, then grows them to full size while they turn over (they go onto the tree at that size)', () => {
     tl.time(2.4)
     expect(story.ring.scale).toBe(1)
     tl.time(2.6)
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
     tl.time(3.5)
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
-    tl.time(PRINT_BEATS.flipTo)
+    tl.time(PRINT_BEATS.growFrom)
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    expect(PRINT_BEATS.growFrom).toBeGreaterThanOrEqual(PRINT_BEATS.liftFrom)
+    expect(PRINT_BEATS.growTo).toBeLessThanOrEqual(PRINT_BEATS.flipTo)
+    tl.time((PRINT_BEATS.growFrom + PRINT_BEATS.growTo) / 2)
+    expect(story.ring.scale).toBeGreaterThan(PRINT.scale)
+    expect(story.ring.scale).toBeLessThan(1)
+    tl.time(PRINT_BEATS.growTo)
+    expect(story.ring.scale).toBe(1)
+    tl.time(4.0)
+    expect(story.ring.scale).toBe(1)
     tl.time(2.4)
     expect(story.ring.scale).toBe(1)
+  })
+
+  it('pulls the camera back from CAM_INITIAL to LIFT_CAM while the rings grow, and holds it there into act 3', () => {
+    tl.time(PRINT_BEATS.camFrom)
+    expect(story.cam).toMatchObject(CAM_INITIAL)
+    tl.time(PRINT_BEATS.camTo)
+    expect(story.cam).toMatchObject(LIFT_CAM)
+    tl.time(4.0)
+    expect(story.cam).toMatchObject(LIFT_CAM)
+    tl.time(3.0)
+    expect(story.cam).toMatchObject(CAM_INITIAL)
   })
 
   it('keeps the copy on until act 3 starts', () => {
@@ -49,8 +70,8 @@ describe('act 2 ring size', () => {
   })
 })
 
-describe('act 2 four-ring row', () => {
-  it('shows one centred ring before the switch, then four rings in the print row', () => {
+describe('act 2 four-ring grid', () => {
+  it('shows one centred ring before the switch, then four rings in the print grid', () => {
     tl.time(2.49)
     expect(story.ring.spread).toBe(0)
     tl.time(2.505)
@@ -63,19 +84,20 @@ describe('act 2 four-ring row', () => {
     expect(story.ring.spread).toBe(0)
   })
 
-  it('spreads the row as the rings leave the plate, ahead of the turn', () => {
+  it('moves the front two out while the rings leave the plate and turn over', () => {
     const B = PRINT_BEATS
     expect(B.spreadFrom).toBeGreaterThanOrEqual(B.crumbleTo)
     expect(B.spreadFrom).toBeLessThanOrEqual(B.flipFrom)
-    expect(B.spreadTo).toBeLessThan(B.flipTo)
+    expect(B.spreadTo).toBeLessThanOrEqual(B.flipTo)
     tl.time(B.spreadTo)
-    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
+    expect(story.ring.spread).toBeCloseTo(PRINT.grid.liftSpread, 9)
     tl.time(B.flipTo)
-    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
+    expect(story.ring.spread).toBeCloseTo(PRINT.grid.liftSpread, 9)
   })
 
-  it('never lets two neighbouring rings (with sprues) overlap while they turn over', () => {
-    // Conservative: each ring's x interval (rotated bounding box corners plus the sprue tip) at the shared pose.
+  it('never lets two rings (with sprues) overlap while they turn over', () => {
+    // Conservative: each ring's x and z intervals (rotated bounding box corners plus the sprue tip) at the shared pose;
+    // two rings are apart when either interval pair is (the rows are apart in z, the rings of a row in x).
     const S = PRINT.scale
     const local: Vector3[] = []
     for (const sx of [-1, 1])
@@ -86,30 +108,34 @@ describe('act 2 four-ring row', () => {
     const pose = newPose()
     const p = new Vector3()
     const B = PRINT_BEATS
+    let checked = 0
     for (let t = B.crumbleTo; t <= 4.0 + 1e-9; t += 0.0025) {
       tl.time(t)
-      const lo: number[] = []
-      const hi: number[] = []
-      for (let k = 0; k < RING_COUNT; k++) {
+      const box = Array.from({ length: RING_COUNT }, (_, k) => {
         ringPose(story.ring, k, pose)
-        let a = Infinity
-        let b = -Infinity
+        const b = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity }
         for (const c of local) {
           p.copy(c).multiplyScalar(S).applyQuaternion(pose.quaternion).add(pose.position)
-          a = Math.min(a, p.x)
-          b = Math.max(b, p.x)
+          b.x0 = Math.min(b.x0, p.x)
+          b.x1 = Math.max(b.x1, p.x)
+          b.z0 = Math.min(b.z0, p.z)
+          b.z1 = Math.max(b.z1, p.z)
         }
-        lo.push(a)
-        hi.push(b)
-      }
-      // Neighbours in the row (PRINT_ROW: ring k sits at row position PRINT_ROW[k]).
-      const at = (i: number) => PRINT_ROW.indexOf(i)
-      for (let i = 1; i < RING_COUNT; i++)
-        expect(lo[at(i)] - hi[at(i - 1)], `t = ${t.toFixed(4)}, rings ${at(i - 1)}/${at(i)}`).toBeGreaterThan(0.005)
+        return b
+      })
+      for (let i = 0; i < RING_COUNT; i++)
+        for (let j = i + 1; j < RING_COUNT; j++) {
+          const a = box[i]
+          const b = box[j]
+          const gap = Math.max(b.x0 - a.x1, a.x0 - b.x1, b.z0 - a.z1, a.z0 - b.z1)
+          expect(gap, `t = ${t.toFixed(4)}, rings ${i}/${j}`).toBeGreaterThan(0.005)
+          checked++
+        }
     }
+    expect(checked).toBeGreaterThan(500)
   })
 
-  it('keeps every ring in the row (flight 0) through act 2', () => {
+  it('keeps every ring off the tree (flight 0) through act 2', () => {
     for (const t of [2.4, 2.6, 3.3, 3.8, 3.97, 4.0]) {
       tl.time(t)
       expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
@@ -221,20 +247,20 @@ describe('act 2 timeline', () => {
     expect(print.glow).toBe(0)
   })
 
-  it('lifts the plate away, turns the four rings upright in a row at y = 0 and clears the clip', () => {
+  it('lifts the plate out of the frame, turns the four rings upright at full size in the spread grid at y = 0 and clears the clip', () => {
     tl.time(3.7)
     expect(story.ring.cureY).toBe(CURE_OFF)
     tl.time(4.0)
     expect(print.grow).toBe(1)
     expect(print.glow).toBe(0)
-    expect(print.plate).toBeCloseTo(PRINT.plate.parkedY)
+    expect(print.plate).toBeCloseTo(PRINT.plate.liftY)
     expect(print.bed).toBe(0)
     expect(story.ring.flip).toBeCloseTo(Math.PI * 2)
     expect(story.ring.y).toBeCloseTo(0)
     expect(story.ring.resin).toBe(1)
     expect(story.ring.sprue).toBe(1)
-    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
-    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    expect(story.ring.spread).toBeCloseTo(PRINT.grid.liftSpread, 9)
+    expect(story.ring.scale).toBe(1)
   })
 
   it('jumping to a time equals scrubbing to it', () => {

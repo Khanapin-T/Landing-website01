@@ -1,7 +1,8 @@
 import { gsap } from 'gsap'
 import { CAM } from '../../config/mold'
 import { ASSEMBLY } from '../../config/assembly'
-import { CAM_INITIAL, story } from '../../story/store'
+import { story } from '../../story/store'
+import { LIFT_CAM } from '../../config/print'
 import { MOLD_BEATS as B } from './beats'
 import { mold } from './state'
 
@@ -13,14 +14,15 @@ export function registerMold(tl: gsap.core.Timeline): () => void {
   const seg = gsap.timeline({ defaults: { ease: 'none', immediateRender: false } })
   const len = (from: number, to: number) => to - from
 
-  // Camera pulls back to the tree view.
-  seg.fromTo(story.cam, { ...CAM_INITIAL }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
-  seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+  // Camera pulls back from where Act 2 left it to the tree view, while the rings fly.
+  seg.fromTo(story.cam, { ...LIFT_CAM }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
 
-  // The trunk grows up from the cone between the hovering print row, then the four printed rings fly onto their slots
-  // one after another (curve to a staging point outside the slot, then a slide along the sprue axis; each grows from
-  // the print size to full size on the way: src/scene/ring/placement.ts).
-  seg.fromTo(mold, { trunk: 0 }, { trunk: 1, duration: len(B.trunkFrom, B.trunkTo), ease: 'power1.out' }, B.trunkFrom)
+  // The base rises into the centre with the trunk standing on it (one motion: same span, same ease).
+  seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+  seg.fromTo(mold, { trunk: 0 }, { trunk: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+
+  // Then the four printed rings fly straight onto their slots one after another (curve to a staging point outside the slot,
+  // then a slide along the sprue axis; each grows to full size on the way: src/scene/ring/placement.ts).
   ASSEMBLY.order.forEach((k, i) => {
     seg.fromTo(story.ring.flight, { [k]: 0 }, { [k]: 1, duration: B.flightLen, ease: 'power2.inOut' }, B.flightFrom + i * B.flightStagger)
   })

@@ -73,14 +73,24 @@ describe('act 7 timeline', () => {
     for (const s of [0, 1, 2, 3]) expect(cutOf(birth, s)).toBe(0)
   })
 
-  it('cuts the rings one by one in CUT_ORDER, each at rest before the next falls', () => {
+  it('cuts the rings in a cascade in CUT_ORDER: each next cut starts almost at once, the falls overlap', () => {
+    expect(B.cutStep).toBeLessThanOrEqual(0.06)
+    expect(B.cutStep).toBeLessThan(B.fallLen)
     CUT_ORDER.forEach((slot, k) => {
       tl.time(fallFrom(k) - 0.001)
       expect(cutOf(birth, slot)).toBe(0)
       tl.time(fallFrom(k) + B.fallLen)
       expect(cutOf(birth, slot)).toBe(1)
-      if (k + 1 < CUT_ORDER.length) expect(fallFrom(k) + B.fallLen).toBeLessThanOrEqual(fallFrom(k + 1))
     })
+    // The hero ring (last in CUT_ORDER) is cut last.
+    expect(CUT_ORDER.at(-1)).toBe(0)
+    // Mid-cascade several rings are in the air at once.
+    tl.time(fallFrom(2) + 0.01)
+    expect(cutOf(birth, CUT_ORDER[0])).toBeGreaterThan(0)
+    expect(cutOf(birth, CUT_ORDER[0])).toBeLessThan(1)
+    expect(cutOf(birth, CUT_ORDER[1])).toBeGreaterThan(0)
+    expect(cutOf(birth, CUT_ORDER[1])).toBeLessThan(1)
+    expect(cutOf(birth, CUT_ORDER[2])).toBeGreaterThan(0)
     expect(fallFrom(CUT_ORDER.length - 1) + B.fallLen).toBeLessThanOrEqual(B.treeUpFrom)
   })
 
@@ -134,27 +144,44 @@ describe('act 7 timeline', () => {
     expect(B.copyOut).toBe(B.sweepFrom)
     expect(B.finalFrom).toBeGreaterThanOrEqual(B.polishTo)
     expect(B.finalTo).toBeLessThanOrEqual(B.sweepTo)
+    expect(B.shineFrom).toBeGreaterThanOrEqual(B.sweepFrom)
+    expect(B.shineTo).toBeLessThanOrEqual(B.sweepTo)
     tl.time(B.sweepTo)
     expect(birth.finale).toBe(1)
     expect(snap(story.cam)).toEqual({ ...CAM_BIRTH.final })
   })
 
-  it('shows the reflection only after the sweep has crossed the whole page, then holds', () => {
-    expect(B.reflectFrom).toBeGreaterThanOrEqual(B.sweepTo)
+  it('brings the reflection up early in the sweep (the shader clips it to the swept side), then holds', () => {
+    expect(B.reflectFrom).toBeGreaterThanOrEqual(B.sweepFrom)
     expect(B.reflectTo).toBeGreaterThan(B.reflectFrom)
-    expect(B.reflectTo).toBeLessThan(TOTAL_SCREENS)
-    for (const t of [B.finalFrom + 0.05, B.sweepFrom + 0.1, B.sweepTo - 0.01, B.sweepTo]) {
+    expect(B.reflectTo).toBeLessThan(B.sweepTo)
+    for (const t of [B.finalFrom + 0.01, B.sweepFrom - 0.01]) {
       tl.time(t)
       expect(birth.reflect).toBe(0)
     }
-    tl.time(B.reflectFrom + 0.05)
-    expect(birth.wipeX).toBe(WIPE.rightX)
+    tl.time((B.reflectFrom + B.reflectTo) / 2)
     expect(birth.reflect).toBeGreaterThan(0)
     expect(birth.reflect).toBeLessThan(1)
     tl.time(B.reflectTo)
     expect(birth.reflect).toBe(1)
-    tl.time(B.sweepTo - 0.01)
+    tl.time(B.sweepTo)
+    expect(birth.reflect).toBe(1)
+    tl.time(B.sweepFrom - 0.01)
     expect(birth.reflect).toBe(0)
+  })
+
+  it('adds the shine (lights, brighter gold) only with the sweep: the first polish pass stays plain', () => {
+    for (const t of [B.outTo, B.polishFrom + 0.1, B.polishTo, B.edgeFrom + 0.05, B.edgeTo, B.sweepFrom - 0.001]) {
+      tl.time(t)
+      expect(birth.finale).toBe(0)
+    }
+    tl.time((B.shineFrom + B.shineTo) / 2)
+    expect(birth.finale).toBeGreaterThan(0)
+    expect(birth.finale).toBeLessThan(1)
+    tl.time(B.shineTo)
+    expect(birth.finale).toBe(1)
+    tl.time(B.polishTo)
+    expect(birth.finale).toBe(0)
   })
 
   it('leaves the final state at the end and holds it', () => {
@@ -171,7 +198,7 @@ describe('act 7 timeline', () => {
   it('restores the end of act 6 exactly when scrubbed back', () => {
     tl.time(B.camFrom - 0.01)
     const before = state()
-    tl.time(B.reflectFrom + 0.07)
+    tl.time(B.sweepFrom + 0.2)
     tl.time(B.camFrom - 0.01)
     expect(state()).toEqual(before)
   })
@@ -183,7 +210,7 @@ describe('act 7 timeline', () => {
     tl.time(14.5)
     tl.time(15.4)
     expect(state()).toEqual(jumped)
-    for (const at of [16.2, B.edgeFrom + 0.1, B.sweepFrom + 0.15, B.reflectFrom + 0.07]) {
+    for (const at of [16.2, B.edgeFrom + 0.1, B.sweepFrom + 0.15, B.sweepFrom + 0.2]) {
       tl.time(0)
       tl.time(at)
       const far = state()

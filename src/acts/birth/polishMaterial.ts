@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 import { FINAL, LINE_NORMAL } from '../../config/birth'
-import { RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
+import { CAST_FACTOR_GLSL, RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
 
 /** Mirror-polished yellow gold (after the polish line). */
-export const POLISHED_GOLD = { color: '#f1c66e', roughness: 0.1, envMapIntensity: 1.35 } as const
+export const POLISHED_GOLD = { color: '#f6c752', roughness: 0.1, envMapIntensity: 1.35 } as const
 
 export interface PolishUniforms {
   /** A world point on the moving line (config/birth.ts polishLinePoint). */
@@ -16,6 +16,10 @@ export interface PolishUniforms {
   uReflect: { value: number }
   /** IBL factor of the polished side: 1, up to FINAL.envBoost in the final frame (the raw side keeps its own). */
   uBoost: { value: number }
+  /** 0 = as-cast (darker) raw side, 1 = cleaned by the acid (rawGoldMaterial.ts cleanOf). */
+  uClean: { value: number }
+  /** NDC x of the wipe line: the mirror copy shows only left of it (the swept, black side); -2 = nowhere. */
+  uWipe: { value: number }
 }
 
 type Variant = 'ring' | 'stub' | 'mirror'
@@ -51,15 +55,21 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         '#include <begin_vertex>',
         '#include <begin_vertex>\nvPolishObj = position;\nvPolishWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
       )
+    if (variant === 'mirror')
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying float vMirrorX;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvMirrorX = gl_Position.x / gl_Position.w;')
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
+        ${variant === 'mirror' ? 'uniform float uWipe;\nvarying float vMirrorX;' : ''}
         uniform vec3 uLinePoint;
         uniform vec3 uLineNormal;
         uniform float uAll;
         uniform float uReflect;
         uniform float uBoost;
+        uniform float uClean;
         varying vec3 vPolishWorld;
         varying vec3 vPolishObj;
         float pgGrain(vec3 p) { return fract(sin(dot(floor(p), vec3(12.9898, 78.233, 37.719))) * 43758.5453); }`,
@@ -70,7 +80,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         float polished = max(step(0.0, dot(vPolishWorld - uLinePoint, uLineNormal)), uAll);
         ${variant === 'stub' ? 'if (polished > 0.5) discard;' : ''}
         float grain = pgGrain(vPolishObj * 220.0);
-        diffuseColor.rgb = mix(${v3(raw)} * (0.9 + 0.12 * grain), ${v3(pol)}, polished);`,
+        diffuseColor.rgb = mix(${v3(raw)} * (0.9 + 0.12 * grain) * ${CAST_FACTOR_GLSL}, ${v3(pol)}, polished);`,
       )
       .replace(
         '#include <roughnessmap_fragment>',
@@ -85,13 +95,16 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         iblIrradiance *= pgEnv;`,
       )
     if (variant === 'mirror')
-      shader.fragmentShader = shader.fragmentShader.replace(
+      shader.fragmentShader = shader.fragmentShader
+        // Only on the side the wipe line has already passed (the black page): the opaque dark copy must not smudge the old scene.
+        .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vMirrorX > uWipe) discard;')
+        .replace(
         '#include <opaque_fragment>',
         `outgoingLight *= uReflect * ${FINAL.reflectStrength.toFixed(4)} * (1.0 - smoothstep(0.0, ${FINAL.reflectFade.toFixed(4)}, ${FINAL.mirrorY.toFixed(4)} - vPolishWorld.y));
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v7`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v11`
   return m
 }
 
@@ -109,6 +122,8 @@ export function createPolishMaterials() {
     uAll: { value: 0 },
     uReflect: { value: 0 },
     uBoost: { value: 1 },
+    uClean: { value: 0 },
+    uWipe: { value: -2 },
   }
   return { ring: create('ring', uniforms), stub: create('stub', uniforms), mirror: create('mirror', uniforms), uniforms }
 }

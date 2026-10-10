@@ -9,9 +9,10 @@ export const RESIN_COLOR = '#3fa772'
 
 /**
  * Build plate (after the author's reference printer photos: a wide thin plate, about 60% of the frame width at its
- * front edge); plate Y values are its bottom face. parkedY is out of frame above.
+ * front edge); plate Y values are its bottom face. parkedY is out of frame above (where it comes down from); liftY is
+ * out of the wider end-of-act frame (LIFT_CAM), where it goes after the print.
  */
-const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 } as const
+const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9, liftY: 2.6 } as const
 
 /** Act 2 layout in world units (ring height = 1). Shared by the ring, the act props and the resin stream particles. */
 export const PRINT = {
@@ -19,15 +20,18 @@ export const PRINT = {
   cureY: -0.6,
   /**
    * The rings (with their sprues and supports) print at this size (author 2026-10-10: four rings, 20-30% smaller than
-   * the old single print at 0.6); act 3 grows each back to full size on its way to the tree.
+   * the old single print at 0.6); they grow back to full size while they turn over after the print.
    */
   scale: 0.45,
   /**
-   * The four rings print side by side in a row along x (printRingX, `pitch` apart at the ring centres). After the print,
-   * as the plate lifts away, the row spreads to `liftSpread` times that pitch, so the rings never touch while they turn
-   * over (a sprue swinging sideways reaches past the neighbour's edge at the print pitch).
+   * The four rings print in a true 2 x 2 grid (author 2026-10-10): two columns at x = +-columnX, a front row at
+   * z = +rowZ and a back row at z = -rowZ (ring centres); from the level Act 2 camera the back two stand behind the
+   * front two. After the print, while the plate lifts away, the rings turn over and grow to full size (they go onto
+   * the tree at that size) and the camera pulls back a little (LIFT_CAM), the front two move out to x = +-frontX and
+   * the back two to x = +-backX (story.ring.spread 1 -> liftSpread), so all four show side by side at the end of the
+   * act (front outer, back inner), right of the copy column.
    */
-  row: { pitch: 0.5, liftSpread: 1.4 },
+  grid: { columnX: 0.35, rowZ: 0.5, frontX: 1.42, backX: 0.6, liftSpread: 2 },
   /**
    * The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it.
    * A rectangle with the build plate's footprint (the author: not a small round pool).
@@ -76,22 +80,51 @@ export const PRINT = {
 /** Rings printed together (one design, four copies on the plate; each takes its own tree slot in Act 3). */
 export const RING_COUNT = 4
 
-/** The x of row position i (0..RING_COUNT-1, left to right) on the build plate (ring centres, a row centred on x = 0). */
-export function printRingX(i: number): number {
-  return (i - (RING_COUNT - 1) / 2) * PRINT.row.pitch
+/**
+ * Ring k's spot on the build plate (ring centre x, z), on the side of its tree slot in Act 3: the front row takes the
+ * upper slots (ring 0 left, the hero ring, slot 0; ring 1 right, slot 1), the back row the lower slots (ring 3 left,
+ * ring 2 right), which are filled first (src/config/assembly.ts).
+ */
+export const PRINT_SPOTS: readonly { readonly x: number; readonly z: number }[] = (() => {
+  const { columnX, rowZ } = PRINT.grid
+  return [
+    { x: -columnX, z: rowZ },
+    { x: columnX, z: rowZ },
+    { x: columnX, z: -rowZ },
+    { x: -columnX, z: -rowZ },
+  ]
+})()
+
+/** Ring k's x on the build plate. */
+export function ringPrintX(k: number): number {
+  return PRINT_SPOTS[k].x
+}
+
+/** Ring k's z on the build plate. */
+export function ringPrintZ(k: number): number {
+  return PRINT_SPOTS[k].z
 }
 
 /**
- * Row position of ring k. The two rings that take the lower tree slots (2, 3) print in the middle, the hero ring 0
- * and ring 1 (upper slots) at the ends: in Act 3 each inner ring leaves the row straight for its lower slot first
- * (an inner row position overlaps the lower slot on its side, and a lower slot cannot be entered once the upper slot
- * next to it is taken), then the outer rings come down onto the upper slots (src/config/assembly.ts).
+ * Ring k's x for a grid `spread` (story.ring.spread): 0 = at the origin (Act 1, one ring), 1 = its grid spot; from 1
+ * to liftSpread the front-row rings move out to +-frontX and the back-row rings to +-backX.
  */
-export const PRINT_ROW: readonly number[] = [0, 3, 2, 1]
+export function gridX(k: number, spread: number): number {
+  const { x, z } = PRINT_SPOTS[k]
+  const { liftSpread, frontX, backX } = PRINT.grid
+  const lift = Math.min(Math.max((spread - 1) / (liftSpread - 1), 0), 1)
+  return x * Math.min(spread, 1) + Math.sign(x) * lift * ((z > 0 ? frontX : backX) - Math.abs(x))
+}
 
-/** Ring k's x on the build plate. */
-export function ringRowX(k: number): number {
-  return printRingX(PRINT_ROW[k])
+/**
+ * The camera at the end of Act 2 (and the start of Act 3): pulled back from CAM_INITIAL while the rings grow to full
+ * size, so all four fit the frame. Same shape as story.cam (src/story/store.ts CamState).
+ */
+export const LIFT_CAM = { y: 0.15, z: 8.0, look: 0.15 } as const
+
+/** Ring k's z for a grid `spread`: 0 = at the origin, its grid spot from 1 on (the rows stay where they printed). */
+export function gridZ(k: number, spread: number): number {
+  return PRINT_SPOTS[k].z * Math.min(spread, 1)
 }
 
 /** Opacity of the rails for a plate height: 0 while parked, 1 once the plate is in the frame. */

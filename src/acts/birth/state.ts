@@ -27,7 +27,7 @@ export interface BirthState {
   tilt: number
   /** 0..1 the final frame: slow ambient spin, the lights, the brighter gold. */
   finale: number
-  /** 0..1 the ring's mirror reflection fades in (after the sweep, over the black page). */
+  /** 0..1 the ring's mirror reflection strength (up early in the sweep; shown only on the swept side, birth.wipeX). */
   reflect: number
   /** 0..1 the line from the end of its pass to a full-height vertical line at the left page edge (config/birth.ts WIPE). */
   edge: number

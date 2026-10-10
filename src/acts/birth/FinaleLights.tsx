@@ -16,8 +16,9 @@ export function FinaleLights() {
   const rim = useRef<PointLight>(null)
 
   useFrame(() => {
-    // A soft share of the light is on from the moment the ring leaves the jar, so the raw ring is not a dark silhouette.
-    const k = Math.max(birth.finale, FINAL_LIGHT.earlyShare * birth.out)
+    // Off through the first polish pass (the ring is only polished, lit by the environment, no glare or bloom); the
+    // second pass (the sweep) brings the lights in with birth.finale.
+    const k = birth.finale
     if (key.current) key.current.intensity = FINAL_LIGHT.key.intensity * k
     if (fill.current) fill.current.intensity = FINAL_LIGHT.fill.intensity * k
     if (rim.current) rim.current.intensity = FINAL_LIGHT.rim.intensity * k

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { TOTAL_SCREENS } from '../../config/acts'
-import { CAM } from '../../config/mold'
-import { PRINT, RING_COUNT } from '../../config/print'
+import { CAM, MOLD } from '../../config/mold'
+import { LIFT_CAM, RING_COUNT } from '../../config/print'
 import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
@@ -42,41 +42,68 @@ afterEach(() => {
 describe('act 3 timeline', () => {
   it('moves nothing of act 3 before 4.0', () => {
     tl.time(3.99)
-    expect(story.cam).toMatchObject(CAM_INITIAL)
+    // The camera is where Act 2 left it.
+    expect(story.cam).toMatchObject(LIFT_CAM)
     expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
     expect(snap(mold)).toEqual(MOLD_INITIAL)
   })
 
-  it('grows the trunk once the base has landed, while all four rings still hover in their row', () => {
-    tl.time(B.trunkFrom)
-    // power2.out: within 0.007 of its seat (MOLD.base.dropOffset * 0.0016).
-    expect(mold.base).toBeGreaterThan(0.998)
-    expect(mold.trunk).toBe(0)
-    tl.time((B.trunkFrom + B.trunkTo) / 2)
-    expect(mold.trunk).toBeGreaterThan(0)
-    expect(mold.trunk).toBeLessThan(1)
-    expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
-    tl.time(B.trunkTo)
-    expect(mold.trunk).toBe(1)
+  it('keeps the rings exactly where act 2 left them (full size) only until the first flight, which starts right away', () => {
+    tl.time(3.99)
+    const end = snap(story.ring)
+    expect(end.scale).toBe(1)
+    for (const t of [4.0, 4.05, B.flightFrom]) {
+      tl.time(t)
+      expect(snap(story.ring), `t=${t}`).toEqual(end)
+    }
+    // No waiting: the last ring has left by 4.3, all four are seated by 4.5.
+    expect(B.flightFrom).toBeLessThanOrEqual(4.12)
+    expect(B.flightFrom + (RING_COUNT - 1) * B.flightStagger).toBeLessThanOrEqual(4.3)
+    expect(B.flightFrom + (RING_COUNT - 1) * B.flightStagger + B.flightLen).toBeLessThanOrEqual(4.5)
   })
 
-  it('flies the rings only after the trunk has (almost) grown, in ASSEMBLY.order, one after another', () => {
-    expect(B.flightFrom).toBeGreaterThan(B.trunkFrom)
+  it('brings the trunk in already standing on the rising base (no growth), and leaves it in place when the base drops', () => {
+    for (let t = 3.99; t <= B.baseInTo + 0.02; t += 0.005) {
+      tl.time(t)
+      // The same offset as the base (RubberBase: (1 - base) * dropOffset) at every moment of the rise.
+      expect(mold.trunk, `t=${t.toFixed(3)}`).toBe(mold.base)
+    }
+    tl.time(B.baseInFrom + 0.01)
+    expect(mold.trunk).toBeGreaterThan(0)
+    expect(mold.trunk).toBeLessThan(1)
+    tl.time(B.baseInTo)
+    expect(mold.trunk).toBe(1)
+    // The base drops out of the frame at the end of the act; the trunk stays inside the investment.
+    tl.time(B.baseOutTo)
+    expect(mold.base).toBe(0)
+    expect(mold.trunk).toBe(1)
+    expect(MOLD.base.dropOffset).toBeLessThan(-3)
+  })
+
+  it('flies the first ring while the base finishes its fast rise, then the rest in ASSEMBLY.order, tightly chained', () => {
+    // A fast rise right after Act 2, the first flight before it ends (the trunk within 0.2 of its seat by then, and in
+    // place before the first ring starts its slide onto it).
+    expect(B.baseInFrom).toBe(4.0)
+    expect(B.baseInTo - B.baseInFrom).toBeLessThanOrEqual(0.15 + 1e-9)
+    expect(B.flightFrom).toBeLessThanOrEqual(B.baseInTo)
+    expect(B.flightStagger).toBeLessThan(B.flightLen)
     tl.time(B.flightFrom)
     expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
-    expect(mold.trunk).toBeGreaterThan(0.95)
+    expect((1 - mold.trunk) * Math.abs(MOLD.base.dropOffset)).toBeLessThan(0.2)
+    tl.time(B.flightFrom + ASSEMBLY.curve * B.flightLen)
+    expect(mold.trunk).toBe(1)
     ASSEMBLY.order.forEach((k, i) => {
       const start = B.flightFrom + i * B.flightStagger
       tl.time(start)
       expect(story.ring.flight[k]).toBe(0)
       // The rings after it have not started; the ones before it are on their way or seated.
       ASSEMBLY.order.slice(i + 1).forEach((j) => expect(story.ring.flight[j]).toBe(0))
-      ASSEMBLY.order.slice(0, i).forEach((j) => expect(story.ring.flight[j]).toBeGreaterThan(0.5))
+      ASSEMBLY.order.slice(0, i).forEach((j) => expect(story.ring.flight[j]).toBeGreaterThan(0))
       tl.time(start + B.flightLen)
       expect(story.ring.flight[k]).toBe(1)
     })
     // The size comes from each ring's flight (placement.ts), not from a global tween.
-    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    expect(story.ring.scale).toBe(1)
   })
 
   it('seats the last ring before the flask comes down', () => {
@@ -87,17 +114,21 @@ describe('act 3 timeline', () => {
     expect(mold.flask).toBe(0)
   })
 
-  it('pulls the camera back and raises the base before the trunk grows', () => {
-    expect(B.camTo).toBeLessThanOrEqual(B.flightFrom)
-    expect(B.baseInTo).toBeLessThanOrEqual(B.trunkFrom + 0.02)
-    tl.time(B.camTo)
+  it('pulls the camera back to the tree view while the rings fly (not before), arriving with the last landing', () => {
+    expect(B.camFrom).toBeGreaterThanOrEqual(4.0)
+    expect(B.camFrom).toBeLessThanOrEqual(B.flightFrom)
+    const lastSeat = B.flightFrom + (RING_COUNT - 1) * B.flightStagger + B.flightLen
+    expect(Math.abs(B.camTo - lastSeat)).toBeLessThanOrEqual(0.05)
+    tl.time(B.camFrom)
+    expect(snap(story.cam)).toEqual({ ...LIFT_CAM })
+    tl.time(Math.max(B.camTo, B.baseInTo))
     expect(snap(story.cam)).toEqual(CAM.tree)
     expect(mold.base).toBe(1)
   })
 
-  it('restores the hovering row when scrubbed back through the flights, and a jump lands where a scrub does', () => {
+  it('restores the act 2 end pose when scrubbed back through the flights, and a jump lands where a scrub does', () => {
     const state = () => ({ ring: snap(story.ring), mold: snap(mold), cam: snap(story.cam) })
-    const probes = [4.3, 4.47, 4.52, 4.61, 4.66, 4.73, 4.8, 4.9, 5.0]
+    const probes = [4.05, 4.1, 4.15, 4.2, 4.25, 4.3, 4.37, 4.47, 4.52, 4.61, 4.8, 5.0]
     // Scrub forward in small steps, remembering the state at each probe.
     const scrubbed = new Map<number, ReturnType<typeof state>>()
     for (let i = 0; i <= 440; i++) {
@@ -115,12 +146,13 @@ describe('act 3 timeline', () => {
       tl.time(p)
       expect(state(), `jump to ${p}`).toEqual(scrubbed.get(p))
     }
-    // Back to the end of the print: the rings hover in their row again, no trunk.
+    // Back to the end of the print: the rings are in their grid again, no base, no trunk.
     tl.time(9)
     for (let t = 9; t >= 3.99; t -= 0.01) tl.time(t)
     tl.time(3.99)
     expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
     expect(mold.trunk).toBe(0)
+    expect(mold.base).toBe(0)
   })
 
   it('lowers the flask after the assembly', () => {
@@ -211,7 +243,7 @@ describe('act 3 timeline', () => {
     tl.time(3.99)
     expect(snap(story.ring)).toEqual(ring)
     expect(snap(mold)).toEqual(MOLD_INITIAL)
-    expect(story.cam).toMatchObject(CAM_INITIAL)
+    expect(story.cam).toMatchObject(LIFT_CAM)
     expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
     tl.time(0)
     expect(snap(story.ring)).toEqual(snap(RING_INITIAL))

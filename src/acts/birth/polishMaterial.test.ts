@@ -62,6 +62,21 @@ describe('polish materials', () => {
     expect(compile(ring).fragmentShader).not.toContain('outgoingLight *= uReflect')
   })
 
+  it('clips the mirror copy to the swept side of the wipe line (clip-space x against uWipe), the other variants not', () => {
+    const { ring, stub, mirror, uniforms } = createPolishMaterials()
+    const m = compile(mirror)
+    expect(m.uniforms.uWipe).toBe(uniforms.uWipe)
+    expect(uniforms.uWipe.value).toBeLessThan(-1)
+    expect(m.vertexShader).toContain('vMirrorX = gl_Position.x / gl_Position.w;')
+    expect(m.vertexShader.indexOf('vMirrorX = ')).toBeGreaterThan(m.vertexShader.indexOf('#include <project_vertex>') - 1)
+    expect(m.fragmentShader).toContain('if (vMirrorX > uWipe) discard;')
+    for (const o of [ring, stub]) {
+      const s = compile(o)
+      expect(s.fragmentShader).not.toContain('vMirrorX')
+      expect(s.vertexShader).not.toContain('vMirrorX')
+    }
+  })
+
   it('scales the IBL down to the raw gold intensity on the raw side (always on the stub), the polished side by uBoost', () => {
     const { ring, stub, mirror } = createPolishMaterials()
     // The raw side runs at the scene's IBL factor (1): the cast rings and the tree do too, so the hero ring matches them.

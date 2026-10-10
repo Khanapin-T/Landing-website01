@@ -31,28 +31,33 @@ const smooth = (t: number) => {
   return c * c * (3 - 2 * c)
 }
 
-/** Ring k's drawn size: the print size in the row, growing on the curve, full size (1) from the staging point on. */
+/** Ring k's drawn size: its size at flight 0 (full size since the end of Act 2), growing on the curve to 1 by the staging point. */
 export function flightScale(printScale: number, flight: number): number {
   return printScale + (1 - printScale) * smooth(flight / CURVE)
 }
 
 /**
- * Where ring k is drawn (ring-local -> world) for ring.flight[k] (Act 3): in its print-row pose (ringPose) at 0; on
- * a cubic curve from there to the staging point outside slot k (first handle: the row position + ASSEMBLY.depart[k],
- * last handle: on the sprue axis), turning into the slot orientation by TURN of the curve; then a straight slide along
- * the sprue axis onto slotPose(k). Writes the pose into `out` and returns the uniform scale. Exact at both ends:
- * flight 0 = ringPose(k) at the print size, flight 1 = slotPose(k) at scale 1.
+ * Where ring k is drawn (ring-local -> world) for ring.flight[k] (Act 3): at flight 0 exactly where Act 2 left it
+ * (ringPose: its spread print-grid pose); then on a cubic curve straight from there to the staging point outside slot
+ * k (first handle: the start + ASSEMBLY.depart[k], last handle: on the sprue axis), turning into the slot orientation
+ * by TURN of the curve; then a straight slide along the sprue axis onto slotPose(k). Writes the pose into `out` and
+ * returns the uniform scale. Exact at both ends: flight 0 = ringPose(k) at ring.scale (full size since the end of Act 2), flight 1 = slotPose(k) at
+ * scale 1.
  */
 export function ringPlacement(ring: Readonly<RingState>, k: number, out: Pose): number {
   const t = ring.flight[k]
   const slot = SLOTS[k]
   if (t <= 0) {
     ringPose(ring, k, out)
-  } else if (t >= 1) {
+    return ring.scale
+  }
+  if (t >= 1) {
     out.position.copy(slot.position)
     out.quaternion.copy(slot.quaternion)
-  } else if (t < CURVE) {
-    ringPose(ring, k, row)
+    return 1
+  }
+  ringPose(ring, k, row)
+  if (t < CURVE) {
     const u = t / CURVE
     const a = 1 - u
     const p0 = row.position

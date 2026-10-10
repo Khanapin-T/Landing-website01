@@ -11,7 +11,7 @@ import { newPose } from '../../scene/ring/pose'
 import { slotPose } from '../../scene/tree/slots'
 import { SPRUE_WAX, stubGrowth } from '../../scene/tree/sprueWax'
 import { CAM_INITIAL, FLASK_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
-import { SPRUE_TIP, cylPoints, cylY, makeBody, overlap, place, pointsInside, ringBody, shankBody, type Body } from '../../test/ringBodies'
+import { SPRUE_TIP, cylPoints, cylY, makeBody, overlap, place, pointsInside, ringBody, shankBody } from '../../test/ringBodies'
 import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
@@ -23,14 +23,15 @@ import { PRINT as PRINT_CFG } from '../../config/print'
 
 /*
  * Act 3 assembly against the real ring mesh (src/test/ringBodies.ts), driven by the real master timeline (acts 1-3):
- * from the end of the print (the four small rings hover in their row) through the base rising, the trunk growing and
- * the four flights, every 0.0005 screens. No ring may enter another ring (hovering, flying or seated), the trunk (at
- * its current height), a seated ring's wax stub, the crucible-former cone or the rubber cup. A ring's own sprue meets
- * the trunk only at the very end of its slide (the joint the wax stub fills): within JOINT of its seat only the ring
- * without its sprue is tested against the trunk.
+ * from the end of the print (the four small rings stand where Act 2 left them) through the base rising with the trunk
+ * on it and the four flights straight onto the tree, every 0.0005 screens. No ring may enter another
+ * ring (waiting, flying or seated), the trunk (wherever it is on its way up), a seated ring's wax stub, the
+ * crucible-former cone or the rubber cup. A ring's own sprue meets the trunk only at the very end of its slide (the
+ * joint the wax stub fills): within JOINT of its seat only the ring without its sprue is tested against the trunk.
  */
 
-const FROM = 3.96
+/** From the start of the lift (supports gone): the rings turn over, spread and grow to full size, then fly. */
+const FROM = 3.72
 const STEP = 0.0005
 /** Distance from the seat below which the sprue end is in the trunk joint (it enters the trunk within the last 0.09). */
 const JOINT = 0.12
@@ -79,21 +80,10 @@ function placeRings() {
   }
 }
 
-/** The trunk at its current growth (the real one tapers to 0.85 of the radius at the top: a full cylinder is stricter). */
-const trunkCache = new Map<string, Body>()
-function trunkAt(growth: number): Body | null {
-  if (growth < 0.001) return null
-  const key = growth.toFixed(4)
-  let b = trunkCache.get(key)
-  if (!b) {
-    const top = MOLD.trunk.bottomY + Number(key) * (MOLD.trunk.topY - MOLD.trunk.bottomY)
-    const pts: number[] = []
-    cylPoints(MOLD.trunk.radius, MOLD.trunk.bottomY, top, pts)
-    b = place(makeBody('trunk', pts, [cylY(MOLD.trunk.radius, MOLD.trunk.bottomY, top)]), new THREE.Matrix4())
-    trunkCache.set(key, b)
-  }
-  return b
-}
+/** The whole trunk (the real one tapers to 0.85 of the radius at the top: a full cylinder is stricter); placed by mold.trunk. */
+const TRUNK_PTS: number[] = []
+cylPoints(MOLD.trunk.radius, MOLD.trunk.bottomY, MOLD.trunk.topY, TRUNK_PTS)
+const trunkBody = makeBody('trunk', TRUNK_PTS, [cylY(MOLD.trunk.radius, MOLD.trunk.bottomY, MOLD.trunk.topY)])
 
 // The rubber base (moves with mold.base): the crucible-former cone (a full cylinder of its widest radius, from the cup
 // floor up to the trunk bottom) and the cup (a solid cylinder, only ring points against it).
@@ -121,11 +111,11 @@ const sameMatrix = (a: THREE.Matrix4, b: THREE.Matrix4) => a.elements.every((v, 
 
 describe('act 3 assembly (real ring mesh)', () => {
   it(
-    'never puts a ring through another ring, the trunk, a stub, the cone or the cup, from the hovering row to the last seat',
+    'never puts a ring through another ring, the trunk, a stub, the cone or the cup, from the print grid to the last seat',
     () => {
       const faults: string[] = []
       const last = rings.map(() => new THREE.Matrix4().makeScale(0, 0, 0))
-      let lastTrunk: Body | null | undefined
+      let lastTrunkY = NaN
       let lastBase = NaN
       const baseM = new THREE.Matrix4()
       const end = B.flaskFrom
@@ -134,9 +124,11 @@ describe('act 3 assembly (real ring mesh)', () => {
         placeRings()
         const moved = rings.map((r, k) => !sameMatrix(r.m, last[k]))
         rings.forEach((r, k) => last[k].copy(r.m))
-        const trunk = trunkAt(mold.trunk)
-        const trunkChanged = trunk !== lastTrunk
-        lastTrunk = trunk
+        const trunk = mold.trunk > 0.001 ? trunkBody : null
+        const trunkY = (1 - mold.trunk) * base.dropOffset
+        const trunkChanged = trunkY !== lastTrunkY
+        lastTrunkY = trunkY
+        if (trunk && trunkChanged) place(trunkBody, new THREE.Matrix4().makeTranslation(0, trunkY, 0))
         const baseY = (1 - mold.base) * base.dropOffset
         const baseChanged = baseY !== lastBase
         lastBase = baseY
@@ -176,7 +168,7 @@ describe('act 3 assembly (real ring mesh)', () => {
     60_000,
   )
 
-  it('keeps every ring in the frame at 16:9 and at 1536 x 730 while it hovers and flies (copy column aside)', () => {
+  it('keeps every ring in the frame at 16:9 and at 1536 x 730 while it waits and flies (copy column aside)', () => {
     const views = [
       { w: 1920, h: 1080 },
       { w: 1536, h: 730 },
@@ -210,14 +202,52 @@ describe('act 3 assembly (real ring mesh)', () => {
     expect(faults.slice(0, 8)).toEqual([])
   })
 
-  it('flies the rings in ASSEMBLY.order, each one after the other has left (staggered starts)', () => {
+  it('keeps every ring off the copy column (1920 x 1080) while it waits and flies', () => {
+    // The copy column (left): the Act 3 heading down to 38% of the height ends at 31% of the width; below it the
+    // paragraphs and the step list of acts 2 and 3 keep clear of 29% (560 px). Screen fractions at 1920 x 1080.
+    const w = 1920
+    const h = 1080
+    const cam = new THREE.PerspectiveCamera(30, w / h, 0.1, 100)
+    cam.setViewOffset(w, h, focusOffsetX(w), 0, w, h)
+    cam.updateProjectionMatrix()
+    const p = new THREE.Vector3()
+    const faults: string[] = []
+    for (let t = 3.97; t <= B.flaskFrom + 1e-9; t += 0.005) {
+      tl.time(t)
+      placeRings()
+      cam.position.set(0, story.cam.y, story.cam.z)
+      cam.lookAt(0, story.cam.look, 0)
+      cam.updateMatrixWorld()
+      for (let k = 0; k < RING_COUNT; k++) {
+        const r = rings[k]
+        for (let i = 0; i < r.pts.length; i += 3 * 20) {
+          p.set(r.pts[i], r.pts[i + 1], r.pts[i + 2]).applyMatrix4(r.m).project(cam)
+          const fx = (p.x + 1) / 2
+          const fy = (1 - p.y) / 2
+          const edge = fy < 0.38 ? 0.31 : 0.29
+          if (fx < edge) {
+            faults.push(`t=${t.toFixed(3)}: ring ${k} over the copy (${fx.toFixed(3)}, ${fy.toFixed(3)})`)
+            break
+          }
+        }
+      }
+    }
+    expect(faults.slice(0, 8)).toEqual([])
+  })
+
+  it('flies the rings in ASSEMBLY.order, each one right after the one before (staggered starts)', () => {
     expect([...ASSEMBLY.order].sort()).toEqual([0, 1, 2, 3])
     for (let i = 1; i < RING_COUNT; i++) {
       const a = ASSEMBLY.order[i - 1]
       const b = ASSEMBLY.order[i]
       tl.time(B.flightFrom + i * B.flightStagger)
       expect(story.ring.flight[b]).toBe(0)
-      expect(story.ring.flight[a]).toBeGreaterThan(0.5)
+      expect(story.ring.flight[a]).toBeGreaterThan(0)
+    }
+    // The lower slots are seated before an upper-slot ring starts its slide (the rings interlock there).
+    for (let i = 2; i < RING_COUNT; i++) {
+      tl.time(B.flightFrom + i * B.flightStagger + ASSEMBLY.curve * B.flightLen)
+      for (const j of ASSEMBLY.order.slice(0, 2)) expect(story.ring.flight[j]).toBe(1)
     }
   })
 })

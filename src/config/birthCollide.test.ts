@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { gsap } from 'gsap'
 import { SPRUE_WAX } from '../scene/tree/sprueWax'
 import { RING, SPRUE_TIP, cylPoints, cylY, gap, makeBody, overlap, place, ringBody, shankBody, worldPoints, type Body } from '../test/ringBodies'
+import { BIRTH_BEATS as B } from '../acts/birth/beats'
 import { MOLD } from './mold'
 import { PRINT } from './print'
 import { RAW } from './water'
@@ -104,6 +105,57 @@ describe('cut rings falling into the jar', () => {
     })
     expect(faults.slice(0, 12)).toEqual([])
   }, 60_000)
+})
+
+describe('cascade: rings falling at the same time (acts/birth/beats.ts schedule)', () => {
+  const JOINT = 0.1
+  const cutAt = (k: number, screen: number) => Math.min(Math.max((screen - (B.cutFrom + k * B.cutStep)) / B.fallLen, 0), 1)
+
+  it('overlaps the falls and ends before the tree goes up', () => {
+    expect(B.cutStep).toBeLessThan(B.fallLen)
+    expect(B.cutFrom + (CUT_ORDER.length - 1) * B.cutStep + B.fallLen).toBeLessThanOrEqual(B.treeUpFrom)
+  })
+
+  it('never pass through each other, the tree parts, the stubs or the jar', () => {
+    const faults: string[] = []
+    const STEPS = 500
+    const t0 = B.cutFrom
+    const t1 = B.cutFrom + (CUT_ORDER.length - 1) * B.cutStep + B.fallLen
+    const rings = CUT_ORDER.map((slot) => ({ slot, ring: ringBody(`ring ${slot}`), shank: shankBody(`shank ${slot}`) }))
+    const m = new THREE.Matrix4()
+    const from = CUT_ORDER.map((slot) => new THREE.Vector3().setFromMatrixPosition(slotMatrix(slot, m)))
+    const at = new THREE.Vector3()
+    for (let i = 0; i <= STEPS; i++) {
+      const screen = t0 + ((t1 - t0) * i) / STEPS
+      const label = `screen ${screen.toFixed(4)}`
+      const cuts = CUT_ORDER.map((_, k) => cutAt(k, screen))
+      const free: boolean[] = []
+      rings.forEach((r, k) => {
+        cutRingMatrix(r.slot, cuts[k], 0, m)
+        place(r.ring, m)
+        place(r.shank, m)
+        free[k] = cuts[k] > 0 && at.setFromMatrixPosition(m).distanceTo(from[k]) > JOINT
+      })
+      rings.forEach((r, k) => {
+        for (let j = k + 1; j < rings.length; j++) {
+          const n = overlap(r.ring, rings[j].ring)
+          if (n) faults.push(`${label}: ring ${r.slot} / ring ${rings[j].slot}: ${n} points`)
+        }
+        if (cuts[k] <= 0) return
+        for (const o of [funnel, ...STUBS.filter((_, s) => s !== r.slot)]) {
+          const n = overlap(r.ring, o)
+          if (n) faults.push(`${label}: ring ${r.slot} / ${o.name}: ${n} points`)
+        }
+        for (const o of [trunk, STUBS[r.slot]]) {
+          const n = overlap(free[k] ? r.ring : r.shank, o)
+          if (n) faults.push(`${label}: ring ${r.slot} / ${o.name}: ${n} points`)
+        }
+        const out = worldPoints(r.ring).filter(jarFault).length
+        if (out) faults.push(`${label}: ring ${r.slot}: ${out} points through the jar`)
+      })
+    }
+    expect(faults.slice(0, 12)).toEqual([])
+  }, 120_000)
 })
 
 describe('rings at rest in the jar', () => {

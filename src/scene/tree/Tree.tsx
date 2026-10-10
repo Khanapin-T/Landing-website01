@@ -29,8 +29,9 @@ function stubLayout(i: number): StubLayout {
 }
 
 /**
- * The wax tree: a red wax trunk that grows from the cone, and a red wax stub on each of the four slots that grows from
- * the sprue tip as its ring seats (the rings themselves are the persistent HeroRing set, story.ring.flight).
+ * The wax tree: a red wax trunk that rises into the frame standing on the rubber base's cone (mold.trunk), and a red
+ * wax stub on each of the four slots that grows from the sprue tip as its ring seats (the rings themselves are the
+ * persistent HeroRing set, story.ring.flight).
  */
 export function Tree() {
   const trunkGeometry = useMemo(() => createTrunkGeometry(), [])
@@ -55,7 +56,8 @@ export function Tree() {
     const burned = story.flask.burn > 0.999
     const t = trunk.current
     if (t) {
-      t.scale.y = Math.max(mold.trunk, 0.0001)
+      // Standing on the rising base (same offset as RubberBase), then in place.
+      t.position.y = MOLD.trunk.bottomY + (1 - mold.trunk) * MOLD.base.dropOffset
       t.visible = loading || (mold.trunk > 0.001 && !burned)
     }
     for (let k = 0; k < RING_COUNT; k++) {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
-import { FINAL, heroMatrix, mirrorMatrix, polishLinePoint } from '../../config/birth'
+import { FINAL, WIPE, heroMatrix, mirrorMatrix, polishLinePoint } from '../../config/birth'
+import { cleanOf } from '../../scene/gold/rawGoldMaterial'
 import { createSprueGeometry } from '../../scene/ring/sprue'
 import { useRingGeometry } from '../../scene/ring/useRingGeometry'
 import { getAppState } from '../../story/appState'
@@ -55,11 +56,14 @@ export function PolishRing() {
     polishLinePoint(birth.line, mats.uniforms.uLinePoint.value)
     // Before the line starts the whole ring is raw: the split plane is infinite and would cut the low, rising ring.
     if (birth.line <= 0) mats.uniforms.uLinePoint.value.x += 20
+    mats.uniforms.uClean.value = cleanOf(birth.rest)
     mats.uniforms.uAll.value = birth.all
     mats.uniforms.uReflect.value = birth.reflect
+    // The mirror copy shows only on the swept (black) side of the wipe line.
+    mats.uniforms.uWipe.value = birth.wipeX > WIPE.leftX ? birth.wipeX : -2
     // The brighter "render" look of the final frame (polished side only).
     mats.uniforms.uBoost.value = 1 + (FINAL.envBoost - 1) * birth.finale
-    // Opaque: it may only show once the sweep has blacked out the page (birth.reflect), compiled during the loader.
+    // Opaque, so the shader clips it to the swept side (uWipe); compiled during the loader (visible while loading).
     r.visible = getAppState().phase === 'loading' || birth.reflect > 0.001
   })
 
