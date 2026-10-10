@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { FINAL, HERO_SLOT, LINE_NORMAL } from '../../config/birth'
-import { DIRT_GLSL, DIRT_SEEDS, DIRT_SURFACE_GLSL, RAW_CLEAN, RAW_GOLD, dirtColorGLSL } from '../../scene/gold/rawGoldMaterial'
+import { FINAL, LINE_NORMAL } from '../../config/birth'
+import { RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
 
 /** Mirror-polished yellow gold (after the polish line). */
 export const POLISHED_GOLD = { color: '#f1c66e', roughness: 0.1, envMapIntensity: 1.35 } as const
@@ -16,10 +16,6 @@ export interface PolishUniforms {
   uReflect: { value: number }
   /** IBL factor of the polished side: 1, up to FINAL.envBoost in the final frame (the raw side keeps its own). */
   uBoost: { value: number }
-  /** The raw side's dirt seed (the hero slot's, as on the tree in Act 6, see rawGoldMaterial.ts DIRT_SEEDS). */
-  uDirtSeed: { value: number }
-  /** The acid clean-up of the raw side: rawGoldMaterial.ts RAW_CLEAN itself (shared with the tree and the cut rings). */
-  uRawClean: { value: number }
 }
 
 type Variant = 'ring' | 'stub' | 'mirror'
@@ -66,8 +62,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         uniform float uBoost;
         varying vec3 vPolishWorld;
         varying vec3 vPolishObj;
-        float pgGrain(vec3 p) { return fract(sin(dot(floor(p), vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
-        ${DIRT_GLSL}`,
+        float pgGrain(vec3 p) { return fract(sin(dot(floor(p), vec3(12.9898, 78.233, 37.719))) * 43758.5453); }`,
       )
       .replace(
         '#include <color_fragment>',
@@ -75,16 +70,13 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         float polished = max(step(0.0, dot(vPolishWorld - uLinePoint, uLineNormal)), uAll);
         ${variant === 'stub' ? 'if (polished > 0.5) discard;' : ''}
         float grain = pgGrain(vPolishObj * 220.0);
-        diffuseColor.rgb = mix(${v3(raw)} * (0.9 + 0.12 * grain), ${v3(pol)}, polished);
-        ${dirtColorGLSL('vPolishObj', '(1.0 - polished)')}`,
+        diffuseColor.rgb = mix(${v3(raw)} * (0.9 + 0.12 * grain), ${v3(pol)}, polished);`,
       )
       .replace(
         '#include <roughnessmap_fragment>',
         `#include <roughnessmap_fragment>
-        roughnessFactor = mix(clamp(${RAW_GOLD.roughness.toFixed(3)} + 0.08 * (grain - 0.5), 0.0, 1.0), mix(${POLISHED_GOLD.roughness.toFixed(3)}, ${FINAL.roughness.toFixed(3)}, clamp((uBoost - 1.0) / ${(FINAL.envBoost - 1).toFixed(4)}, 0.0, 1.0)), polished);
-        ${DIRT_SURFACE_GLSL.roughness}`,
+        roughnessFactor = mix(clamp(${RAW_GOLD.roughness.toFixed(3)} + 0.08 * (grain - 0.5), 0.0, 1.0), mix(${POLISHED_GOLD.roughness.toFixed(3)}, ${FINAL.roughness.toFixed(3)}, clamp((uBoost - 1.0) / ${(FINAL.envBoost - 1).toFixed(4)}, 0.0, 1.0)), polished);`,
       )
-      .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n${DIRT_SURFACE_GLSL.metalness}`)
       .replace(
         '#include <lights_fragment_maps>',
         `#include <lights_fragment_maps>
@@ -99,7 +91,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v7`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v6`
   return m
 }
 
@@ -107,9 +99,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
  * The hero ring's materials (Act 7): raw as-cast gold on one side of the moving polish plane (through
  * uLinePoint, normal uLineNormal), mirror-polished gold on the other; uAll polishes everything. `stub` discards the
  * sprue stub on the polished side (it vanishes where the line has passed); `mirror` is the reflection copy under the
- * ring, opaque and faded to black (uReflect); uBoost brightens the polished gold in the final frame. The raw side
- * carries the same post-casting dirt as the tree and the cut rings (rawGoldMaterial.ts DIRT_GLSL, cleaned by RAW_CLEAN
- * in the acid); the polished side never does. One shared
+ * ring, opaque and faded to black (uReflect); uBoost brightens the polished gold in the final frame. One shared
  * uniforms object; uniforms only, so each variant compiles once.
  */
 export function createPolishMaterials() {
@@ -119,8 +109,6 @@ export function createPolishMaterials() {
     uAll: { value: 0 },
     uReflect: { value: 0 },
     uBoost: { value: 1 },
-    uDirtSeed: { value: DIRT_SEEDS.slots[HERO_SLOT] },
-    uRawClean: RAW_CLEAN,
   }
   return { ring: create('ring', uniforms), stub: create('stub', uniforms), mirror: create('mirror', uniforms), uniforms }
 }

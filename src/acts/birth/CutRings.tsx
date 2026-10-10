@@ -4,27 +4,26 @@ import type { Group } from 'three'
 import { CUT_ORDER, HERO_SLOT, cutRingMatrix, jarOffsetY } from '../../config/birth'
 import { createSprueGeometry } from '../../scene/ring/sprue'
 import { useRingLightGeometry } from '../../scene/ring/useRingGeometry'
-import { DIRT_SEEDS, createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
+import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
 import { getAppState } from '../../story/appState'
 import { birth, cutOf } from './state'
 
 const SLOTS = CUT_ORDER.filter((s) => s !== HERO_SLOT)
 
 /**
- * The three rings that stay in the jar (Act 7): raw gold with their sprue stubs (dirty until the acid cleans them), on the tree, falling one by one,
+ * The three rings that stay in the jar (Act 7): raw gold with their sprue stubs, on the tree, falling one by one,
  * at rest in the acid; they go down with the jar (config/birth.ts cutRingMatrix). The hero ring is PolishRing.
  */
 export function CutRings() {
   const ring = useRingLightGeometry()
   const sprue = useMemo(() => createSprueGeometry(), [])
-  // One material per ring (its slot's dirt seed, as on the tree in Act 6); one shared program.
-  const materials = useMemo(() => SLOTS.map((slot) => createRawGoldMaterial(DIRT_SEEDS.slots[slot])), [])
+  const material = useMemo(() => createRawGoldMaterial(false), [])
   useEffect(
     () => () => {
       sprue.dispose()
-      for (const m of materials) m.dispose()
+      material.dispose()
     },
-    [sprue, materials],
+    [sprue, material],
   )
 
   const refs = useRef<(Group | null)[]>([])
@@ -51,8 +50,8 @@ export function CutRings() {
           }}
           matrixAutoUpdate={false}
         >
-          <mesh geometry={ring} material={materials[i]} />
-          <mesh geometry={sprue} material={materials[i]} />
+          <mesh geometry={ring} material={material} />
+          <mesh geometry={sprue} material={material} />
         </group>
       ))}
     </>

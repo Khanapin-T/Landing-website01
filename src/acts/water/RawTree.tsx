@@ -5,23 +5,23 @@ import { rawTreeMatrix } from '../../config/water'
 import { TreeShapes } from '../../scene/furnace/TreeShapes'
 import { getAppState } from '../../story/appState'
 import { story } from '../../story/store'
-import { createRawTreeMaterials } from '../../scene/gold/rawGoldMaterial'
+import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
 import { water } from './state'
 
 /**
- * The raw cast tree (Act 6): the tree shapes in matte as-cast gold with the post-casting dirt, shown once the investment has dissolved
+ * The raw cast tree (Act 6): the tree shapes in matte as-cast gold, shown once the investment has dissolved
  * (story.flask.wash). It sits in the flask frame, slides out of the funnel end, then stands upright in the
  * foreground (config/water.ts rawTreeMatrix). It stays as the end state for act 7.
  */
 export function RawTree() {
-  // Same seeds in Act 6 (RawTree) and Act 7 (BirthTree): the tree keeps its dirt pattern across the hand-over.
-  const mats = useMemo(() => createRawTreeMaterials(), [])
+  const material = useMemo(() => createRawGoldMaterial(false), [])
+  const trunk = useMemo(() => createRawGoldMaterial(true), [])
   useEffect(
     () => () => {
-      mats.tree.dispose()
-      for (const m of mats.slots) m.dispose()
+      material.dispose()
+      trunk.dispose()
     },
-    [mats],
+    [material, trunk],
   )
 
   const group = useRef<Group>(null)
@@ -35,7 +35,7 @@ export function RawTree() {
 
   return (
     <group ref={group} matrixAutoUpdate={false}>
-      <TreeShapes material={mats.tree} slotMaterials={mats.slots} />
+      <TreeShapes material={material} trunkMaterial={trunk} />
     </group>
   )
 }
