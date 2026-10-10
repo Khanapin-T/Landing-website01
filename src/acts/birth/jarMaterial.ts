@@ -9,18 +9,18 @@ import { ACID_Y, JAR_FLOOR_Y } from '../../config/birth'
  * Values above ~0.85 bloom. Tune by eye.
  */
 export const ACID_LOOK = {
-  color: '#7dff1a',
-  base: 0.14,
-  rim: 0.5,
+  color: '#1fe600',
+  base: 0.3,
+  rim: 0.4,
   rimPower: 2.0,
   depth: 0.16,
-  surface: 0.7,
-  meniscus: 1.2,
+  surface: 0.38,
+  meniscus: 0.8,
   meniscusWidth: 0.09,
 } as const
 
 /** The jar glass: base tint, opacity, the bright edge highlight (rim intensity and colour). */
-export const GLASS_LOOK = { color: '#eef6f2', opacity: 0.08, envMapIntensity: 1.4, rim: 0.9, rimColor: '#d6ffc4' } as const
+export const GLASS_LOOK = { color: '#eef6f2', opacity: 0.08, envMapIntensity: 1.4, rim: 0.9, rimColor: '#9dff6a' } as const
 
 const acidVertex = /* glsl */ `
 varying vec3 vN;

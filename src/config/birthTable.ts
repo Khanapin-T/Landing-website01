@@ -21,10 +21,10 @@ export const TABLE = {
   frontZ: RAW.z + 6,
   thickness: 0.45,
   topY: JAR_FLOOR_Y - 0.003,
-  color: '#0a1015',
-  roughness: 0.45,
-  metalness: 0.2,
-  envMapIntensity: 0.45,
+  color: '#06090d',
+  roughness: 0.7,
+  metalness: 0,
+  envMapIntensity: 0.1,
 } as const
 
 /** Faint green spill of the acid on the table under the jar: an additive radial glow quad (colour times intensity). */

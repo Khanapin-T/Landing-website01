@@ -96,6 +96,8 @@ export const FINAL = {
  * 0..intensity by birth.finale. Point lights, candela, decay 2. Tune by eye.
  */
 export const FINAL_LIGHT = {
+  /** Fraction of the final light that is already on while the ring comes out and is polished (birth.out). */
+  earlyShare: 0.4,
   key: { position: [POLISH.x + 1.6, POLISH.y + 1.7, POLISH.z + 2.3] as const, color: '#ffd8a6', intensity: 70 },
   fill: { position: [POLISH.x - 1.8, POLISH.y + 0.6, POLISH.z + 2.0] as const, color: '#ffe0b8', intensity: 28 },
   rim: { position: [POLISH.x - 1.5, POLISH.y + 0.9, POLISH.z - 1.9] as const, color: '#a8c6ff', intensity: 24 },
