@@ -25,7 +25,8 @@ export function FinaleHud() {
           <h2 className="text-[clamp(40px,4vw,68px)] font-semibold leading-[0.98] tracking-[-0.01em] text-line" style={{ fontStretch: '125%' }}>
             {f.name}
           </h2>
-          <p className="mt-6 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.promo}</p>
+          <p className="mt-6 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.made}</p>
+          <p className="mt-4 max-w-[38ch] text-[17px] leading-relaxed text-line/80">{f.promo}</p>
           <ul data-links className="mt-8 flex gap-6 font-mono text-sm uppercase tracking-[0.12em]">
             {f.links.map((l) => (
               <li key={l.label}>

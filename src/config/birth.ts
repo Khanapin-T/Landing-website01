@@ -85,8 +85,8 @@ export const FINAL = {
   mirrorY: RAW.y - 0.646,
   reflectStrength: 0.32,
   reflectFade: 0.9,
-  envBoost: 2.6,
-  roughness: 0.3,
+  envBoost: 2.99,
+  roughness: 0.255,
 } as const
 
 /**

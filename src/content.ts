@@ -74,6 +74,8 @@ export const content = {
   /** Final frame. PLACEHOLDERS: the author writes the name, the wording and the contacts last. */
   finale: {
     name: 'Your name',
+    /** Closing line before the promo (author 2026-10-10, wording approximate: he may refine it). */
+    made: 'One beautiful, graceful, masculine ring has been made. Now you know how rings are created in our workshop.',
     promo: 'This is just one example of our work. Get in touch.',
     links: [
       { label: 'WhatsApp', href: '#' },

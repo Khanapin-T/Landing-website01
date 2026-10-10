@@ -30,7 +30,7 @@ export function PostFX() {
     // Constant MSAA: changing it at runtime recreates the composer. Quality steps only touch DPR and particles.
     <EffectComposer multisampling={4} enableNormalPass={false}>
       <primitive object={lens} dispose={null} />
-      <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.85} luminanceSmoothing={0.15} />
+      <Bloom mipmapBlur intensity={0.51} luminanceThreshold={0.85} luminanceSmoothing={0.15} />
       <ToneMapping mode={ToneMappingMode.AGX} />
       <primitive object={grade} dispose={null} />
       {/* Not premultiplied: the grain must also reach dark pixels to dither gradient banding. */}
