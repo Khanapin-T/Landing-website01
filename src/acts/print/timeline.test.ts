@@ -5,7 +5,10 @@ import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
 import { PRINT_BEATS } from './beats'
-import { CURE_OFF, PRINT, RING_HALF, printPose } from '../../config/print'
+import { Vector3 } from 'three'
+import { CURE_OFF, PRINT, RING_COUNT, RING_HALF, printPose } from '../../config/print'
+import { newPose, ringPose } from '../../scene/ring/pose'
+import { RING_HALF_EXTENTS } from '../../scene/tree/slots'
 import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
 let tl: gsap.core.Timeline
@@ -43,6 +46,71 @@ describe('act 2 ring size', () => {
   it('keeps the copy on until act 3 starts', () => {
     expect(PRINT_BEATS.copyOut).toBeGreaterThanOrEqual(PRINT_BEATS.flipTo - 0.05)
     expect(PRINT_BEATS.copyOut).toBeLessThanOrEqual(4.0)
+  })
+})
+
+describe('act 2 four-ring row', () => {
+  it('shows one centred ring before the switch, then four rings in the print row', () => {
+    tl.time(2.49)
+    expect(story.ring.spread).toBe(0)
+    tl.time(2.505)
+    expect(story.ring.spread).toBe(1)
+    for (const t of [2.8, 3.3, PRINT_BEATS.crumbleTo, PRINT_BEATS.liftFrom]) {
+      tl.time(t)
+      expect(story.ring.spread).toBe(1)
+    }
+    tl.time(2.4)
+    expect(story.ring.spread).toBe(0)
+  })
+
+  it('spreads the row as the rings leave the plate, ahead of the turn', () => {
+    const B = PRINT_BEATS
+    expect(B.spreadFrom).toBeGreaterThanOrEqual(B.crumbleTo)
+    expect(B.spreadFrom).toBeLessThanOrEqual(B.flipFrom)
+    expect(B.spreadTo).toBeLessThan(B.flipTo)
+    tl.time(B.spreadTo)
+    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
+    tl.time(B.flipTo)
+    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
+  })
+
+  it('never lets two neighbouring rings (with sprues) overlap while they turn over', () => {
+    // Conservative: each ring's x interval (rotated bounding box corners plus the sprue tip) at the shared pose.
+    const S = PRINT.scale
+    const local: Vector3[] = []
+    for (const sx of [-1, 1])
+      for (const sy of [-1, 1])
+        for (const sz of [-1, 1]) local.push(new Vector3(sx * RING_HALF_EXTENTS.x, sy * RING_HALF_EXTENTS.y, sz * RING_HALF_EXTENTS.z))
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) local.push(new Vector3(sx * PRINT.sprue.radius, -RING_HALF - PRINT.sprue.length, sz * PRINT.sprue.radius))
+    const pose = newPose()
+    const p = new Vector3()
+    const B = PRINT_BEATS
+    for (let t = B.crumbleTo; t <= 4.0 + 1e-9; t += 0.0025) {
+      tl.time(t)
+      const lo: number[] = []
+      const hi: number[] = []
+      for (let k = 0; k < RING_COUNT; k++) {
+        ringPose(story.ring, k, pose)
+        let a = Infinity
+        let b = -Infinity
+        for (const c of local) {
+          p.copy(c).multiplyScalar(S).applyQuaternion(pose.quaternion).add(pose.position)
+          a = Math.min(a, p.x)
+          b = Math.max(b, p.x)
+        }
+        lo.push(a)
+        hi.push(b)
+      }
+      for (let k = 1; k < RING_COUNT; k++) expect(lo[k] - hi[k - 1], `t = ${t.toFixed(4)}, rings ${k - 1}/${k}`).toBeGreaterThan(0.005)
+    }
+  })
+
+  it('keeps every ring in the row (flight 0) through act 2', () => {
+    for (const t of [2.4, 2.6, 3.3, 3.8, 3.97, 4.0]) {
+      tl.time(t)
+      expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
+    }
   })
 })
 
@@ -150,7 +218,7 @@ describe('act 2 timeline', () => {
     expect(print.glow).toBe(0)
   })
 
-  it('lifts the plate away, flips the ring upright to the center and clears the clip', () => {
+  it('lifts the plate away, turns the four rings upright in a row at y = 0 and clears the clip', () => {
     tl.time(3.7)
     expect(story.ring.cureY).toBe(CURE_OFF)
     tl.time(4.0)
@@ -162,6 +230,21 @@ describe('act 2 timeline', () => {
     expect(story.ring.y).toBeCloseTo(0)
     expect(story.ring.resin).toBe(1)
     expect(story.ring.sprue).toBe(1)
+    expect(story.ring.spread).toBeCloseTo(PRINT.row.liftSpread, 9)
+    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+  })
+
+  it('jumping to a time equals scrubbing to it', () => {
+    const times = [2.3, 2.505, 2.9, 3.4, 3.65, 3.75, 3.85, 3.97, 4.0]
+    const scrubbed = times.map((t) => {
+      tl.time(t)
+      return { ring: { ...story.ring, flight: [...story.ring.flight] }, print: { ...print }, stream: { ...story.stream } }
+    })
+    for (let i = times.length - 1; i >= 0; i--) {
+      tl.time(0)
+      tl.time(times[i])
+      expect({ ring: { ...story.ring, flight: [...story.ring.flight] }, print: { ...print }, stream: { ...story.stream } }).toEqual(scrubbed[i])
+    }
   })
 
   it('restores act 1 exactly when scrubbed back from later acts', () => {
@@ -174,6 +257,7 @@ describe('act 2 timeline', () => {
     expect(story.ring.cad).toBe(1)
     expect(story.ring.cureY).toBe(CURE_OFF)
     expect(story.ring.fill).toBe(1)
+    expect(story.ring.spread).toBe(0)
     tl.time(0)
     expect(story.ring).toMatchObject(RING_INITIAL)
     expect(print).toMatchObject(PRINT_INITIAL)

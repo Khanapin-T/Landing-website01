@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { CAM_INITIAL } from '../story/store'
-import { CURE_OFF, PRINT, RING_HALF, printPose, railOpacity, railSpan } from './print'
+import { RING_HALF_EXTENTS } from '../scene/tree/slots'
+import { CURE_OFF, PRINT, RING_COUNT, RING_HALF, printPose, printRingX, railOpacity, railSpan } from './print'
 
 describe('print layout', () => {
-  // The ring prints at PRINT.scale (author: 40% smaller while printing).
+  // The rings print at PRINT.scale (author 2026-10-10: 20-30% smaller than the old single print at 0.6).
   const S = PRINT.scale
   const part = (RING_HALF + PRINT.sprue.length) * S
 
-  it('prints the ring 40% smaller', () => {
-    expect(S).toBeCloseTo(0.6, 9)
+  it('prints the rings 25% smaller than the old single print', () => {
+    expect(S).toBeCloseTo(0.6 * 0.75, 9)
   })
 
   it('starts with the plate on the vat floor and the whole part below the cure plane', () => {
@@ -35,6 +36,44 @@ describe('print layout', () => {
 
   it('uses an off value far below anything on screen', () => {
     expect(CURE_OFF).toBeLessThan(-100)
+  })
+})
+
+describe('four-ring print row', () => {
+  const S = PRINT.scale
+  const { spanX, jitter, baseRadius, radius } = PRINT.supports
+  // Widest x reach of a ring with its supports, ring-local: the ring's bbox, or the outermost support's foot.
+  const supportsHalfX = spanX + jitter / 2 + Math.max(baseRadius, 2 * radius * 1.6)
+  const halfX = Math.max(RING_HALF_EXTENTS.x, supportsHalfX) * S
+
+  it('prints four rings in a row centred on the plate, pitch apart', () => {
+    expect(RING_COUNT).toBe(4)
+    for (let k = 0; k < RING_COUNT; k++) {
+      expect(printRingX(k)).toBeCloseTo((k - 1.5) * PRINT.row.pitch, 12)
+      expect(printRingX(k) + printRingX(RING_COUNT - 1 - k)).toBeCloseTo(0, 12)
+    }
+    expect(PRINT.row.pitch).toBeCloseTo(0.5, 12)
+  })
+
+  it('fits all four rings with their supports on the plate with a margin', () => {
+    const reach = printRingX(RING_COUNT - 1) + halfX
+    expect(reach).toBeLessThanOrEqual(PRINT.plate.width / 2 - 0.03)
+    // The resin bed under the plate covers every ring's cure front.
+    expect(reach).toBeLessThanOrEqual(PRINT.pool.halfWidth)
+  })
+
+  it('keeps neighbours (ring plus supports) apart', () => {
+    for (let k = 1; k < RING_COUNT; k++) {
+      const gap = printRingX(k) - printRingX(k - 1) - 2 * halfX
+      expect(gap).toBeGreaterThan(0.04)
+    }
+  })
+
+  it('spreads the row wider (never narrower) as the rings leave the plate, still inside the frame', () => {
+    expect(PRINT.row.liftSpread).toBeGreaterThan(1)
+    // Act 2 camera at z = CAM_INITIAL.z, fov 30, 16:9: the frame half width at the rings' depth (z = 0).
+    const frameHalfW = CAM_INITIAL.z * Math.tan((30 * Math.PI) / 360) * (16 / 9)
+    expect(printRingX(RING_COUNT - 1) * PRINT.row.liftSpread + RING_HALF_EXTENTS.x * S).toBeLessThan(0.7 * frameHalfW)
   })
 })
 

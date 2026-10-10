@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PRINT, RING_HALF, printPose } from '../../config/print'
+import { PRINT, RING_COUNT, RING_HALF, printPose, printRingX } from '../../config/print'
+import { RING_HALF_EXTENTS } from '../../scene/tree/slots'
 import { mulberry32 } from '../../lib/random'
 import { PLATE_FRAME_Y, buildSupportGeometry, computeSupports, sampleSupportPoints, supportRadii, type CastUp } from './supportsData'
 
@@ -76,6 +77,19 @@ describe('print supports', () => {
       expect(pos.getY(i)).toBeLessThanOrEqual(PLATE_FRAME_Y + 1e-6)
     }
     g.dispose()
+  })
+
+  it('keeps each copy of the supports in its own lane of the four-ring row (off the neighbours and their supports)', () => {
+    // The widest supports (every ray hits: deep and shallow stand-ins) with their feet, ring-local.
+    for (const set of [supports, computeSupports(() => 0, mulberry32(3))]) {
+      const reach = Math.max(...set.map((s) => Math.abs(s.x) + Math.max(PRINT.supports.baseRadius, supportRadii(s).column * 1.6)))
+      for (let k = 1; k < RING_COUNT; k++) {
+        const pitch = printRingX(k) - printRingX(k - 1)
+        // Supports of k-1 against supports of k, and against ring k itself.
+        expect(pitch - 2 * reach * PRINT.scale).toBeGreaterThan(0.04)
+        expect(pitch - (reach + RING_HALF_EXTENTS.x) * PRINT.scale).toBeGreaterThan(0.04)
+      }
+    }
   })
 
   it('samples points along the supports for the break-up', () => {

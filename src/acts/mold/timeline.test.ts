@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gsap } from 'gsap'
 import { TOTAL_SCREENS } from '../../config/acts'
 import { CAM } from '../../config/mold'
-import { PRINT } from '../../config/print'
+import { PRINT, RING_COUNT } from '../../config/print'
 import { registerIdea } from '../idea/timeline'
 import { IDEA_INITIAL, idea } from '../idea/state'
 import { registerPrint } from '../print/timeline'
@@ -13,7 +13,7 @@ import { registerMold } from './timeline'
 import { MOLD_INITIAL, mold } from './state'
 import { CAM_INITIAL, FLASK_INITIAL, RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
 
-/** Plain copy without GSAP's `_gsap` cache (it is also added to the `clones` array). */
+/** Plain copy without GSAP's `_gsap` cache (it is also added to tweened arrays such as `story.ring.flight`). */
 const snap = <T extends object>(o: T): T =>
   Object.fromEntries(Object.entries(o).filter(([k]) => k !== '_gsap').map(([k, v]) => [k, Array.isArray(v) ? [...v] : v])) as T
 
@@ -42,21 +42,24 @@ describe('act 3 timeline', () => {
   it('moves nothing of act 3 before 4.0', () => {
     tl.time(3.99)
     expect(story.cam).toMatchObject(CAM_INITIAL)
-    expect(story.ring.tree).toBe(0)
+    expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
     expect(snap(mold)).toEqual(MOLD_INITIAL)
   })
 
-  it('grows the small printed ring to full size on its way to the tree, while the camera pulls back', () => {
+  it('flies the four printed rings to their slots one after another inside the hero window (print scale kept)', () => {
+    expect(B.heroFrom + (RING_COUNT - 1) * B.flightStagger + B.flightLen).toBeLessThanOrEqual(B.heroTo + 1e-9)
     tl.time(B.heroFrom)
-    expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
-    tl.time((B.heroFrom + B.heroTo) / 2)
-    expect(story.ring.scale).toBeGreaterThan(PRINT.scale)
-    expect(story.ring.scale).toBeLessThan(1)
+    expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
+    tl.time(B.heroFrom + B.flightStagger * 1.5)
+    expect(story.ring.flight[0]).toBeGreaterThan(story.ring.flight[1])
+    expect(story.ring.flight[1]).toBeGreaterThan(0)
+    expect(story.ring.flight[2]).toBe(0)
     tl.time(B.heroTo)
-    expect(story.ring.scale).toBe(1)
-    expect(story.ring.tree).toBe(1)
-    tl.time(3.99)
+    expect([...story.ring.flight]).toEqual([1, 1, 1, 1])
+    // The size comes from each ring's flight (placement.ts), not from a global tween.
     expect(story.ring.scale).toBeCloseTo(PRINT.scale, 9)
+    tl.time(3.99)
+    expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
   })
 
   it('pulls the camera back and raises the base, then lands the hero ring on the trunk', () => {
@@ -64,16 +67,13 @@ describe('act 3 timeline', () => {
     expect(snap(story.cam)).toEqual(CAM.tree)
     expect(mold.base).toBe(1)
     tl.time(4.6)
-    expect(story.ring.tree).toBe(1)
+    expect([...story.ring.flight]).toEqual([1, 1, 1, 1])
     expect(mold.trunk).toBe(1)
   })
 
-  it('pops the clones in one after another, then lowers the flask', () => {
-    tl.time(4.7)
-    expect(mold.clones[0]).toBeGreaterThan(0)
-    expect(mold.clones[2]).toBe(0)
+  it('starts the trunk only after every ring has left the axis, then lowers the flask', () => {
+    expect(B.trunkFrom).toBeGreaterThanOrEqual(B.heroTo)
     tl.time(4.95)
-    expect([...mold.clones]).toEqual([1, 1, 1])
     expect(mold.flask).toBe(0)
     tl.time(5.25)
     expect(mold.flask).toBe(1)
@@ -158,12 +158,12 @@ describe('act 3 timeline', () => {
     const ring = snap(story.ring)
     tl.time(9)
     tl.time(3.99)
-    expect(story.ring).toMatchObject(ring)
+    expect(snap(story.ring)).toEqual(ring)
     expect(snap(mold)).toEqual(MOLD_INITIAL)
     expect(story.cam).toMatchObject(CAM_INITIAL)
-    expect(story.ring.tree).toBe(0)
+    expect([...story.ring.flight]).toEqual([0, 0, 0, 0])
     tl.time(0)
-    expect(story.ring).toMatchObject(RING_INITIAL)
+    expect(snap(story.ring)).toEqual(snap(RING_INITIAL))
     expect(story.cam).toMatchObject(CAM_INITIAL)
     expect(snap(mold)).toEqual(MOLD_INITIAL)
   })

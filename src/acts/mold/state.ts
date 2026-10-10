@@ -4,7 +4,10 @@ export interface MoldState {
   base: number
   /** Trunk growth 0..1. */
   trunk: number
-  /** Clone rings 0..1 (scale about the sprue tip). */
+  /**
+   * UNUSED since the four-ring print (2026-10-10: the printed rings fly to the tree, no clones pop in). Kept only
+   * because src/acts/birth/timeline.test.ts still resets it; remove together with that line.
+   */
   clones: [number, number, number]
   /** Flask: 0 = high above its seat, 1 = seated. */
   flask: number

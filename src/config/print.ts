@@ -17,8 +17,17 @@ const PLATE = { width: 2.03, depth: 1.3, thickness: 0.06, parkedY: 1.9 } as cons
 export const PRINT = {
   /** Cure plane (the vat floor): the printed part only exists above it. */
   cureY: -0.6,
-  /** The ring (and its sprue and supports) prints at this size (author: 40% smaller); act 3 grows it back on its way to the tree. */
-  scale: 0.6,
+  /**
+   * The rings (with their sprues and supports) print at this size (author 2026-10-10: four rings, 20-30% smaller than
+   * the old single print at 0.6); act 3 grows each back to full size on its way to the tree.
+   */
+  scale: 0.45,
+  /**
+   * The four rings print side by side in a row along x (printRingX, `pitch` apart at the ring centres). After the print,
+   * as the plate lifts away, the row spreads to `liftSpread` times that pitch, so the rings never touch while they turn
+   * over (a sprue swinging sideways reaches past the neighbour's edge at the print pitch).
+   */
+  row: { pitch: 0.5, liftSpread: 1.4 },
   /**
    * The resin bed: Act 1's points pour into this flat layer just under the cure plane and feed the print from it.
    * A rectangle with the build plate's footprint (the author: not a small round pool).
@@ -63,6 +72,14 @@ export const PRINT = {
     puff: 0.35,
   },
 } as const
+
+/** Rings printed together (one design, four copies on the plate; each takes its own tree slot in Act 3). */
+export const RING_COUNT = 4
+
+/** Ring k's x on the build plate (ring centres, a row centred on x = 0). */
+export function printRingX(k: number): number {
+  return (k - (RING_COUNT - 1) / 2) * PRINT.row.pitch
+}
 
 /** Opacity of the rails for a plate height: 0 while parked, 1 once the plate is in the frame. */
 export function railOpacity(plateY: number): number {

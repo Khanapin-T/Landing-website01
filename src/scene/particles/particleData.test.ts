@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { particleDrawCount, resinStream, sampleSurface } from './particleData'
+import { particleDrawCount, resinStream, sampleSurface, streamRing } from './particleData'
 import { mulberry32 } from '../../lib/random'
-import { PRINT, RING_HALF, printPose } from '../../config/print'
+import { PRINT, RING_COUNT, RING_HALF, printPose, printRingX } from '../../config/print'
 
 describe('particle data', () => {
   it('samples points on the surface, deterministically per seed', () => {
@@ -45,11 +45,11 @@ describe('particle data', () => {
     expect(lowSum / lowN).toBeLessThan(highSum / highN)
   })
 
-  it('sends each point back to its own spot on the printed ring, when the cure front reaches it', () => {
+  it('sends each point to its own spot on its printed ring, when the cure front reaches it', () => {
     for (let i = 0; i < p.count; i++) {
       const [x, y, z] = [ring[i * 3], ring[i * 3 + 1], ring[i * 3 + 2]]
-      // Upside down (flip PI around Z): x and y mirror, z stays; the point is printed on the cure plane.
-      expect(p.front![i * 3]).toBeCloseTo(-x * PRINT.scale)
+      // Upside down (flip PI around Z about the ring's own centre): x and y mirror, z stays; printed on the cure plane.
+      expect(p.front![i * 3]).toBeCloseTo(-x * PRINT.scale + printRingX(streamRing(i)))
       expect(p.front![i * 3 + 1]).toBeCloseTo(PRINT.cureY)
       expect(p.front![i * 3 + 2]).toBeCloseTo(z * PRINT.scale)
       // At its arrival progress the printed ring has carried this point exactly onto the cure plane.
@@ -57,6 +57,27 @@ describe('particle data', () => {
       expect(g).toBeGreaterThan(0)
       expect(g).toBeLessThanOrEqual(1 + 1e-6)
       expect(printPose(g).ringY - y * PRINT.scale).toBeCloseTo(PRINT.cureY)
+    }
+  })
+
+  it('spreads the points evenly over the four printed rings, each ring getting the whole surface', () => {
+    const n = new Array(RING_COUNT).fill(0)
+    const lo = new Array(RING_COUNT).fill(Infinity)
+    const hi = new Array(RING_COUNT).fill(-Infinity)
+    for (let i = 0; i < p.count; i++) {
+      const k = streamRing(i)
+      expect(Number.isInteger(k) && k >= 0 && k < RING_COUNT).toBe(true)
+      n[k]++
+      lo[k] = Math.min(lo[k], ring[i * 3 + 1])
+      hi[k] = Math.max(hi[k], ring[i * 3 + 1])
+      // The point lands within its own ring's footprint in the row.
+      expect(Math.abs(p.front![i * 3] - printRingX(k))).toBeLessThanOrEqual(0.5 * PRINT.scale + 1e-6)
+    }
+    for (let k = 0; k < RING_COUNT; k++) {
+      expect(Math.abs(n[k] - p.count / RING_COUNT)).toBeLessThanOrEqual(1)
+      // Each ring is printed top to bottom (from the bottom of the sampled shape to its top).
+      expect(lo[k]).toBeLessThan(-RING_HALF + 0.05)
+      expect(hi[k]).toBeGreaterThan(RING_HALF - 0.05)
     }
   })
 

@@ -22,11 +22,11 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
 
   seg.fromTo(print, { bed: 0 }, { bed: 1, duration: len(B.bedInFrom, B.bedInTo), ease: 'power2.out' }, B.bedInFrom)
 
-  // Ring switch while hidden under the cure plane.
+  // Ring switch while hidden under the cure plane: the one CAD ring becomes four resin rings in a row on the plate.
   seg.fromTo(
     story.ring,
-    { fill: 0, cad: 1, resin: 0, sprue: 0, flip: 0, y: 0, cureY: CURE_OFF, scale: 1 },
-    { fill: 1, cad: 0, resin: 1, sprue: 1, flip: Math.PI, y: start.ringY, cureY: PRINT.cureY, scale: PRINT.scale, duration: instant },
+    { fill: 0, cad: 1, resin: 0, sprue: 0, flip: 0, y: 0, cureY: CURE_OFF, scale: 1, spread: 0 },
+    { fill: 1, cad: 0, resin: 1, sprue: 1, flip: Math.PI, y: start.ringY, cureY: PRINT.cureY, scale: PRINT.scale, spread: 1, duration: instant },
     B.setup,
   )
   seg.fromTo(print, { sup: 0 }, { sup: start.ringY, duration: instant }, B.setup)
@@ -50,9 +50,11 @@ export function registerPrint(tl: gsap.core.Timeline): () => void {
 
   // Done: at 100% the supports crumble into a short puff while the ring still hangs on its sprue (the sprue stays).
   seg.fromTo(print, { drop: 0 }, { drop: 1, duration: len(B.crumbleFrom, B.crumbleTo) }, B.crumbleFrom)
-  // Then clip off, plate away, the ring turns upright (still small: act 3 grows it on its way to the tree).
+  // Then clip off, plate away, the rings turn upright (still small: act 3 grows each on its way to the tree). As they
+  // leave the plate the row spreads a little first, so a sprue swinging sideways never reaches the neighbour.
   seg.fromTo(story.ring, { cureY: PRINT.cureY }, { cureY: CURE_OFF, duration: instant }, B.printTo)
   seg.fromTo(print, { plate: end.plateY }, { plate: PRINT.plate.parkedY, duration: len(B.liftFrom, B.liftTo), ease: 'power2.in' }, B.liftFrom)
+  seg.fromTo(story.ring, { spread: 1 }, { spread: PRINT.row.liftSpread, duration: len(B.spreadFrom, B.spreadTo), ease: 'power2.out' }, B.spreadFrom)
   const flip = len(B.flipFrom, B.flipTo)
   seg.fromTo(story.ring, { flip: Math.PI }, { flip: TURN, duration: flip, ease: 'power2.inOut' }, B.flipFrom)
   seg.fromTo(story.ring, { y: end.ringY }, { y: 0, duration: flip, ease: 'power2.inOut' }, B.flipFrom)

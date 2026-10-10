@@ -11,15 +11,17 @@ export const MOLD_BEATS = {
   baseInFrom: 4.05,
   baseInTo: 4.3,
   copyIn: 4.0,
-  /** The hero ring leaves the center and lands on its slot. */
+  /**
+   * The four printed rings leave the row and land on their slots (interim: ring k flies over
+   * [heroFrom + k * flightStagger, + flightLen], all within heroFrom..heroTo; they may cross in flight).
+   */
   heroFrom: 4.0,
   heroTo: 4.3,
-  /** The trunk starts after the base has landed and after the hero ring has left the axis (no piercing). */
+  flightStagger: 0.04,
+  flightLen: 0.18,
+  /** The trunk starts after the base has landed and after the rings have left the axis (no piercing). */
   trunkFrom: 4.35,
   trunkTo: 4.6,
-  /** Three clones pop in one after another. */
-  cloneFrom: [4.6, 4.7, 4.8],
-  cloneLen: 0.15,
   flaskFrom: 4.95,
   flaskTo: 5.25,
   tapeFrom: 5.25,

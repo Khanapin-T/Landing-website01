@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { ActId } from '../config/acts'
 import { CURE_OFF } from '../config/print'
 
-/** The persistent hero ring, driven by acts through `master`. */
+/** The four persistent rings (one shared state while they print; ring 0 is Act 1's CAD ring), driven by acts through `master`. */
 export interface RingState {
   /** Turn around Y, radians. */
   yaw: number
@@ -20,13 +20,40 @@ export interface RingState {
   sprue: number
   /** World Y of the print cure plane; the ring is clipped below it. CURE_OFF = no clip. */
   cureY: number
-  /** 0..1 blend from the pose above into tree slot 0 (Act 3). */
-  tree: number
-  /** Uniform size of the ring and its sprue (Act 2 prints it at PRINT.scale). */
+  /**
+   * 0..1 print row: 0 = every ring at x = 0 (Act 1, one ring), 1 = ring k at printRingX(k) (set at the Act 2 ring
+   * switch); above 1 the row spreads wider (PRINT.row.liftSpread, while the rings turn over).
+   */
+  spread: number
+  /**
+   * Per ring 0..1 (Act 3): 0 = in the print row (the pose above), 1 = seated on tree slot k (slotPose(k)). Its drawn
+   * size goes from `scale` to 1 with it (src/scene/ring/placement.ts). The array is a GSAP tween target: never
+   * replace it at runtime, only its values.
+   */
+  flight: [number, number, number, number]
+  /** Uniform print size of the rings and their sprues (Act 2 prints them at PRINT.scale; each grows back with its flight). */
   scale: number
 }
 
-export const RING_INITIAL: Readonly<RingState> = { yaw: 0, fill: 0, cad: 1, y: 0, flip: 0, resin: 0, sprue: 0, cureY: CURE_OFF, tree: 0, scale: 1 }
+/**
+ * `flight` is a getter: every spread or Object.assign of RING_INITIAL gets its own fresh array, so the initial values
+ * are never shared with (and mutated through) the live tween target.
+ */
+export const RING_INITIAL: Readonly<RingState> = {
+  yaw: 0,
+  fill: 0,
+  cad: 1,
+  y: 0,
+  flip: 0,
+  resin: 0,
+  sprue: 0,
+  cureY: CURE_OFF,
+  spread: 0,
+  get flight(): [number, number, number, number] {
+    return [0, 0, 0, 0]
+  },
+  scale: 1,
+}
 
 /** Camera rig: world Y and Z of the camera (x stays 0) and the world Y of the point on the Y axis it looks at (look == y: straight down -Z). */
 export interface CamState {
