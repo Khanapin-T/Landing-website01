@@ -39,7 +39,9 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
   const v3 = (c: THREE.Color) => `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`
   // envMapIntensity is POLISHED_GOLD's; the raw side scales the IBL back down to RAW_GOLD's (as the cut rings), the
   // polished side up by uBoost in the final frame.
-  const rawEnv = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
+  // With scene.environment three ignores material.envMapIntensity (the cast rings and the tree render at the scene's
+  // factor 1), so the raw side must not be scaled down or the hero ring is darker than the other rings.
+  const rawEnv = (1).toFixed(5)
   const envScale = variant === 'stub' ? rawEnv : `mix(${rawEnv}, uBoost, polished)`
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
@@ -89,7 +91,7 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v5`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v6`
   return m
 }
 

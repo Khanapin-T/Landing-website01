@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { FINAL, LINE_NORMAL } from '../../config/birth'
-import { RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
 import { POLISHED_GOLD, createPolishMaterials } from './polishMaterial'
 
 const compile = (m: THREE.Material) => {
@@ -64,7 +63,8 @@ describe('polish materials', () => {
 
   it('scales the IBL down to the raw gold intensity on the raw side (always on the stub), the polished side by uBoost', () => {
     const { ring, stub, mirror } = createPolishMaterials()
-    const ratio = (RAW_GOLD.envMapIntensity / POLISHED_GOLD.envMapIntensity).toFixed(5)
+    // The raw side runs at the scene's IBL factor (1): the cast rings and the tree do too, so the hero ring matches them.
+    const ratio = (1).toFixed(5)
     for (const m of [ring, mirror]) {
       const fs = compile(m).fragmentShader
       expect(fs).toContain(`float pgEnv = mix(${ratio}, uBoost, polished);`)
