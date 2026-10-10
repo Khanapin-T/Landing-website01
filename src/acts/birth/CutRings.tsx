@@ -17,7 +17,7 @@ const SLOTS = CUT_ORDER.filter((s) => s !== HERO_SLOT)
 export function CutRings() {
   const ring = useRingLightGeometry()
   const sprue = useMemo(() => createSprueGeometry(), [])
-  const material = useMemo(() => createRawGoldMaterial(false), [])
+  const material = useMemo(() => createRawGoldMaterial(), [])
   useEffect(
     () => () => {
       sprue.dispose()

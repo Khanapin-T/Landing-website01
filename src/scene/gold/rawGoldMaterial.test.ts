@@ -1,22 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { MOLD } from '../../config/mold'
-import { RAW_GOLD, TARNISH, createRawGoldMaterial } from './rawGoldMaterial'
+import { RAW_GOLD, createRawGoldMaterial } from './rawGoldMaterial'
 
-describe('raw gold', () => {
-  it('is strongly matte, never shiny before the polish', () => {
-    expect(RAW_GOLD.roughness).toBeGreaterThanOrEqual(0.8)
-    expect(createRawGoldMaterial(false).roughness).toBe(RAW_GOLD.roughness)
+describe('raw gold material', () => {
+  it('stays strongly matte and fully metallic', () => {
+    const m = createRawGoldMaterial()
+    expect(m.roughness).toBe(RAW_GOLD.roughness)
+    expect(RAW_GOLD.roughness).toBeGreaterThan(0.8)
+    expect(m.metalness).toBe(1)
   })
 
-  it('puts the one tarnish patch on the trunk surface, small, in its lower half', () => {
-    const length = MOLD.trunk.topY - MOLD.trunk.bottomY
-    expect(Math.hypot(TARNISH.center[0], TARNISH.center[2])).toBeCloseTo(MOLD.trunk.radius, 2)
-    expect(TARNISH.center[1]).toBeGreaterThan(0)
-    expect(TARNISH.center[1]).toBeLessThan(length / 2)
-    expect(TARNISH.radius).toBeLessThan(length / 4)
+  it('is clean pale yellow gold: no tarnish or dirt in the shader', () => {
+    const m = createRawGoldMaterial()
+    const shader = { vertexShader: '#include <common>\n#include <begin_vertex>', fragmentShader: '#include <common>\n#include <color_fragment>\n#include <roughnessmap_fragment>' }
+    m.onBeforeCompile(shader as never, {} as never)
+    expect(shader.fragmentShader).not.toMatch(/tarnish|dirt/i)
+    const c = m.color
+    expect(c.r).toBeGreaterThan(c.g)
+    expect(c.g).toBeGreaterThan(c.b)
   })
 
-  it('compiles the tarnished trunk as its own program, the rest as another', () => {
-    expect(createRawGoldMaterial(true).customProgramCacheKey()).not.toBe(createRawGoldMaterial(false).customProgramCacheKey())
+  it('compiles every raw material as one program', () => {
+    expect(createRawGoldMaterial().customProgramCacheKey()).toBe(createRawGoldMaterial().customProgramCacheKey())
   })
 })

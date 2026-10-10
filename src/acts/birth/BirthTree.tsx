@@ -9,18 +9,16 @@ import { birth } from './state'
 
 /**
  * The raw tree without its rings (Act 7): trunk, funnel and the four trunk stubs in the act 6 end pose (the same
- * materials, the tarnish patch on the trunk), so the hand-over at 14.0 is invisible. The rings are drawn by CutRings
+ * materials), so the hand-over at 14.0 is invisible. The rings are drawn by CutRings
  * and PolishRing. Goes up out of the frame (birth.treeUp) once all rings are off.
  */
 export function BirthTree() {
-  const material = useMemo(() => createRawGoldMaterial(false), [])
-  const trunk = useMemo(() => createRawGoldMaterial(true), [])
+  const material = useMemo(() => createRawGoldMaterial(), [])
   useEffect(
     () => () => {
       material.dispose()
-      trunk.dispose()
     },
-    [material, trunk],
+    [material],
   )
 
   const group = useRef<Group>(null)
@@ -34,7 +32,7 @@ export function BirthTree() {
 
   return (
     <group ref={group} matrixAutoUpdate={false}>
-      <TreeShapes material={material} trunkMaterial={trunk} rings={false} />
+      <TreeShapes material={material} rings={false} />
     </group>
   )
 }

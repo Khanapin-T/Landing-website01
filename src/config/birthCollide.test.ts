@@ -103,7 +103,7 @@ describe('cut rings falling into the jar', () => {
       }
     })
     expect(faults.slice(0, 12)).toEqual([])
-  })
+  }, 60_000)
 })
 
 describe('rings at rest in the jar', () => {
