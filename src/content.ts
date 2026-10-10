@@ -87,6 +87,8 @@ export const content = {
   gauge: 'Vacuum',
   /** Label of the rest timer chip (Acts 3 and 5). */
   rest: 'Rest',
+  /** Autoplay button: starts and pauses the self-scrolling story. */
+  autoplay: { play: 'Autoplay', pause: 'Pause', hint: 'Not smooth? Press Autoplay and enjoy' },
   actNames: {
     intro: 'Intro',
     idea: 'Idea',

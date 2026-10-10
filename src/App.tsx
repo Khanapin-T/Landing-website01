@@ -4,6 +4,7 @@ import { setError } from './story/appState'
 import { ScrollDirector } from './story/ScrollDirector'
 import { ScrollTrack } from './scroll/ScrollTrack'
 import { Hud } from './hud/Hud'
+import { AutoplayButton } from './hud/AutoplayButton'
 import { Loader } from './hud/Loader'
 import { FpsMeter } from './debug/FpsMeter'
 import { content } from './content'
@@ -35,6 +36,7 @@ export function App() {
       <ScrollDirector />
       <ScrollTrack />
       <Hud />
+      <AutoplayButton />
       <Loader />
       {DEBUG && <FpsMeter />}
     </>

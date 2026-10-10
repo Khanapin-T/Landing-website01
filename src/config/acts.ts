@@ -8,6 +8,8 @@ export interface ActDef {
   temperature: number
   /** Screens into the act where a chapter click lands. Default DEFAULT_ENTRY. */
   entry?: number
+  /** Seconds the act takes in autoplay (the screens-per-second pace is screens / autoplaySeconds). Tune by eye. */
+  autoplaySeconds: number
 }
 
 /** Small step past the act start so pixel rounding never lands on the previous act. */
@@ -15,14 +17,14 @@ export const DEFAULT_ENTRY = 0.01
 
 /** Story order and lengths (spec section 3). 'birth' includes the final hold. Tune by eye. */
 export const ACTS: readonly ActDef[] = [
-  { id: 'intro', screens: 0.5, temperature: 0 },
-  { id: 'idea', screens: 2, temperature: 0, entry: 0.6 },
-  { id: 'print', screens: 1.5, temperature: 0.1, entry: 0.6 },
-  { id: 'mold', screens: 2.5, temperature: 0.15, entry: 0.5 },
-  { id: 'fire', screens: 2.5, temperature: 0.8, entry: 0.5 },
-  { id: 'gold', screens: 2.5, temperature: 1, entry: 0.15 },
-  { id: 'water', screens: 2.5, temperature: 0.45 },
-  { id: 'birth', screens: 3, temperature: 0.6 },
+  { id: 'intro', screens: 0.5, temperature: 0, autoplaySeconds: 2.9 },
+  { id: 'idea', screens: 2, temperature: 0, entry: 0.6, autoplaySeconds: 10 },
+  { id: 'print', screens: 1.5, temperature: 0.1, entry: 0.6, autoplaySeconds: 8.8 },
+  { id: 'mold', screens: 2.5, temperature: 0.15, entry: 0.5, autoplaySeconds: 14.2 },
+  { id: 'fire', screens: 2.5, temperature: 0.8, entry: 0.5, autoplaySeconds: 13.3 },
+  { id: 'gold', screens: 2.5, temperature: 1, entry: 0.15, autoplaySeconds: 14.2 },
+  { id: 'water', screens: 2.5, temperature: 0.45, autoplaySeconds: 12.1 },
+  { id: 'birth', screens: 3, temperature: 0.6, autoplaySeconds: 14.2 },
 ]
 
 export const TOTAL_SCREENS = ACTS.reduce((sum, a) => sum + a.screens, 0)
