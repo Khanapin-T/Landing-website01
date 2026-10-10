@@ -9,7 +9,7 @@ import { getAppState } from '../../story/appState'
 import { story } from '../../story/store'
 import { burnUniforms } from '../furnace/burn'
 import { slotPose } from './slots'
-import { createSprueWaxGeometry } from './sprueWax'
+import { createSprueWaxGeometry, stubGrowth } from './sprueWax'
 import { createTrunkGeometry } from './trunk'
 import { createWaxMaterial } from './waxMaterial'
 
@@ -26,11 +26,6 @@ function stubLayout(i: number): StubLayout {
   const { position, quaternion } = slotPose(i)
   const tip = TIP_TO_RING.clone().negate().applyQuaternion(quaternion).add(position)
   return { tip, quaternion }
-}
-
-/** 0..1 growth of ring k's wax stub: it grows from the sprue tip during the last part of the ring's flight. */
-function stubGrowth(flight: number): number {
-  return Math.min(Math.max((flight - 0.85) / 0.15, 0), 1)
 }
 
 /**

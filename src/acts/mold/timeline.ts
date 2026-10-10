@@ -1,6 +1,6 @@
 import { gsap } from 'gsap'
 import { CAM } from '../../config/mold'
-import { RING_COUNT } from '../../config/print'
+import { ASSEMBLY } from '../../config/assembly'
 import { CAM_INITIAL, story } from '../../story/store'
 import { MOLD_BEATS as B } from './beats'
 import { mold } from './state'
@@ -17,13 +17,13 @@ export function registerMold(tl: gsap.core.Timeline): () => void {
   seg.fromTo(story.cam, { ...CAM_INITIAL }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
   seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
 
-  // The four printed rings fly from the row onto their slots one after another (each grows from the print size to
-  // full size with its flight: src/scene/ring/placement.ts), then the trunk grows up from the cone.
-  // INTERIM (stage 1): straight blends that may cross; stage 2 replaces these with collision-free paths.
-  for (let k = 0; k < RING_COUNT; k++) {
-    seg.fromTo(story.ring.flight, { [k]: 0 }, { [k]: 1, duration: B.flightLen, ease: 'power2.inOut' }, B.heroFrom + k * B.flightStagger)
-  }
+  // The trunk grows up from the cone between the hovering print row, then the four printed rings fly onto their slots
+  // one after another (curve to a staging point outside the slot, then a slide along the sprue axis; each grows from
+  // the print size to full size on the way: src/scene/ring/placement.ts).
   seg.fromTo(mold, { trunk: 0 }, { trunk: 1, duration: len(B.trunkFrom, B.trunkTo), ease: 'power1.out' }, B.trunkFrom)
+  ASSEMBLY.order.forEach((k, i) => {
+    seg.fromTo(story.ring.flight, { [k]: 0 }, { [k]: 1, duration: B.flightLen, ease: 'power2.inOut' }, B.flightFrom + i * B.flightStagger)
+  })
 
   // Flask, tape, investment.
   seg.fromTo(mold, { flask: 0 }, { flask: 1, duration: len(B.flaskFrom, B.flaskTo), ease: 'power2.in' }, B.flaskFrom)

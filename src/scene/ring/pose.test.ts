@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
-import { PRINT, RING_COUNT, printRingX } from '../../config/print'
+import { PRINT, PRINT_ROW, RING_COUNT, printRingX, ringRowX } from '../../config/print'
 import { blendPose, newPose, ringPose, type Pose } from './pose'
 
 const make = (p: [number, number, number], axis: [number, number, number], angle: number): Pose => ({
@@ -42,16 +42,23 @@ describe('ringPose', () => {
     expect(o.quaternion.angleTo(identity)).toBeLessThan(1e-9)
   })
 
-  it('puts every ring at x = 0 with spread 0 (Act 1: one ring) and ring k at printRingX(k) * spread', () => {
+  it('puts every ring at x = 0 with spread 0 (Act 1: one ring) and ring k at ringRowX(k) * spread', () => {
     for (let k = 0; k < RING_COUNT; k++) {
       expect(ringPose({ y: 0.2, flip: 1, yaw: 2, spread: 0 }, k, newPose()).position.distanceTo(new Vector3(0, 0.2, 0))).toBe(0)
       for (const spread of [0.5, 1, PRINT.row.liftSpread]) {
         const o = ringPose({ y: -0.1, flip: Math.PI, yaw: 0.6, spread }, k, newPose())
-        expect(o.position.x).toBeCloseTo(printRingX(k) * spread, 12)
+        expect(o.position.x).toBeCloseTo(ringRowX(k) * spread, 12)
         expect(o.position.y).toBeCloseTo(-0.1, 12)
         expect(o.position.z).toBe(0)
       }
     }
+  })
+
+  it('gives every ring its own row position, the hero ring 0 the leftmost, the lower-slot rings (2, 3) the middle ones', () => {
+    expect([...PRINT_ROW].sort()).toEqual([0, 1, 2, 3])
+    expect(ringRowX(0)).toBe(printRingX(0))
+    for (const k of [2, 3]) expect(Math.abs(ringRowX(k))).toBeCloseTo(PRINT.row.pitch / 2, 12)
+    for (const k of [0, 1]) expect(Math.abs(ringRowX(k))).toBeCloseTo(PRINT.row.pitch * 1.5, 12)
   })
 
   it('turns each ring about its own centre: the rotation does not depend on k', () => {

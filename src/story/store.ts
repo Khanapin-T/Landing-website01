@@ -21,7 +21,7 @@ export interface RingState {
   /** World Y of the print cure plane; the ring is clipped below it. CURE_OFF = no clip. */
   cureY: number
   /**
-   * 0..1 print row: 0 = every ring at x = 0 (Act 1, one ring), 1 = ring k at printRingX(k) (set at the Act 2 ring
+   * 0..1 print row: 0 = every ring at x = 0 (Act 1, one ring), 1 = ring k at ringRowX(k) (set at the Act 2 ring
    * switch); above 1 the row spreads wider (PRINT.row.liftSpread, while the rings turn over).
    */
   spread: number

@@ -1,5 +1,5 @@
 import { Quaternion, Vector3 } from 'three'
-import { printRingX } from '../../config/print'
+import { ringRowX } from '../../config/print'
 import type { RingState } from '../../story/store'
 
 export interface Pose {
@@ -16,10 +16,10 @@ const qb = new Quaternion()
 
 /**
  * Ring k's placement in the print row, before it joins the tree: T(x_k, y, 0) * Rz(flip) * Ry(yaw) with
- * x_k = printRingX(k) * spread (each ring turns about its own centre).
+ * x_k = ringRowX(k) * spread (each ring turns about its own centre).
  */
 export function ringPose(ring: Pick<RingState, 'y' | 'flip' | 'yaw' | 'spread'>, k: number, out: Pose): Pose {
-  out.position.set(printRingX(k) * ring.spread, ring.y, 0)
+  out.position.set(ringRowX(k) * ring.spread, ring.y, 0)
   qa.setFromAxisAngle(Z, ring.flip)
   qb.setFromAxisAngle(Y, ring.yaw)
   out.quaternion.copy(qa).multiply(qb)

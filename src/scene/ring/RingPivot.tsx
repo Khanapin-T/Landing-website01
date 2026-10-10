@@ -10,7 +10,7 @@ const pose = newPose()
 
 /**
  * Applies ring `index`'s scroll-driven placement to everything attached to it (ringPlacement): its print-row pose
- * T(x_k, y, 0) * Rz(flip) * Ry(yaw) blended into tree slot k by story.ring.flight[k], at its flight scale.
+ * T(x_k, y, 0) * Rz(flip) * Ry(yaw), then its flight onto tree slot k by story.ring.flight[k], at its flight scale.
  */
 export function RingPivot({ index = 0, children }: { index?: number; children: ReactNode }) {
   const group = useRef<Group>(null)

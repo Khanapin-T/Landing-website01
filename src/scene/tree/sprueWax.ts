@@ -20,3 +20,11 @@ export function createSprueWaxGeometry(): THREE.CylinderGeometry {
   g.translate(0, -length + h / 2, 0)
   return g
 }
+
+/** Flight value from which ring k's wax stub grows (it is then on its final slide, src/config/assembly.ts). */
+export const STUB_FROM = 0.85
+
+/** 0..1 growth of ring k's wax stub: it grows from the sprue tip during the last part of the ring's flight (its slide). */
+export function stubGrowth(flight: number): number {
+  return Math.min(Math.max((flight - STUB_FROM) / (1 - STUB_FROM), 0), 1)
+}

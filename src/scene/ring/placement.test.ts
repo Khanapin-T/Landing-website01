@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { Vector3 } from 'three'
+import { ASSEMBLY } from '../../config/assembly'
 import { PRINT, RING_COUNT } from '../../config/print'
 import { RING_INITIAL, type RingState } from '../../story/store'
 import { slotPose } from '../tree/slots'
@@ -18,6 +20,14 @@ const row = (flight: RingState['flight']): RingState => ({
   scale: PRINT.scale,
   flight,
 })
+
+const only = (k: number, t: number): RingState['flight'] => {
+  const f: RingState['flight'] = [0, 0, 0, 0]
+  f[k] = t
+  return f
+}
+
+const axis = (k: number) => new Vector3(0, 1, 0).applyQuaternion(slotPose(k).quaternion)
 
 describe('ring placement (print row -> tree slot)', () => {
   it('keeps every ring exactly in its row pose at the print size with flight 0', () => {
@@ -54,17 +64,71 @@ describe('ring placement (print row -> tree slot)', () => {
     const s = ringPlacement(r, 1, o)
     expect(s).toBeGreaterThan(PRINT.scale)
     expect(s).toBeLessThan(1)
-    const a = ringPose(r, 1, newPose()).position
-    const b = slotPose(1).position
-    expect(o.position.distanceTo(a.clone().lerp(b, 0.5))).toBeLessThan(1e-9)
   })
 
-  it('grows from the print size to full size, smoothly and monotonically', () => {
+  it('reaches the staging point outside the slot (on the sprue axis, turned, full size), then slides straight along that axis', () => {
+    for (let k = 0; k < RING_COUNT; k++) {
+      const slot = slotPose(k)
+      const stage = axis(k).multiplyScalar(ASSEMBLY.stage[k]).add(slot.position)
+      const o = newPose()
+      const s = ringPlacement(row(only(k, ASSEMBLY.curve)), k, o)
+      expect(o.position.distanceTo(stage)).toBeLessThan(1e-9)
+      expect(o.quaternion.angleTo(slot.quaternion)).toBeLessThan(1e-6)
+      expect(s).toBe(1)
+      // Staged outside: farther from the trunk axis and higher than the seat.
+      expect(Math.hypot(stage.x, stage.z)).toBeGreaterThan(Math.hypot(slot.position.x, slot.position.z))
+      expect(stage.y).toBeGreaterThan(slot.position.y)
+      for (let t = ASSEMBLY.curve; t <= 1; t += 0.01) {
+        ringPlacement(row(only(k, t)), k, o)
+        const d = o.position.clone().sub(slot.position)
+        // On the sprue axis line, between the staging point and the seat, in the slot orientation.
+        expect(d.clone().cross(axis(k)).length()).toBeLessThan(1e-9)
+        expect(d.dot(axis(k))).toBeGreaterThanOrEqual(-1e-9)
+        expect(d.dot(axis(k))).toBeLessThanOrEqual(ASSEMBLY.stage[k] + 1e-9)
+        expect(o.quaternion.angleTo(slot.quaternion)).toBeLessThan(1e-6)
+      }
+    }
+  })
+
+  it('moves and turns continuously (no jump anywhere, also where the curve meets the slide)', () => {
+    const N = 2000
+    for (let k = 0; k < RING_COUNT; k++) {
+      const a = newPose()
+      const b = newPose()
+      ringPlacement(row(only(k, 0)), k, a)
+      let maxStep = 0
+      let maxTurn = 0
+      for (let i = 1; i <= N; i++) {
+        ringPlacement(row(only(k, i / N)), k, b)
+        maxStep = Math.max(maxStep, a.position.distanceTo(b.position))
+        maxTurn = Math.max(maxTurn, a.quaternion.angleTo(b.quaternion))
+        a.position.copy(b.position)
+        a.quaternion.copy(b.quaternion)
+      }
+      expect(maxStep, `ring ${k}`).toBeLessThan(0.01)
+      expect(maxTurn, `ring ${k}`).toBeLessThan(0.01)
+    }
+  })
+
+  it('enters the slide at the speed of the curve (no kink in the motion)', () => {
+    const h = 1e-5
+    const c = ASSEMBLY.curve
+    const o = newPose()
+    for (let k = 0; k < RING_COUNT; k++) {
+      const at = (t: number) => (ringPlacement(row(only(k, t)), k, o), o.position.clone())
+      const before = at(c - h).sub(at(c - 2 * h)).divideScalar(h)
+      const after = at(c + 2 * h).sub(at(c + h)).divideScalar(h)
+      expect(before.distanceTo(after) / after.length(), `ring ${k}`).toBeLessThan(1e-3)
+    }
+  })
+
+  it('grows from the print size to full size, smoothly and monotonically, by the staging point', () => {
     expect(flightScale(PRINT.scale, 0)).toBe(PRINT.scale)
+    expect(flightScale(PRINT.scale, ASSEMBLY.curve)).toBe(1)
     expect(flightScale(PRINT.scale, 1)).toBe(1)
-    expect(flightScale(PRINT.scale, 0.5)).toBeCloseTo((PRINT.scale + 1) / 2, 12)
+    expect(flightScale(PRINT.scale, ASSEMBLY.curve / 2)).toBeCloseTo((PRINT.scale + 1) / 2, 12)
     let prev = 0
-    for (let t = 0; t <= 1.0001; t += 0.05) {
+    for (let t = 0; t <= 1.0001; t += 0.01) {
       const s = flightScale(PRINT.scale, t)
       expect(s).toBeGreaterThanOrEqual(prev)
       prev = s

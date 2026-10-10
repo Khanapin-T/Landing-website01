@@ -76,9 +76,22 @@ export const PRINT = {
 /** Rings printed together (one design, four copies on the plate; each takes its own tree slot in Act 3). */
 export const RING_COUNT = 4
 
-/** Ring k's x on the build plate (ring centres, a row centred on x = 0). */
-export function printRingX(k: number): number {
-  return (k - (RING_COUNT - 1) / 2) * PRINT.row.pitch
+/** The x of row position i (0..RING_COUNT-1, left to right) on the build plate (ring centres, a row centred on x = 0). */
+export function printRingX(i: number): number {
+  return (i - (RING_COUNT - 1) / 2) * PRINT.row.pitch
+}
+
+/**
+ * Row position of ring k. The two rings that take the lower tree slots (2, 3) print in the middle, the hero ring 0
+ * and ring 1 (upper slots) at the ends: in Act 3 each inner ring leaves the row straight for its lower slot first
+ * (an inner row position overlaps the lower slot on its side, and a lower slot cannot be entered once the upper slot
+ * next to it is taken), then the outer rings come down onto the upper slots (src/config/assembly.ts).
+ */
+export const PRINT_ROW: readonly number[] = [0, 3, 2, 1]
+
+/** Ring k's x on the build plate. */
+export function ringRowX(k: number): number {
+  return printRingX(PRINT_ROW[k])
 }
 
 /** Opacity of the rails for a plate height: 0 while parked, 1 once the plate is in the frame. */

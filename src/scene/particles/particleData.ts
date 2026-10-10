@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js'
-import { PRINT, RING_COUNT, RING_HALF, printRingX } from '../../config/print'
+import { PRINT, RING_COUNT, RING_HALF, ringRowX } from '../../config/print'
 
 export interface ParticleBuffers {
   /** Start positions (xyz). Also the geometry's `position` attribute. */
@@ -49,7 +49,7 @@ export function streamRing(i: number): number {
 /**
  * The resin stream: the dissolved CAD ring pours into the resin bed (bottom points first), and while printing each
  * point flies to its own spot on one of the four printed rings (streamRing), arriving when the cure front reaches it
- * (printPose: the rings hang upside down, flipped PI around Z about their own centres at printRingX(k), so x and y
+ * (printPose: the rings hang upside down, flipped PI around Z about their own centres at ringRowX(k), so x and y
  * mirror and z stays; they print at PRINT.scale).
  */
 export function resinStream(from: Float32Array, rand: () => number): ParticleBuffers {
@@ -79,7 +79,7 @@ export function resinStream(from: Float32Array, rand: () => number): ParticleBuf
     to[i * 3] = u * pool.halfWidth
     to[i * 3 + 1] = pool.y + (rand() - 0.5) * pool.thickness * (1 - 0.6 * r)
     to[i * 3 + 2] = v * pool.halfDepth
-    front[i * 3] = -x * scale + printRingX(streamRing(i))
+    front[i * 3] = -x * scale + ringRowX(streamRing(i))
     front[i * 3 + 1] = cureY
     front[i * 3 + 2] = z * scale
     delay[i] = ((y - minY) / h) * 0.55 + rand() * 0.1

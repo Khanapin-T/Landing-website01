@@ -12,16 +12,18 @@ export const MOLD_BEATS = {
   baseInTo: 4.3,
   copyIn: 4.0,
   /**
-   * The four printed rings leave the row and land on their slots (interim: ring k flies over
-   * [heroFrom + k * flightStagger, + flightLen], all within heroFrom..heroTo; they may cross in flight).
+   * The wax trunk grows up from the cone once the base has landed (power2.out: within 0.006 of its seat at 4.29),
+   * between the hovering print row (no ring is in its way).
    */
-  heroFrom: 4.0,
-  heroTo: 4.3,
-  flightStagger: 0.04,
-  flightLen: 0.18,
-  /** The trunk starts after the base has landed and after the rings have left the axis (no piercing). */
-  trunkFrom: 4.35,
-  trunkTo: 4.6,
+  trunkFrom: 4.29,
+  trunkTo: 4.46,
+  /**
+   * Then the four printed rings fly to their slots one after another, in ASSEMBLY.order (src/config/assembly.ts): the
+   * i-th flight runs over [flightFrom + i * flightStagger, + flightLen]; the last ring is seated before the flask drops.
+   */
+  flightFrom: 4.44,
+  flightStagger: 0.1,
+  flightLen: 0.16,
   flaskFrom: 4.95,
   flaskTo: 5.25,
   tapeFrom: 5.25,

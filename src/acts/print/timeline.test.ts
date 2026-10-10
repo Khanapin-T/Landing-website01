@@ -6,7 +6,7 @@ import { registerPrint } from './timeline'
 import { PRINT_INITIAL, print } from './state'
 import { PRINT_BEATS } from './beats'
 import { Vector3 } from 'three'
-import { CURE_OFF, PRINT, RING_COUNT, RING_HALF, printPose } from '../../config/print'
+import { CURE_OFF, PRINT, PRINT_ROW, RING_COUNT, RING_HALF, printPose } from '../../config/print'
 import { newPose, ringPose } from '../../scene/ring/pose'
 import { RING_HALF_EXTENTS } from '../../scene/tree/slots'
 import { RING_INITIAL, STREAM_INITIAL, story } from '../../story/store'
@@ -102,7 +102,10 @@ describe('act 2 four-ring row', () => {
         lo.push(a)
         hi.push(b)
       }
-      for (let k = 1; k < RING_COUNT; k++) expect(lo[k] - hi[k - 1], `t = ${t.toFixed(4)}, rings ${k - 1}/${k}`).toBeGreaterThan(0.005)
+      // Neighbours in the row (PRINT_ROW: ring k sits at row position PRINT_ROW[k]).
+      const at = (i: number) => PRINT_ROW.indexOf(i)
+      for (let i = 1; i < RING_COUNT; i++)
+        expect(lo[at(i)] - hi[at(i - 1)], `t = ${t.toFixed(4)}, rings ${at(i - 1)}/${at(i)}`).toBeGreaterThan(0.005)
     }
   })
 

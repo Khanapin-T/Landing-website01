@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { particleDrawCount, resinStream, sampleSurface, streamRing } from './particleData'
 import { mulberry32 } from '../../lib/random'
-import { PRINT, RING_COUNT, RING_HALF, printPose, printRingX } from '../../config/print'
+import { PRINT, RING_COUNT, RING_HALF, printPose, ringRowX } from '../../config/print'
 
 describe('particle data', () => {
   it('samples points on the surface, deterministically per seed', () => {
@@ -49,7 +49,7 @@ describe('particle data', () => {
     for (let i = 0; i < p.count; i++) {
       const [x, y, z] = [ring[i * 3], ring[i * 3 + 1], ring[i * 3 + 2]]
       // Upside down (flip PI around Z about the ring's own centre): x and y mirror, z stays; printed on the cure plane.
-      expect(p.front![i * 3]).toBeCloseTo(-x * PRINT.scale + printRingX(streamRing(i)))
+      expect(p.front![i * 3]).toBeCloseTo(-x * PRINT.scale + ringRowX(streamRing(i)))
       expect(p.front![i * 3 + 1]).toBeCloseTo(PRINT.cureY)
       expect(p.front![i * 3 + 2]).toBeCloseTo(z * PRINT.scale)
       // At its arrival progress the printed ring has carried this point exactly onto the cure plane.
@@ -71,7 +71,7 @@ describe('particle data', () => {
       lo[k] = Math.min(lo[k], ring[i * 3 + 1])
       hi[k] = Math.max(hi[k], ring[i * 3 + 1])
       // The point lands within its own ring's footprint in the row.
-      expect(Math.abs(p.front![i * 3] - printRingX(k))).toBeLessThanOrEqual(0.5 * PRINT.scale + 1e-6)
+      expect(Math.abs(p.front![i * 3] - ringRowX(k))).toBeLessThanOrEqual(0.5 * PRINT.scale + 1e-6)
     }
     for (let k = 0; k < RING_COUNT; k++) {
       expect(Math.abs(n[k] - p.count / RING_COUNT)).toBeLessThanOrEqual(1)
