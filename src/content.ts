@@ -61,6 +61,28 @@ export const content = {
       'The flask goes into a bucket of water on its side. The water boils for a moment and turns white as the investment breaks down. Ten minutes later the flask comes out clean and the gold tree slides out of it.',
     steps: ['Water', 'Rest', 'Tree out'],
   },
+  birth: {
+    heading: 'Then the ring is born',
+    caption:
+      'Each ring is cut from the tree and goes into a jar of acid for ten minutes. Then one of them is processed and polished until it shines.',
+    steps: ['Cut off', 'Acid', 'Polish'],
+    /** Label of the acid timer chip. */
+    timer: 'Acid',
+    /** Label riding with the neon polish line. */
+    polishLabel: 'processing and polishing',
+  },
+  /** Final frame: name and contacts from the author (2026-10-10); the wording of `made` is approximate and he may refine it. */
+  finale: {
+    name: 'NVGOLD',
+    /** Closing line before the promo (author 2026-10-10, wording approximate: he may refine it). */
+    made: 'One beautiful, graceful, masculine ring has been made. Now you know how rings are created in our workshop.',
+    promo: 'This is just one example of our work. Get in touch.',
+    links: [
+      { label: 'WhatsApp', value: '+7 708 226 9235', href: 'https://wa.me/77082269235' },
+      { label: 'Email', value: 'hanapin08@gmail.com', href: 'mailto:hanapin08@gmail.com' },
+      { label: 'Instagram', value: '@almac_astana', href: 'https://www.instagram.com/almac_astana/' },
+    ],
+  },
   /** Label of the vacuum gauge (Acts 3 and 5). */
   gauge: 'Vacuum',
   /** Label of the rest timer chip (Acts 3 and 5). */

@@ -49,7 +49,7 @@ export function useRingGeometry(): THREE.BufferGeometry {
   return useNormalizedGeometry(RING_URL)
 }
 
-/** The light (40k tris) ring for the tree clones, normalized the same way as the hero ring. */
+/** The light (40k tris) ring for printed rings 1..3, normalized the same way as the hero ring. */
 export function useRingLightGeometry(): THREE.BufferGeometry {
   return useNormalizedGeometry(RING_LIGHT_URL)
 }

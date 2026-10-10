@@ -1,13 +1,11 @@
-import { TOTAL_SCREENS } from '../../config/acts'
-
 /** Act 6 choreography in absolute screens (water 11.5..14.0). Tune by eye. */
 export const WATER_BEATS = {
-  /** Act 6 props render from windowFrom; the raw tree stays after the act as the end state until act 7 takes over. */
+  /** Act 6 props render from windowFrom to 14.0; act 7 draws the same tree in the same pose from 14.0 (no overlap gap). */
   windowFrom: 11.45,
-  windowTo: TOTAL_SCREENS,
+  windowTo: 14.0,
   copyIn: 11.65,
-  /** The copy column (and the timer at 10:00) stays after the act until act 7 moves this to its own start. */
-  copyOut: 20,
+  /** The copy column (and the timer at 10:00) leaves just after the act; act 7 takes the column at BIRTH_BEATS.copyIn. */
+  copyOut: 14.02,
   /** Camera to the bucket view while the bucket rises in from below. */
   camFrom: 11.5,
   camTo: 11.9,

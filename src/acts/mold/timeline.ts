@@ -1,29 +1,30 @@
 import { gsap } from 'gsap'
 import { CAM } from '../../config/mold'
-import { PRINT } from '../../config/print'
-import { CAM_INITIAL, story } from '../../story/store'
+import { ASSEMBLY } from '../../config/assembly'
+import { story } from '../../story/store'
+import { LIFT_CAM } from '../../config/print'
 import { MOLD_BEATS as B } from './beats'
 import { mold } from './state'
 
 /**
  * Adds Act 3's scrubbed tweens to `tl` at absolute screens. fromTo + immediateRender:false everywhere, so both
- * scroll directions restore exact values. Act 3 owns `story.ring.tree`, `story.ring.scale` (from 4.0), `story.cam` and `mold.*`.
+ * scroll directions restore exact values. Act 3 owns `story.ring.flight`, `story.cam` and `mold.*`.
  */
 export function registerMold(tl: gsap.core.Timeline): () => void {
   const seg = gsap.timeline({ defaults: { ease: 'none', immediateRender: false } })
   const len = (from: number, to: number) => to - from
 
-  // Camera pulls back to the tree view.
-  seg.fromTo(story.cam, { ...CAM_INITIAL }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
-  seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+  // Camera pulls back from where Act 2 left it to the tree view, while the rings fly.
+  seg.fromTo(story.cam, { ...LIFT_CAM }, { ...CAM.tree, duration: len(B.camFrom, B.camTo), ease: 'power2.inOut' }, B.camFrom)
 
-  // The hero ring lands on its slot, the trunk grows up from the cone, the clones pop in.
-  seg.fromTo(story.ring, { tree: 0 }, { tree: 1, duration: len(B.heroFrom, B.heroTo), ease: 'power2.inOut' }, B.heroFrom)
-  // The ring was printed small (act 2): it grows to full size on its way to the slot, while the camera pulls back.
-  seg.fromTo(story.ring, { scale: PRINT.scale }, { scale: 1, duration: len(B.heroFrom, B.heroTo), ease: 'power2.inOut' }, B.heroFrom)
-  seg.fromTo(mold, { trunk: 0 }, { trunk: 1, duration: len(B.trunkFrom, B.trunkTo), ease: 'power1.out' }, B.trunkFrom)
-  B.cloneFrom.forEach((from, i) => {
-    seg.fromTo(mold.clones, { [i]: 0 }, { [i]: 1, duration: B.cloneLen, ease: 'back.out(1.6)' }, from)
+  // The base rises into the centre with the trunk standing on it (one motion: same span, same ease).
+  seg.fromTo(mold, { base: 0 }, { base: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+  seg.fromTo(mold, { trunk: 0 }, { trunk: 1, duration: len(B.baseInFrom, B.baseInTo), ease: 'power2.out' }, B.baseInFrom)
+
+  // Then the four printed rings fly straight onto their slots one after another (curve to a staging point outside the slot,
+  // then a slide along the sprue axis; each grows to full size on the way: src/scene/ring/placement.ts).
+  ASSEMBLY.order.forEach((k, i) => {
+    seg.fromTo(story.ring.flight, { [k]: 0 }, { [k]: 1, duration: B.flightLen, ease: 'power2.inOut' }, B.flightFrom + i * B.flightStagger)
   })
 
   // Flask, tape, investment.

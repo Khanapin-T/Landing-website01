@@ -11,9 +11,16 @@ import { funnelProfile } from './funnel'
 /**
  * The shapes of the casting tree and its funnel (trunk, funnel, four rings with their sprues and the wax stubs that continue the sprues into the trunk), in the unflipped flask
  * frame, all drawn with one material. Mount it inside a group in the flask frame. Used by the cavity outline (Act 4) and
- * the solid gold fill (Act 5). Act 6 passes a separate trunkMaterial (the tarnish patch).
+ * the solid gold fill (Act 5). The raw tree (Acts 6 and 7) is clean: one material for everything.
+ * Act 7 passes rings={false}: the empty tree after the cut keeps only the trunk stubs.
  */
-export function TreeShapes({ material, trunkMaterial }: { material: THREE.Material; trunkMaterial?: THREE.Material }) {
+export function TreeShapes({
+  material,
+  rings = true,
+}: {
+  material: THREE.Material
+  rings?: boolean
+}) {
   const ring = useRingLightGeometry()
   const sprue = useMemo(() => createSprueGeometry(), [])
   const trunk = useMemo(() => createTrunkGeometry(), [])
@@ -27,12 +34,12 @@ export function TreeShapes({ material, trunkMaterial }: { material: THREE.Materi
 
   return (
     <>
-      <mesh geometry={trunk} material={trunkMaterial ?? material} position={[0, MOLD.trunk.bottomY, 0]} />
+      <mesh geometry={trunk} material={material} position={[0, MOLD.trunk.bottomY, 0]} />
       <mesh geometry={funnel} material={material} />
       {poses.map((p, i) => (
         <group key={i} position={p.position} quaternion={p.quaternion}>
-          <mesh geometry={ring} material={material} />
-          <mesh geometry={sprue} material={material} />
+          {rings && <mesh geometry={ring} material={material} />}
+          {rings && <mesh geometry={sprue} material={material} />}
           <mesh geometry={stub} material={material} position={SPRUE_TIP_LOCAL as unknown as [number, number, number]} />
         </group>
       ))}

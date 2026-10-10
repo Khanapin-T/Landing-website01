@@ -11,7 +11,7 @@ import { registerPrint } from './timeline'
 import { CureBed } from './CureBed'
 import { Supports } from './Supports'
 
-/** Act 2: cure light under the resin bed and the build plate (the bed itself is ResinStream's points). The ring itself (resin state, clip, sprue) is the persistent HeroRing. */
+/** Act 2: cure light under the resin bed, the build plate and the supports (the bed itself is ResinStream's points). The four rings (resin state, clip, sprues) are the persistent HeroRing set. */
 export function PrintScene() {
   useLayoutEffect(() => {
     const offs = [registerPrint(master)]

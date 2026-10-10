@@ -30,7 +30,7 @@ describe('acts config', () => {
     expect(idea.entry).toBeCloseTo(1.1)
     // Print lands mid-print (plate up, ring half grown, copy in).
     expect(print.entry).toBeCloseTo(3.1)
-    // Mold lands with the tree built and the clones popping in (copy and step list are in).
+    // Mold lands with the rings seated on their slots and the trunk growing (copy and step list are in).
     expect(mold.entry).toBeCloseTo(4.5)
     for (const x of w) {
       expect(x.entry).toBeGreaterThan(x.start)

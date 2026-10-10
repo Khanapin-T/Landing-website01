@@ -6,7 +6,7 @@ import { PRINT, railOpacity, railSpan } from '../../config/print'
 import { getAppState } from '../../story/appState'
 import { print } from './state'
 
-const { width, depth, thickness, parkedY } = PRINT.plate
+const { width, depth, thickness, parkedY, liftY } = PRINT.plate
 const RAILS = PRINT.rails
 
 /**
@@ -62,7 +62,8 @@ export function BuildPlate() {
     const loading = getAppState().phase === 'loading'
     const g = group.current
     if (g) {
-      g.visible = loading || print.plate < parkedY - 0.001
+      // Hidden while parked above (before it comes down) and once lifted out of the wider end-of-act frame.
+      g.visible = loading || print.plate < parkedY - 0.001 || (print.plate > parkedY + 0.001 && print.plate < liftY - 0.001)
       g.position.y = print.plate
     }
     const opacity = railOpacity(print.plate)

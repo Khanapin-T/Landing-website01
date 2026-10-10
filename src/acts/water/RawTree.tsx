@@ -5,7 +5,7 @@ import { rawTreeMatrix } from '../../config/water'
 import { TreeShapes } from '../../scene/furnace/TreeShapes'
 import { getAppState } from '../../story/appState'
 import { story } from '../../story/store'
-import { createRawGoldMaterial } from './rawGoldMaterial'
+import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
 import { water } from './state'
 
 /**
@@ -14,14 +14,12 @@ import { water } from './state'
  * foreground (config/water.ts rawTreeMatrix). It stays as the end state for act 7.
  */
 export function RawTree() {
-  const material = useMemo(() => createRawGoldMaterial(false), [])
-  const trunk = useMemo(() => createRawGoldMaterial(true), [])
+  const material = useMemo(() => createRawGoldMaterial(), [])
   useEffect(
     () => () => {
       material.dispose()
-      trunk.dispose()
     },
-    [material, trunk],
+    [material],
   )
 
   const group = useRef<Group>(null)
@@ -35,7 +33,7 @@ export function RawTree() {
 
   return (
     <group ref={group} matrixAutoUpdate={false}>
-      <TreeShapes material={material} trunkMaterial={trunk} />
+      <TreeShapes material={material} />
     </group>
   )
 }

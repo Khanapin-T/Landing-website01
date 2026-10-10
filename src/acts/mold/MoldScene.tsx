@@ -25,8 +25,8 @@ import { registerMold } from './timeline'
 const glow: [number, number, number] = [0, 0, 0]
 
 /**
- * Act 3: rubber base, wax tree with the clone rings, then the flask (steel, tape, investment, bubbles) that comes
- * down over it. The hero ring itself is the persistent HeroRing (it blends into tree slot 0). The scene stays
+ * Act 3: rubber base, wax tree (trunk and stubs), then the flask (steel, tape, investment, bubbles) that comes
+ * down over it. The four printed rings are the persistent HeroRing set (ring k flies onto tree slot k). The scene stays
  * after the act. This component is also the flask owner for the furnace (Acts 4-5): it writes the shared furnace
  * uniforms from story.flask, mounts the flask's X-ray shell and the cavity outline, and turns the whole flask over.
  */

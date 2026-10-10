@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js'
-import { PRINT, RING_HALF } from '../../config/print'
+import { PRINT, RING_COUNT, RING_HALF, ringPrintX, ringPrintZ } from '../../config/print'
 
 export interface ParticleBuffers {
   /** Start positions (xyz). Also the geometry's `position` attribute. */
@@ -39,9 +39,18 @@ export function sampleSurface(geometry: THREE.BufferGeometry, count: number, ran
 }
 
 /**
+ * Which of the four printed rings point `i` feeds. Every 4th point: the sampled points come in random surface order,
+ * so each ring gets an even quarter of the whole surface.
+ */
+export function streamRing(i: number): number {
+  return i % RING_COUNT
+}
+
+/**
  * The resin stream: the dissolved CAD ring pours into the resin bed (bottom points first), and while printing each
- * point flies back to its own spot on the ring, arriving when the cure front reaches it (printPose: the ring hangs
- * upside down, flipped PI around Z, so x and y mirror and z stays; it prints at PRINT.scale).
+ * point flies to its own spot on one of the four printed rings (streamRing), arriving when the cure front reaches it
+ * (printPose: the rings hang upside down, flipped PI around Z about their own centres at their grid spots (ringPrintX(k), ringPrintZ(k)), so x and y
+ * mirror and z stays; they print at PRINT.scale).
  */
 export function resinStream(from: Float32Array, rand: () => number): ParticleBuffers {
   const count = from.length / 3
@@ -70,9 +79,9 @@ export function resinStream(from: Float32Array, rand: () => number): ParticleBuf
     to[i * 3] = u * pool.halfWidth
     to[i * 3 + 1] = pool.y + (rand() - 0.5) * pool.thickness * (1 - 0.6 * r)
     to[i * 3 + 2] = v * pool.halfDepth
-    front[i * 3] = -x * scale
+    front[i * 3] = -x * scale + ringPrintX(streamRing(i))
     front[i * 3 + 1] = cureY
-    front[i * 3 + 2] = z * scale
+    front[i * 3 + 2] = z * scale + ringPrintZ(streamRing(i))
     delay[i] = ((y - minY) / h) * 0.55 + rand() * 0.1
     arrive[i] = Math.min(Math.max((y + RING_HALF + sprue.length) / printed, 0), 1)
     seed[i] = rand()

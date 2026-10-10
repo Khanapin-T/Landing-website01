@@ -2,29 +2,25 @@ import { useRef, type ReactNode } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import { story } from '../../story/store'
-import { slotPose } from '../tree/slots'
-import { blendPose, newPose, ringPose } from './pose'
+import { newPose } from './pose'
+import { ringPlacement } from './placement'
 
-// Module-level scratch: nothing is allocated per frame.
-const free = newPose()
-const blended = newPose()
-const slot0 = slotPose(0)
+// Module-level scratch: nothing is allocated per frame (each pivot copies it out right away).
+const pose = newPose()
 
 /**
- * Applies the ring's scroll-driven placement to everything attached to it: T(0, y, 0) * Rz(flip) * Ry(yaw) * S(scale),
- * blended into tree slot 0 by story.ring.tree (Act 3). With tree = 0 this equals the old nested groups.
+ * Applies ring `index`'s scroll-driven placement to everything attached to it (ringPlacement): its print-row pose
+ * T(x_k, y, 0) * Rz(flip) * Ry(yaw), then its flight onto tree slot k by story.ring.flight[k], at its flight scale.
  */
-export function RingPivot({ children }: { children: ReactNode }) {
+export function RingPivot({ index = 0, children }: { index?: number; children: ReactNode }) {
   const group = useRef<Group>(null)
   useFrame(() => {
     const g = group.current
     if (!g) return
-    ringPose(story.ring, free)
-    const t = story.ring.tree
-    const pose = t > 0 ? blendPose(free, slot0, t, blended) : free
+    const s = ringPlacement(story.ring, index, pose)
     g.position.copy(pose.position)
     g.quaternion.copy(pose.quaternion)
-    g.scale.setScalar(story.ring.scale)
+    g.scale.setScalar(s)
   })
   return <group ref={group}>{children}</group>
 }

@@ -2,9 +2,15 @@
 export interface MoldState {
   /** Rubber base: 0 = below the frame, 1 = in place. */
   base: number
-  /** Trunk growth 0..1. */
+  /**
+   * Wax trunk arrival 0..1: 0 = below the frame (standing on the base at MOLD.base.dropOffset), 1 = in place. Rises
+   * with the base (same tween), but stays in the flask when the base drops away.
+   */
   trunk: number
-  /** Clone rings 0..1 (scale about the sprue tip). */
+  /**
+   * UNUSED since the four-ring print (2026-10-10: the printed rings fly to the tree, no clones pop in). Kept only
+   * because src/acts/birth/timeline.test.ts still resets it; remove together with that line.
+   */
   clones: [number, number, number]
   /** Flask: 0 = high above its seat, 1 = seated. */
   flask: number

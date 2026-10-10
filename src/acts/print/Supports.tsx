@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { PRINT, RESIN_COLOR } from '../../config/print'
+import { PRINT, PRINT_SPOTS, RESIN_COLOR, RING_COUNT } from '../../config/print'
 import { mulberry32 } from '../../lib/random'
 import { particleDrawCount } from '../../scene/particles/particleData'
 import { useQuality } from '../../scene/quality/qualityStore'
@@ -77,9 +77,9 @@ varying float vAlpha;
 void main() {
   float k = supBreak(aSeed);
   float t = supFallT(aSeed);
-  // A short puff from where the support stood: outward (away from the ring axis) and back (away from the camera),
-  // slowing down, never down through the ring that still hangs below.
-  vec3 dir = normalize(vec3(position.x * 2.5, 0.12, -0.5 - abs(position.z)));
+  // A short puff from where the support stood: mostly back (away from the camera) and a little outward (away from the
+  // ring axis, staying in its own lane of the four-ring grid), slowing down, never down through the ring below.
+  vec3 dir = normalize(vec3(position.x * 0.6, 0.12, -0.5 - abs(position.z)));
   float go = 1.0 - (1.0 - t) * (1.0 - t);
   vec3 p = position + (dir * ${PRINT.supports.puff.toFixed(3)} + aJitter * 0.06) * go;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -100,11 +100,15 @@ void main() {
 }
 `
 
+/** Supports copies: one per printed ring, at its spot in the print grid. */
+const COPIES = PRINT_SPOTS
+
 /**
  * Act 2's print supports (author 2026-10-09: many, like real resin printing): thin resin columns from the plate down
  * onto the upside-down ring, landing on its real surface (rays cast once against the light ring model), drawn at
- * PRINT.scale like the ring. They print with the ring and rise with it (print.sup); at 100%, while the ring still hangs
- * on its sprue, they crumble into a short puff of points (print.drop). The sprue is the ring's own and stays.
+ * PRINT.scale like the ring, one copy under each of the four rings (shared geometry and materials). They print with
+ * the rings and rise with them (print.sup); at 100%, while the rings still hang on their sprues, they crumble into a
+ * short puff of points (print.drop). The sprues are the rings' own and stay.
  */
 export function Supports() {
   const ring = useRingLightGeometry()
@@ -154,8 +158,8 @@ export function Supports() {
 
   const gl = useThree((s) => s.gl)
   const group = useRef<THREE.Group>(null)
-  const columns = useRef<THREE.Mesh>(null)
-  const cloud = useRef<THREE.Points>(null)
+  const columns = useRef<(THREE.Object3D | null)[]>([])
+  const clouds = useRef<(THREE.Object3D | null)[]>([])
   useFrame(() => {
     const loading = getAppState().phase === 'loading'
     cure.value = story.ring.cureY
@@ -164,16 +168,40 @@ export function Supports() {
     if (group.current) group.current.position.y = print.sup
     // Only while the ring is resin with its sprue (Act 2 on), and until every support has fallen.
     const printed = story.ring.resin > 0.5 && story.ring.sprue > 0.5
-    if (columns.current) columns.current.visible = loading || (printed && print.drop < 0.999)
-    if (cloud.current) cloud.current.visible = loading || (printed && print.drop > 0.001 && print.drop < 0.999)
+    const columnsOn = loading || (printed && print.drop < 0.999)
+    const cloudOn = loading || (printed && print.drop > 0.001 && print.drop < 0.999)
+    for (let k = 0; k < RING_COUNT; k++) {
+      const c = columns.current[k]
+      if (c) c.visible = columnsOn
+      const p = clouds.current[k]
+      if (p) p.visible = cloudOn
+    }
   })
 
   // Starts visible: Precompile (traverseVisible) runs before the first frame sets the real values. frustumCulled off:
   // the falling vertices leave the geometry's bounds.
   return (
-    <group ref={group} position-y={print.sup} scale={PRINT.scale}>
-      <mesh ref={columns} geometry={geometry} material={material} frustumCulled={false} />
-      <points ref={cloud} geometry={points.geometry} material={pointsMaterial} frustumCulled={false} />
+    <group ref={group} position-y={print.sup}>
+      {COPIES.map((spot, k) => (
+        <group key={k} position-x={spot.x} position-z={spot.z} scale={PRINT.scale}>
+          <mesh
+            ref={(m) => {
+              columns.current[k] = m
+            }}
+            geometry={geometry}
+            material={material}
+            frustumCulled={false}
+          />
+          <points
+            ref={(p) => {
+              clouds.current[k] = p
+            }}
+            geometry={points.geometry}
+            material={pointsMaterial}
+            frustumCulled={false}
+          />
+        </group>
+      ))}
     </group>
   )
 }
