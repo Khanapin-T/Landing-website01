@@ -41,10 +41,13 @@ export function registerBirth(tl: gsap.core.Timeline): () => void {
   seg.fromTo(birth, { edge: 0 }, { edge: 1, duration: len(B.edgeFrom, B.edgeTo), ease: 'power1.inOut' }, B.edgeFrom)
   seg.fromTo(birth, { wipeX: WIPE.leftX }, { wipeX: WIPE.rightX, duration: len(B.sweepFrom, B.sweepTo), ease: 'power1.inOut' }, B.sweepFrom)
 
-  // Final: tilt, reflection and spin, the lights and the brighter gold (birth.finale), the final camera.
+  // Final: tilt and spin, the lights and the brighter gold (birth.finale), the final camera.
   seg.fromTo(birth, { tilt: 0 }, { tilt: FINAL.tilt, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)
   seg.fromTo(birth, { finale: 0 }, { finale: 1, duration: len(B.finalFrom, B.finalTo), ease: 'power1.inOut' }, B.finalFrom)
   seg.fromTo(story.cam, { ...CAM_BIRTH.polish }, { ...CAM_BIRTH.final, duration: len(B.finalFrom, B.finalTo), ease: 'power2.inOut' }, B.finalFrom)
+
+  // The reflection, once the sweep has blacked out the whole page.
+  seg.fromTo(birth, { reflect: 0 }, { reflect: 1, duration: len(B.reflectFrom, B.reflectTo), ease: 'power1.inOut' }, B.reflectFrom)
 
   tl.add(seg, 0)
   return () => {

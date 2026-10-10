@@ -8,7 +8,7 @@ import { birth } from './state'
 import { createAcidMaterial, createGlassMaterial } from './jarMaterial'
 
 /**
- * The low glass jar of pale-green acid (Act 7): a lathe glass shell and an acid cylinder filling it up to ACID_Y,
+ * The low glass jar of luminous acid green (Act 7): a lathe glass shell and an acid cylinder filling it up to ACID_Y,
  * centred under the tree. It rises in from below (birth.jar) and goes down out of the frame with the three other
  * rings (birth.jarAway). Both transparent, drawn after the opaque rings inside.
  */

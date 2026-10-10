@@ -25,8 +25,10 @@ export interface BirthState {
   all: number
   /** Final tilt of the ring, radians. */
   tilt: number
-  /** 0..1 the final frame: reflection, slow ambient spin, the lights, the brighter gold. */
+  /** 0..1 the final frame: slow ambient spin, the lights, the brighter gold. */
   finale: number
+  /** 0..1 the ring's mirror reflection fades in (after the sweep, over the black page). */
+  reflect: number
   /** 0..1 the line from the end of its pass to a full-height vertical line at the left page edge (config/birth.ts WIPE). */
   edge: number
   /** NDC x of the vertical wipe line while it sweeps left to right (WIPE.leftX = not started, WIPE.rightX = done). */
@@ -48,6 +50,7 @@ export const BIRTH_INITIAL: Readonly<BirthState> = {
   all: 0,
   tilt: 0,
   finale: 0,
+  reflect: 0,
   edge: 0,
   wipeX: WIPE.leftX,
 }

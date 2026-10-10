@@ -13,6 +13,8 @@ import { FinaleLights } from './FinaleLights'
 import { Jar } from './Jar'
 import { PolishLine } from './PolishLine'
 import { PolishRing } from './PolishRing'
+import { Table } from './Table'
+import { Vessels } from './Vessels'
 import { WipeLine } from './WipeLine'
 import { registerBirth } from './timeline'
 
@@ -40,6 +42,8 @@ export function BirthScene() {
         <BirthTree />
         <CutRings />
         <PolishRing />
+        <Table />
+        <Vessels />
         <Jar />
         {/* WipeLine before PolishLine: it writes wipeView, which the line label reads in the same frame. */}
         <WipeLine />

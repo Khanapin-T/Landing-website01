@@ -9,7 +9,7 @@ export const BIRTH_BEATS = {
    * The act copy (and the acid timer) is gone when the sweep starts: by then the line has erased it (clip), the cue
    * only makes sure nothing of it leaks afterwards. The final block has no cue: the sweep reveals it.
    */
-  copyOut: 16.55,
+  copyOut: 16.5,
   /** Camera to the tree + jar view while the jar rises in from below. */
   camFrom: 14.0,
   camTo: 14.3,
@@ -33,13 +33,16 @@ export const BIRTH_BEATS = {
   polishTo: 16.35,
   /** The line goes on to the left edge of the page, turning upright and growing to the full height (erases the copy). */
   edgeFrom: 16.35,
-  edgeTo: 16.55,
+  edgeTo: 16.5,
   /** Then straight back across the page, left to right: black and the final block behind it. */
-  sweepFrom: 16.55,
-  sweepTo: 16.85,
-  /** Final: tilt, reflection, slow spin, the final camera, the lights and the brighter gold; done with the sweep. */
-  finalFrom: 16.45,
-  finalTo: 16.85,
+  sweepFrom: 16.5,
+  sweepTo: 16.78,
+  /** Final: tilt, slow spin, the final camera, the lights and the brighter gold; done with the sweep. */
+  finalFrom: 16.42,
+  finalTo: 16.78,
+  /** The reflection fades in only once the sweep is done (the whole page black behind it); then a short hold. */
+  reflectFrom: 16.78,
+  reflectTo: 16.92,
   /** Step list cues (start screens). */
   steps: { cut: 14.3, acid: 15.15, polish: 15.95 },
 } as const

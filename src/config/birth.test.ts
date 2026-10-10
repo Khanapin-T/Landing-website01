@@ -137,7 +137,8 @@ describe('hero ring', () => {
     expect(b.x).toBeCloseTo(a.x, 9)
     expect(b.z).toBeCloseTo(a.z, 9)
     expect((a.y + b.y) / 2).toBeCloseTo(FINAL.mirrorY, 9)
-    for (const q of ringPoints(src)) expect(q.y).toBeGreaterThan(FINAL.mirrorY)
+    // The ring body (not the stub: it is polished away before the final) stays clear of the plane.
+    for (const q of ringPoints(src).slice(1)) expect(q.y).toBeGreaterThan(FINAL.mirrorY)
   })
 })
 
@@ -183,8 +184,10 @@ describe('framing', () => {
 
   it('frames the ring and the visible part of its reflection in the final view', () => {
     const src = polishMatrix(0, FINAL.tilt, new THREE.Matrix4())
-    // The reflection fades out 0.9 under the mirror plane (polishMaterial.ts), so only the part above that counts.
-    const pts = [...ringPoints(src), ...ringPoints(mirrorMatrix(src, new THREE.Matrix4())).filter((p) => p.y > FINAL.mirrorY - 0.9)]
+    // The reflection fades out FINAL.reflectFade under the mirror plane (polishMaterial.ts), so only the part above that
+    // counts. Ring body only (slice(1) drops the stub tip: the stub is polished away and the mirror copy has none).
+    const body = (m: THREE.Matrix4) => ringPoints(m).slice(1)
+    const pts = [...body(src), ...body(mirrorMatrix(src, new THREE.Matrix4())).filter((p) => p.y > FINAL.mirrorY - FINAL.reflectFade)]
     for (const aspect of ASPECTS) for (const p of pts) expect(Math.abs(ndc(CAM_BIRTH.final, aspect, p).y)).toBeLessThan(0.85)
   })
 })

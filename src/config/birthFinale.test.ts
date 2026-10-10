@@ -42,6 +42,32 @@ describe('finale', () => {
     expect(kz).toBeLessThan(CAM_BIRTH.final.z - 1)
   })
 
+  it('puts a warm fill front left, mirroring the key, weaker than the key', () => {
+    const [fx, fy, fz] = FINAL_LIGHT.fill.position
+    const [kx, ky] = FINAL_LIGHT.key.position
+    expect(fx).toBeLessThan(POLISH.x)
+    expect(Math.sign(fx - POLISH.x)).toBe(-Math.sign(kx - POLISH.x))
+    expect(fy).toBeGreaterThan(POLISH.y)
+    expect(fy).toBeLessThan(ky)
+    expect(fz).toBeGreaterThan(POLISH.z)
+    expect(fz).toBeLessThan(CAM_BIRTH.final.z - 1)
+    const k = FINAL_LIGHT.fill.intensity / FINAL_LIGHT.key.intensity
+    expect(k).toBeGreaterThan(0.25)
+    expect(k).toBeLessThan(0.6)
+    // Warm: more red than blue.
+    const c = new THREE.Color(FINAL_LIGHT.fill.color)
+    expect(c.r).toBeGreaterThan(c.b)
+  })
+
+  it('keeps the reflection close under the ring without touching it', () => {
+    // Lowest point of the ring body (bbox corner, stub excluded) at the final tilt, relative to the ring centre.
+    const low = new THREE.Vector3(0, -0.5, 1.03 / 2.48 / 2).applyAxisAngle(new THREE.Vector3(1, 0, 0), FINAL.tilt).y
+    const gap = POLISH.y + low - FINAL.mirrorY
+    expect(gap).toBeGreaterThan(0.08)
+    // Half of the s07 gap (plane at RAW.y - 0.78), measured on the mesh: 0.268 -> 0.134.
+    expect(RAW.y - FINAL.mirrorY).toBeCloseTo(0.646, 3)
+  })
+
   it('ends the wipe as a thin full-height line at the left page edge', () => {
     expect(WIPE.half).toBeGreaterThan(1)
     expect(WIPE.width).toBeGreaterThan(0)

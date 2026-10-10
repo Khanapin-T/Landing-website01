@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { LINE_NORMAL } from '../../config/birth'
+import { FINAL, LINE_NORMAL } from '../../config/birth'
 import { RAW_GOLD } from '../../scene/gold/rawGoldMaterial'
 import { POLISHED_GOLD, createPolishMaterials } from './polishMaterial'
 
@@ -37,14 +37,29 @@ describe('polish materials', () => {
     expect(compile(ring).fragmentShader).not.toContain('if (polished > 0.5) discard;')
   })
 
-  it('makes the reflection variant transparent and the others opaque, each with its own program key', () => {
+  it('keeps every variant opaque, each with its own program key', () => {
     const { ring, stub, mirror } = createPolishMaterials()
-    expect(mirror.transparent).toBe(true)
-    expect(ring.transparent).toBe(false)
+    for (const m of [ring, stub, mirror]) {
+      expect(m.transparent).toBe(false)
+      expect(m.depthWrite).toBe(true)
+      expect(m.depthTest).toBe(true)
+      expect(m.blending).toBe(THREE.NormalBlending)
+    }
     const keys = new Set([ring, stub, mirror].map((m) => m.customProgramCacheKey()))
     expect(keys.size).toBe(3)
     expect(POLISHED_GOLD.roughness).toBeLessThan(0.2)
     expect(mirror.side).toBe(THREE.FrontSide)
+  })
+
+  it('fades the reflection to black by scaling the outgoing light, not by alpha (no x-ray of the inner faces)', () => {
+    const { ring, mirror } = createPolishMaterials()
+    const fs = compile(mirror).fragmentShader
+    const fade = fs.indexOf('outgoingLight *= uReflect')
+    expect(fade).toBeGreaterThan(fs.indexOf('vec3 outgoingLight ='))
+    expect(fade).toBeLessThan(fs.indexOf('#include <opaque_fragment>'))
+    expect(fs).toContain(`${FINAL.reflectFade.toFixed(4)}, ${FINAL.mirrorY.toFixed(4)} - vPolishWorld.y`)
+    expect(fs).not.toContain('diffuseColor.a = uReflect')
+    expect(compile(ring).fragmentShader).not.toContain('outgoingLight *= uReflect')
   })
 
   it('scales the IBL down to the raw gold intensity on the raw side (always on the stub), the polished side by uBoost', () => {

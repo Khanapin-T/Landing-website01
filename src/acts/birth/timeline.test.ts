@@ -139,9 +139,27 @@ describe('act 7 timeline', () => {
     expect(snap(story.cam)).toEqual({ ...CAM_BIRTH.final })
   })
 
+  it('shows the reflection only after the sweep has crossed the whole page, then holds', () => {
+    expect(B.reflectFrom).toBeGreaterThanOrEqual(B.sweepTo)
+    expect(B.reflectTo).toBeGreaterThan(B.reflectFrom)
+    expect(B.reflectTo).toBeLessThan(TOTAL_SCREENS)
+    for (const t of [B.finalFrom + 0.05, B.sweepFrom + 0.1, B.sweepTo - 0.01, B.sweepTo]) {
+      tl.time(t)
+      expect(birth.reflect).toBe(0)
+    }
+    tl.time(B.reflectFrom + 0.05)
+    expect(birth.wipeX).toBe(WIPE.rightX)
+    expect(birth.reflect).toBeGreaterThan(0)
+    expect(birth.reflect).toBeLessThan(1)
+    tl.time(B.reflectTo)
+    expect(birth.reflect).toBe(1)
+    tl.time(B.sweepTo - 0.01)
+    expect(birth.reflect).toBe(0)
+  })
+
   it('leaves the final state at the end and holds it', () => {
     tl.time(TOTAL_SCREENS)
-    expect(birth).toMatchObject({ jar: 1, cut0: 1, cut1: 1, cut2: 1, cut3: 1, treeUp: 1, rest: 1, out: 1, jarAway: 1, line: 1, all: 1, finale: 1, edge: 1, wipeX: WIPE.rightX })
+    expect(birth).toMatchObject({ jar: 1, cut0: 1, cut1: 1, cut2: 1, cut3: 1, treeUp: 1, rest: 1, out: 1, jarAway: 1, line: 1, all: 1, finale: 1, reflect: 1, edge: 1, wipeX: WIPE.rightX })
     expect(birth.tilt).toBeCloseTo(FINAL.tilt, 5)
     expect(snap(story.cam)).toEqual({ ...CAM_BIRTH.final })
     const held = state()
@@ -153,7 +171,7 @@ describe('act 7 timeline', () => {
   it('restores the end of act 6 exactly when scrubbed back', () => {
     tl.time(B.camFrom - 0.01)
     const before = state()
-    tl.time(16.7)
+    tl.time(B.reflectFrom + 0.07)
     tl.time(B.camFrom - 0.01)
     expect(state()).toEqual(before)
   })
@@ -165,7 +183,7 @@ describe('act 7 timeline', () => {
     tl.time(14.5)
     tl.time(15.4)
     expect(state()).toEqual(jumped)
-    for (const at of [16.2, B.edgeFrom + 0.1, B.sweepFrom + 0.15]) {
+    for (const at of [16.2, B.edgeFrom + 0.1, B.sweepFrom + 0.15, B.reflectFrom + 0.07]) {
       tl.time(0)
       tl.time(at)
       const far = state()

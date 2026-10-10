@@ -75,16 +75,29 @@ export const LINE_NORMAL = new THREE.Vector3(Math.sin(LINE.angle), -Math.cos(LIN
 /**
  * Final frame: ring tilt, ambient spin speed (rad/s at birth.finale = 1), the reflection plane under the ring, and
  * `roughness`: the polished gold softens to this in the final (broad highlights instead of a black mirror), `envBoost`: the polished gold's IBL is scaled up to this factor with birth.finale (the brighter "render" look).
+ * mirrorY: the ring body's lowest point at `tilt` is 0.5117 under its centre (measured on ring.glb, stub excluded); the
+ * plane at -0.646 leaves a 0.134 gap (half of the s07 gap 0.268 at -0.78). The reflection fades to black from
+ * `reflectStrength` at the plane to 0 at `reflectFade` under it (polishMaterial.ts).
  */
-export const FINAL = { tilt: deg(10), spin: 0.35, mirrorY: RAW.y - 0.78, envBoost: 2.6, roughness: 0.3 } as const
+export const FINAL = {
+  tilt: deg(10),
+  spin: 0.35,
+  mirrorY: RAW.y - 0.646,
+  reflectStrength: 0.32,
+  reflectFade: 0.9,
+  envBoost: 2.6,
+  roughness: 0.3,
+} as const
 
 /**
- * The real lights of the final frame (world space, relative to POLISH): a warm key upper right in front of the ring
- * and a faint cool rim behind it. Mounted from the start at intensity 0 (a changed light count recompiles every
- * shader) and scaled 0..intensity by birth.finale. Point lights, candela, decay 2. Tune by eye.
+ * The real lights of the final frame (world space, relative to POLISH): a warm key upper right in front of the ring,
+ * a warm fill front left (about 40% of the key, so no spin angle shows only the dark environment) and a faint cool
+ * rim behind it. Mounted from the start at intensity 0 (a changed light count recompiles every shader) and scaled
+ * 0..intensity by birth.finale. Point lights, candela, decay 2. Tune by eye.
  */
 export const FINAL_LIGHT = {
   key: { position: [POLISH.x + 1.6, POLISH.y + 1.7, POLISH.z + 2.3] as const, color: '#ffd8a6', intensity: 70 },
+  fill: { position: [POLISH.x - 1.8, POLISH.y + 0.6, POLISH.z + 2.0] as const, color: '#ffe0b8', intensity: 28 },
   rim: { position: [POLISH.x - 1.5, POLISH.y + 0.9, POLISH.z - 1.9] as const, color: '#a8c6ff', intensity: 24 },
 } as const
 

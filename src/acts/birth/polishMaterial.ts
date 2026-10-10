@@ -12,7 +12,7 @@ export interface PolishUniforms {
   uLineNormal: { value: THREE.Vector3 }
   /** 1 = polished everywhere (after the pass, so the spinning ring never shows raw again). */
   uAll: { value: number }
-  /** 0..1 opacity of the reflection copy. */
+  /** 0..1 strength of the reflection copy (it fades to black, not to transparent). */
   uReflect: { value: number }
   /** IBL factor of the polished side: 1, up to FINAL.envBoost in the final frame (the raw side keeps its own). */
   uBoost: { value: number }
@@ -26,10 +26,12 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
     metalness: 1,
     roughness: RAW_GOLD.roughness,
     envMapIntensity: POLISHED_GOLD.envMapIntensity,
-    transparent: variant === 'mirror',
-    // The mirror copy is drawn last with nothing behind it; writing depth keeps its far faces from showing through.
+    // All variants are opaque. The mirror copy fades to black (outgoing light scaled), not to transparent: it only shows
+    // over the black page after the sweep, and blending would let the inner honeycomb show through the outer surface.
     // FrontSide also for the mirror: three flips the winding for its negative-determinant matrix.
+    transparent: false,
     depthWrite: true,
+    depthTest: true,
     side: THREE.FrontSide,
   })
   const raw = new THREE.Color(RAW_GOLD.color)
@@ -83,20 +85,20 @@ function create(variant: Variant, uniforms: PolishUniforms): THREE.MeshStandardM
     if (variant === 'mirror')
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <opaque_fragment>',
-        `diffuseColor.a = uReflect * 0.32 * (1.0 - smoothstep(0.0, 0.9, ${FINAL.mirrorY.toFixed(4)} - vPolishWorld.y));
+        `outgoingLight *= uReflect * ${FINAL.reflectStrength.toFixed(4)} * (1.0 - smoothstep(0.0, ${FINAL.reflectFade.toFixed(4)}, ${FINAL.mirrorY.toFixed(4)} - vPolishWorld.y));
         #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `polish-gold-${variant}-v4`
+  m.customProgramCacheKey = () => `polish-gold-${variant}-v5`
   return m
 }
 
 /**
  * The hero ring's materials (Act 7): raw as-cast gold on one side of the moving polish plane (through
  * uLinePoint, normal uLineNormal), mirror-polished gold on the other; uAll polishes everything. `stub` discards the
- * sprue stub on the polished side (it vanishes where the line has passed); `mirror` is the faded reflection copy
- * under the ring; uBoost brightens the polished gold in the final frame. One shared uniforms object; uniforms only, so
- * each variant compiles once.
+ * sprue stub on the polished side (it vanishes where the line has passed); `mirror` is the reflection copy under the
+ * ring, opaque and faded to black (uReflect); uBoost brightens the polished gold in the final frame. One shared
+ * uniforms object; uniforms only, so each variant compiles once.
  */
 export function createPolishMaterials() {
   const uniforms: PolishUniforms = {

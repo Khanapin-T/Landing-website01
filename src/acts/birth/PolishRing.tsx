@@ -11,7 +11,7 @@ import { createPolishMaterials } from './polishMaterial'
 /**
  * The hero ring of Act 7 (slot 0, the full 100k model) from the tree to the final frame: on the tree, cut last, at rest
  * on top in the jar, out to the centre, polished by the line, then tilted and slowly spinning (ambient, frozen under
- * prefers-reduced-motion) over its faded mirror copy. Pose: config/birth.ts heroMatrix.
+ * prefers-reduced-motion) over its mirror copy (faded to black, shown after the sweep). Pose: config/birth.ts heroMatrix.
  */
 export function PolishRing() {
   const ring = useRingGeometry()
@@ -56,10 +56,11 @@ export function PolishRing() {
     // Before the line starts the whole ring is raw: the split plane is infinite and would cut the low, rising ring.
     if (birth.line <= 0) mats.uniforms.uLinePoint.value.x += 20
     mats.uniforms.uAll.value = birth.all
-    mats.uniforms.uReflect.value = birth.finale
+    mats.uniforms.uReflect.value = birth.reflect
     // The brighter "render" look of the final frame (polished side only).
     mats.uniforms.uBoost.value = 1 + (FINAL.envBoost - 1) * birth.finale
-    r.visible = getAppState().phase === 'loading' || birth.finale > 0.001
+    // Opaque: it may only show once the sweep has blacked out the page (birth.reflect), compiled during the loader.
+    r.visible = getAppState().phase === 'loading' || birth.reflect > 0.001
   })
 
   return (
