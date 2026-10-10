@@ -3,24 +3,24 @@ import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import { treeMatrix } from '../../config/birth'
 import { TreeShapes } from '../../scene/furnace/TreeShapes'
-import { createRawGoldMaterial } from '../../scene/gold/rawGoldMaterial'
+import { createRawTreeMaterials } from '../../scene/gold/rawGoldMaterial'
 import { getAppState } from '../../story/appState'
 import { birth } from './state'
 
 /**
  * The raw tree without its rings (Act 7): trunk, funnel and the four trunk stubs in the act 6 end pose (the same
- * materials, the tarnish patch on the trunk), so the hand-over at 14.0 is invisible. The rings are drawn by CutRings
+ * materials and dirt seeds as RawTree), so the hand-over at 14.0 is invisible. The rings are drawn by CutRings
  * and PolishRing. Goes up out of the frame (birth.treeUp) once all rings are off.
  */
 export function BirthTree() {
-  const material = useMemo(() => createRawGoldMaterial(false), [])
-  const trunk = useMemo(() => createRawGoldMaterial(true), [])
+  // Same seeds in Act 6 (RawTree) and Act 7 (BirthTree): the tree keeps its dirt pattern across the hand-over.
+  const mats = useMemo(() => createRawTreeMaterials(), [])
   useEffect(
     () => () => {
-      material.dispose()
-      trunk.dispose()
+      mats.tree.dispose()
+      for (const m of mats.slots) m.dispose()
     },
-    [material, trunk],
+    [mats],
   )
 
   const group = useRef<Group>(null)
@@ -34,7 +34,7 @@ export function BirthTree() {
 
   return (
     <group ref={group} matrixAutoUpdate={false}>
-      <TreeShapes material={material} trunkMaterial={trunk} rings={false} />
+      <TreeShapes material={mats.tree} slotMaterials={mats.slots} rings={false} />
     </group>
   )
 }

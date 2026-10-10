@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { FINAL, LINE_NORMAL } from '../../config/birth'
+import { FINAL, HERO_SLOT, LINE_NORMAL } from '../../config/birth'
+import { DIRT_GLSL, DIRT_SEEDS, RAW_CLEAN, createRawGoldMaterial, dirtColorGLSL } from '../../scene/gold/rawGoldMaterial'
 import { POLISHED_GOLD, createPolishMaterials } from './polishMaterial'
 
 const compile = (m: THREE.Material) => {
@@ -72,5 +73,21 @@ describe('polish materials', () => {
       expect(fs).toContain('iblIrradiance *= pgEnv;')
     }
     expect(compile(stub).fragmentShader).toContain(`float pgEnv = ${ratio};`)
+  })
+
+  it('carries the same post-casting dirt as the raw tree on the raw side only, cleaned by the shared acid uniform', () => {
+    const { ring, stub, mirror, uniforms } = createPolishMaterials()
+    const rawFs = compile(createRawGoldMaterial(DIRT_SEEDS.slots[HERO_SLOT])).fragmentShader
+    for (const m of [ring, stub, mirror]) {
+      const s = compile(m)
+      expect(s.fragmentShader).toContain(DIRT_GLSL)
+      expect(rawFs).toContain(DIRT_GLSL)
+      // Masked by the raw side: the polished side (right of the line, uAll) is never dirty.
+      expect(s.fragmentShader).toContain(dirtColorGLSL('vPolishObj', '(1.0 - polished)'))
+      expect(s.fragmentShader.indexOf('gdDirt(vPolishObj)')).toBeGreaterThan(s.fragmentShader.indexOf('float polished ='))
+      expect(s.uniforms.uRawClean).toBe(RAW_CLEAN)
+      expect(s.uniforms.uDirtSeed).toBe(uniforms.uDirtSeed)
+    }
+    expect(uniforms.uDirtSeed.value).toBe(DIRT_SEEDS.slots[HERO_SLOT])
   })
 })

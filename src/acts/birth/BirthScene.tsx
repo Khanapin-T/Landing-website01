@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
+import { RAW_CLEAN, rawCleanOf } from '../../scene/gold/rawGoldMaterial'
 import { getAppState } from '../../story/appState'
 import { master, syncMaster } from '../../story/master'
 import { story } from '../../story/store'
@@ -15,6 +16,7 @@ import { PolishLine } from './PolishLine'
 import { PolishRing } from './PolishRing'
 import { Table } from './Table'
 import { Vessels } from './Vessels'
+import { birth } from './state'
 import { WipeLine } from './WipeLine'
 import { registerBirth } from './timeline'
 
@@ -32,6 +34,9 @@ export function BirthScene() {
 
   const root = useRef<Group>(null)
   useFrame(() => {
+    // The one writer of the acid clean-up of all raw gold (tree, cut rings, hero ring raw side): a pure function of the
+    // scroll (birth.rest is 0 before Act 7), so scrubbing back restores the dirt.
+    RAW_CLEAN.value = rawCleanOf(birth.rest)
     if (root.current) root.current.visible = shouldRender(getAppState().phase, story.screen, BIRTH_BEATS.windowFrom, BIRTH_BEATS.windowTo)
   })
 
